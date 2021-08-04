@@ -1,0 +1,7 @@
+.classpath
+.settings
+release.properties
+*.log
+bin/
+target/
+

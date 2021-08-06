@@ -15,7 +15,7 @@ import com.tercen.service.ServiceError;
 
 public class Utils {
 
-	public static Project getProject(TercenClient client, String teamOrUser, String projectName)
+	private static Project getProject(TercenClient client, String teamOrUser, String projectName)
 			throws ServiceError {
 
 		List<Object> startKey = List.of(teamOrUser, false, "2000");
@@ -37,10 +37,10 @@ public class Utils {
 		return client.projectService.create(new_project);
 	}
 	
-	public static String uploadFile(String url, String teamName, String projectName, String fileName) throws ServiceError, IOException {
+	public static String uploadFile(String url, String teamName, String projectName, String domain, String username, String password, String fileName) throws ServiceError, IOException {
 		// Write data to tercen
 		TercenClient client = new TercenClient(url);
-		client.userService.connect2("tercen", "test", "test");
+		client.userService.connect2(domain, username, password);
 		Project	project = getProject(client, teamName, projectName);
 			
 		FileDocument fileDoc = new FileDocument();

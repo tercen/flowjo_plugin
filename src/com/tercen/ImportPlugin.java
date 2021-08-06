@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.Icon;
+import javax.swing.JOptionPane;
 
 import com.tercen.service.ServiceError;
 import com.treestar.lib.core.ExportFileTypes;
@@ -23,6 +24,11 @@ public class ImportPlugin implements PopulationPluginInterface {
 	private static final String TEAM_NAME = "test-team";
 	private static final String PROJECT_NAME = "myproject";
 	private static final String LOCALHOST_URL = "http://10.0.2.2:5402/";
+	private static final String DOMAIN = "tercen";
+	private static final String USERNAME = "test";
+	private static final String PASSWORD = "test";
+	
+	private static final String Failed = "Failed";
 	
 	@Override
 	public SElement getElement() {
@@ -53,15 +59,19 @@ public class ImportPlugin implements PopulationPluginInterface {
 	}
 	
 	@Override
-	public ExternalAlgorithmResults invokeAlgorithm(SElement arg0, File arg1, File arg2) {
+	public ExternalAlgorithmResults invokeAlgorithm(SElement fcmlQueryElement, File sampleFile, File outputFolder) {
 		ExternalAlgorithmResults result = new ExternalAlgorithmResults();
 		
-		//upload file to tercen
 		try {
-			// arg1 should point to csvfile of FCS file
-			String fileName = arg1.getPath();
-			String uploadResult = Utils.uploadFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, fileName);
-			result.setWorkspaceString(uploadResult);
+	        if (!sampleFile.exists()) {
+	            JOptionPane.showMessageDialog(null, "Input file does not exist", "ImportPlugin error", JOptionPane.ERROR_MESSAGE);
+	            result.setWorkspaceString(ImportPlugin.Failed);
+	        } else {
+	    		//upload file to tercen
+	        	String fileName = sampleFile.getPath();
+	        	String uploadResult = Utils.uploadFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME, PASSWORD, fileName);
+	        	result.setWorkspaceString(uploadResult);
+	        }
 		} catch (ServiceError e) {
 			e.printStackTrace();
 			result.setWorkspaceString(e.getMessage());

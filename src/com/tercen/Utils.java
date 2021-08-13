@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
@@ -14,6 +15,8 @@ import com.tercen.model.impl.Project;
 import com.tercen.service.ServiceError;
 
 public class Utils {
+	
+	private static final String Separator = "\\";
 
 	private static Project getProject(TercenClient client, String teamOrUser, String projectName)
 			throws ServiceError {
@@ -37,14 +40,34 @@ public class Utils {
 		return client.projectService.create(new_project);
 	}
 	
-	public static String uploadFile(String url, String teamName, String projectName, String domain, String username, String password, String fileName) throws ServiceError, IOException {
+	public static String uploadFcsFile(String url, String teamName, String projectName, String domain, String username, String password, String fileName) throws ServiceError, IOException {
 		// Write data to tercen
 		TercenClient client = new TercenClient(url);
 		client.userService.connect2(domain, username, password);
 		Project	project = getProject(client, teamName, projectName);
 			
 		FileDocument fileDoc = new FileDocument();
-		String[] filenameParts = fileName.split("/");
+		String[] filenameParts = fileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
+		fileDoc.name = filenameParts[filenameParts.length - 1];
+		fileDoc.projectId = project.id;
+		fileDoc.acl.owner = project.acl.owner;
+		fileDoc.metadata.contentType = "application/octet-stream";
+		fileDoc.metadata.contentEncoding = "iso-8859-1";
+		File file = new File(fileName);
+		byte[] bytes = FileUtils.readFileToByteArray(file);
+		FileDocument fileResult = client.fileService.upload(fileDoc, bytes);
+		
+		return fileResult.toJson().toString();			
+	}
+	
+	public static String uploadCsvFile(String url, String teamName, String projectName, String domain, String username, String password, String fileName) throws ServiceError, IOException {
+		// Write data to tercen
+		TercenClient client = new TercenClient(url);
+		client.userService.connect2(domain, username, password);
+		Project	project = getProject(client, teamName, projectName);
+			
+		FileDocument fileDoc = new FileDocument();
+		String[] filenameParts = fileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
 		fileDoc.name = filenameParts[filenameParts.length - 1];
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;

@@ -9,9 +9,12 @@ import javax.swing.Icon;
 import javax.swing.JOptionPane;
 
 import com.tercen.service.ServiceError;
+import com.treestar.flowjo.core.Sample;
+import com.treestar.lib.FJPluginHelper;
 import com.treestar.lib.core.ExportFileTypes;
 import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
+import com.treestar.lib.file.FJFileRef;
 import com.treestar.lib.xml.SElement;
 
 public class ImportPlugin implements PopulationPluginInterface {
@@ -67,9 +70,15 @@ public class ImportPlugin implements PopulationPluginInterface {
 	            JOptionPane.showMessageDialog(null, "Input file does not exist", "ImportPlugin error", JOptionPane.ERROR_MESSAGE);
 	            result.setWorkspaceString(ImportPlugin.Failed);
 	        } else {
-	    		//upload file to tercen
+	        	//upload csv file
 	        	String fileName = sampleFile.getPath();
-	        	String uploadResult = Utils.uploadFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME, PASSWORD, fileName);
+	        	String uploadResult = Utils.uploadCsvFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME, PASSWORD, fileName);
+
+	    		//upload fcs file
+	        	Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
+	        	FJFileRef fileRef = sample.getFileRef();
+	        	fileName = fileRef.getLocalFilepath();
+	        	uploadResult = Utils.uploadFcsFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME, PASSWORD, fileName);
 	        	result.setWorkspaceString(uploadResult);
 	        }
 		} catch (ServiceError e) {

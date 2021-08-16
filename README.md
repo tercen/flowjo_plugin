@@ -11,9 +11,16 @@ Run plugin:
 * Plugin should be available under 'Workspace' -> 'Plugins'
 
 ```
+mvn install:install-file -Dfile=target/jtson-0.0.3-SNAPSHOT.jar -DgroupId=com.tercen -DartifactId=jtson -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true
+
+mvn install:install-file -Dfile=target/tercen_java_client-0.0.1-SNAPSHOT.jar -DgroupId=com.tercen -DartifactId=java_client -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true
+
 mvn install:install-file -Dfile="C:\Program Files\FlowJo 10.8.0\FlowJo.jar" -DgroupId=com.flowjo -DartifactId=flowjo -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true
 
-mvn install:install-file -Dfile="C:\Program Files\FlowJo 10.8.0\lib\fjlib-2.4.0.jar" -DgroupId=com.flowjo -DartifactId=flowlib -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true
+mvn install:install-file -Dfile="C:\Program Files\FlowJo 10.8.0\libs\fjlib-2.4.0.jar" -DgroupId=com.flowjo -DartifactId=flowlib -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true
+
+mvn install:install-file -Dfile="C:\Program Files\FlowJo 10.8.0\libs\fjengine-2.5.0.jar" -DgroupId=com.flowjo -DartifactId=fjengine -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true
+
 ```
 
 Debug plugin:

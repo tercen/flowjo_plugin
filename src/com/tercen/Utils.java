@@ -1,10 +1,14 @@
 package com.tercen;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 
@@ -40,27 +44,38 @@ public class Utils {
 		return client.projectService.create(new_project);
 	}
 	
-	public static String uploadFcsFile(String url, String teamName, String projectName, String domain, String username, String password, String fileName) throws ServiceError, IOException {
+	public static LinkedHashMap uploadZipFile(String url, String teamName, String projectName, String domain, String username, String password, String fullFileName) throws ServiceError, IOException {
 		// Write data to tercen
 		TercenClient client = new TercenClient(url);
 		client.userService.connect2(domain, username, password);
 		Project	project = getProject(client, teamName, projectName);
 			
 		FileDocument fileDoc = new FileDocument();
-		String[] filenameParts = fileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
-		fileDoc.name = filenameParts[filenameParts.length - 1];
+		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
+		String filename = filenameParts[filenameParts.length - 1];
+		fileDoc.name = filename.replace(".fcs", ".zip");
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
-		fileDoc.metadata.contentType = "application/octet-stream";
-		fileDoc.metadata.contentEncoding = "iso-8859-1";
-		File file = new File(fileName);
-		byte[] bytes = FileUtils.readFileToByteArray(file);
-		FileDocument fileResult = client.fileService.upload(fileDoc, bytes);
+		fileDoc.metadata.contentType = "application/zip";
+		fileDoc.metadata.contentEncoding = "zip,iso-8859-1";
+		File file = new File(fullFileName);
 		
-		return fileResult.toJson().toString();			
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ZipOutputStream zos = new ZipOutputStream(bos);
+		ZipEntry entry = new ZipEntry(file.getName());
+		byte[] bytes = FileUtils.readFileToByteArray(file);
+		zos.putNextEntry(entry);
+		zos.write(bytes, 0, bytes.length);
+		zos.closeEntry();
+		zos.close();
+		
+		byte[] zipBytes = bos.toByteArray();
+		FileDocument fileResult = client.fileService.upload(fileDoc, zipBytes);
+		
+		return fileResult.toJson();			
 	}
 	
-	public static String uploadCsvFile(String url, String teamName, String projectName, String domain, String username, String password, String fileName) throws ServiceError, IOException {
+	public static LinkedHashMap uploadCsvFile(String url, String teamName, String projectName, String domain, String username, String password, String fileName) throws ServiceError, IOException {
 		// Write data to tercen
 		TercenClient client = new TercenClient(url);
 		client.userService.connect2(domain, username, password);
@@ -80,7 +95,7 @@ public class Utils {
 		byte[] bytes = FileUtils.readFileToByteArray(file);
 		FileDocument fileResult = client.fileService.upload(fileDoc, bytes);
 		
-		return fileResult.toJson().toString();			
+		return fileResult.toJson();			
 	}
 	
 }

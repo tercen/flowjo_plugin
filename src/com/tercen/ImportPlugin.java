@@ -1,8 +1,12 @@
 package com.tercen;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import javax.swing.Icon;
@@ -72,19 +76,34 @@ public class ImportPlugin implements PopulationPluginInterface {
 	        } else {
 	        	//upload csv file
 	        	String fileName = sampleFile.getPath();
-	        	String uploadResult = Utils.uploadCsvFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME, PASSWORD, fileName);
+	        	LinkedHashMap uploadResult = Utils.uploadCsvFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME, PASSWORD, fileName);
 
-	    		//upload fcs file
+	    		//upload fcs-zip file
 	        	Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
 	        	FJFileRef fileRef = sample.getFileRef();
 	        	fileName = fileRef.getLocalFilepath();
-	        	uploadResult = Utils.uploadFcsFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME, PASSWORD, fileName);
-	        	result.setWorkspaceString(uploadResult);
+	        	uploadResult = Utils.uploadZipFile(LOCALHOST_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME, PASSWORD, fileName);
+	        	result.setWorkspaceString(uploadResult.toString());
+	        	
+	        	// open browser
+	        	String projectId = (String) uploadResult.get("projectId");
+	        	if (projectId != null && projectId != "") {
+		        	String url = LOCALHOST_URL + TEAM_NAME + "/p/" + projectId;
+		        	Desktop desktop = java.awt.Desktop.getDesktop();
+		        	URI uri = new URI(String.valueOf(url));
+		        	desktop.browse(uri);
+	        	}
+	        	// TODO:
+	        	// Find a way to view the data
+	        	// next step is to execute a workflow given the data
 	        }
 		} catch (ServiceError e) {
 			e.printStackTrace();
 			result.setWorkspaceString(e.getMessage());
 		} catch (IOException e) {
+			e.printStackTrace();
+			result.setWorkspaceString(e.getMessage());
+		} catch (URISyntaxException e) {
 			e.printStackTrace();
 			result.setWorkspaceString(e.getMessage());
 		}

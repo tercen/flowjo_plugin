@@ -78,7 +78,8 @@ public class Utils {
 			
 		FileDocument fileDoc = new FileDocument();
 		String filename = getFilename(fullFileName);
-		String outFilename =  filename.replace(".fcs", ".zip");
+        String ext = filename.substring(filename.lastIndexOf("."));
+		String outFilename =  filename.replace(ext, ".zip");
 		fileDoc.name = outFilename;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;

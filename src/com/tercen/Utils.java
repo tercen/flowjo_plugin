@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -16,12 +17,18 @@ import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.Project;
+import com.tercen.model.impl.ProjectDocument;
 import com.tercen.service.ServiceError;
 
 public class Utils {
 	
 	private static final String Separator = "\\";
 
+	private static String getFilename(String fullFileName) {
+		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
+		return filenameParts[filenameParts.length - 1];
+	}
+	
 	private static Project getProject(TercenClient client, String teamOrUser, String projectName)
 			throws ServiceError {
 
@@ -44,6 +51,25 @@ public class Utils {
 		return client.projectService.create(new_project);
 	}
 	
+	private static void removeProjectFileIfExists(TercenClient client, Project project, String filename) throws ServiceError {
+		List<ProjectDocument> projectDocs = client.projectDocumentService.findProjectObjectsByLastModifiedDate(null, null, 100, 0, true, false);
+		if (projectDocs.size() > 0) {
+			projectDocs = projectDocs
+				  .stream()
+				  .filter(p -> p.projectId.equals(project.id))
+				  .filter(p -> p.name.equals(filename))
+				  .collect(Collectors.toList());
+			
+			projectDocs.forEach(p ->  {
+				try {
+					client.fileService.delete(p.id, p.rev);
+				} catch (ServiceError e) {
+					e.printStackTrace();
+				}
+			});
+		}
+	}
+	
 	public static LinkedHashMap uploadZipFile(String url, String teamName, String projectName, String domain, String username, String password, String fullFileName) throws ServiceError, IOException {
 		// Write data to tercen
 		TercenClient client = new TercenClient(url);
@@ -51,9 +77,9 @@ public class Utils {
 		Project	project = getProject(client, teamName, projectName);
 			
 		FileDocument fileDoc = new FileDocument();
-		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
-		String filename = filenameParts[filenameParts.length - 1];
-		fileDoc.name = filename.replace(".fcs", ".zip");
+		String filename = getFilename(fullFileName);
+		String outFilename =  filename.replace(".fcs", ".zip");
+		fileDoc.name = outFilename;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
 		fileDoc.metadata.contentType = "application/zip";
@@ -70,20 +96,23 @@ public class Utils {
 		zos.close();
 		
 		byte[] zipBytes = bos.toByteArray();
+		bos.close();
+		// remove existing file and upload new file
+		removeProjectFileIfExists(client, project, outFilename);
 		FileDocument fileResult = client.fileService.upload(fileDoc, zipBytes);
 		
 		return fileResult.toJson();			
 	}
 	
-	public static LinkedHashMap uploadCsvFile(String url, String teamName, String projectName, String domain, String username, String password, String fileName) throws ServiceError, IOException {
+	public static LinkedHashMap uploadCsvFile(String url, String teamName, String projectName, String domain, String username, String password, String fullFileName) throws ServiceError, IOException {
 		// Write data to tercen
 		TercenClient client = new TercenClient(url);
 		client.userService.connect2(domain, username, password);
 		Project	project = getProject(client, teamName, projectName);
 			
 		FileDocument fileDoc = new FileDocument();
-		String[] filenameParts = fileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
-		fileDoc.name = filenameParts[filenameParts.length - 1];
+		String filename = getFilename(fullFileName);
+		fileDoc.name = filename;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
 		fileDoc.metadata = new CSVFileMetadata();
@@ -91,11 +120,13 @@ public class Utils {
 		fileDoc.metadata.separator = ",";
 		fileDoc.metadata.quote = "\"";
 		fileDoc.metadata.contentEncoding = "iso-8859-1";
-		File file = new File(fileName);
+		File file = new File(fullFileName);
 		byte[] bytes = FileUtils.readFileToByteArray(file);
+		
+		// remove existing file and upload new file
+		removeProjectFileIfExists(client, project, filename);
 		FileDocument fileResult = client.fileService.upload(fileDoc, bytes);
 		
 		return fileResult.toJson();			
 	}
-	
 }

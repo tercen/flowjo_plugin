@@ -23,7 +23,7 @@ import com.tercen.service.ServiceError;
 public class Utils {
 	
 	private static final String Separator = "\\";
-
+	
 	private static String getFilename(String fullFileName) {
 		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
 		return filenameParts[filenameParts.length - 1];
@@ -68,6 +68,10 @@ public class Utils {
 				}
 			});
 		}
+	}
+	
+	public static String getTercenProjectURL(String hostName, String teamName, String projectId) {
+		 return hostName + teamName + "/p/" + projectId;
 	}
 	
 	public static LinkedHashMap uploadZipFile(String url, String teamName, String projectName, String domain, String username, String password, String fullFileName) throws ServiceError, IOException {

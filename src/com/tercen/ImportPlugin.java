@@ -2,13 +2,17 @@ package com.tercen;
 
 import java.awt.Component;
 import java.awt.Desktop;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Properties;
 
 import javax.swing.Icon;
 import javax.swing.JOptionPane;
@@ -28,22 +32,29 @@ import com.treestar.lib.xml.SElement;
 public class ImportPlugin implements PopulationPluginInterface {
 
 	private static final String pluginName = "TercenImportPlugin";
-	private String version = "1.0";
+	private static final String version = "1.0";
+
+	// default settings
+	private static final String HOSTNAME_URL = "http://10.0.2.2:5402/";
+	private static final String TEAM_NAME = "test-team";
+	private static final String PROJECT_NAME = "myproject";
+	private static final String DOMAIN = "tercen";
+	private static final String USERNAME = "test";
+	private static final String PASSWORD = "test";
+
+	private String hostName = HOSTNAME_URL;
+	private String teamName = TEAM_NAME;
+	private String projectName = PROJECT_NAME;
+	private String domain = DOMAIN;
+	private String userName = USERNAME;
+	private String passWord = PASSWORD;
 	private boolean upload;
 	private boolean uploadFCS;
 	private boolean uploadCSV;
 	private boolean openBrowser;
 
-	private static final String TEAM_NAME = "test-team";
-	private static final String PROJECT_NAME = "myproject";
-	private static final String HOSTNAME_URL = "http://10.0.2.2:5402/";
-	private static final String DOMAIN = "tercen";
-	private static final String USERNAME = "test";
-	private static final String PASSWORD = "test";
-
 	private static final int fixedToolTipWidth = 300;
 	private static final String Failed = "Failed";
-	private static final String confirmText = String.format("Are you sure to upload files to %s?", HOSTNAME_URL);
 	private static final String sampleLabel = "Upload Sample FCS file";
 	private static final String sampleTooltip = "Should the FCS file be uploaded?";
 	private boolean fSample = true;
@@ -61,6 +72,12 @@ public class ImportPlugin implements PopulationPluginInterface {
 		result.setBool("uploadFCS", uploadFCS);
 		result.setBool("uploadCSV", uploadCSV);
 		result.setBool("openBrowser", openBrowser);
+		result.setString("host", hostName);
+		result.setString("team", teamName);
+		result.setString("project", projectName);
+		result.setString("domain", domain);
+		result.setString("user", userName);
+		result.setString("pwd", passWord);
 		return result;
 	}
 
@@ -99,8 +116,8 @@ public class ImportPlugin implements PopulationPluginInterface {
 					// upload csv file
 					if (uploadCSV) {
 						String fileName = sampleFile.getPath();
-						uploadResult = Utils.uploadCsvFile(HOSTNAME_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME,
-								PASSWORD, fileName);
+						uploadResult = Utils.uploadCsvFile(hostName, teamName, projectName, domain, userName, passWord,
+								fileName);
 					}
 
 					// upload fcs-zip file
@@ -108,8 +125,8 @@ public class ImportPlugin implements PopulationPluginInterface {
 						Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
 						FJFileRef fileRef = sample.getFileRef();
 						String fileName = fileRef.getLocalFilepath();
-						uploadResult = Utils.uploadZipFile(HOSTNAME_URL, TEAM_NAME, PROJECT_NAME, DOMAIN, USERNAME,
-								PASSWORD, fileName);
+						uploadResult = Utils.uploadZipFile(hostName, teamName, projectName, domain, userName, passWord,
+								fileName);
 						result.setWorkspaceString(uploadResult.toString());
 					}
 
@@ -118,7 +135,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 						if (uploadResult != null) {
 							String projectId = (String) uploadResult.get("projectId");
 							if (projectId != null && projectId != "") {
-								String url = Utils.getTercenProjectURL(HOSTNAME_URL, TEAM_NAME, projectId);
+								String url = Utils.getTercenProjectURL(hostName, teamName, projectId);
 								Desktop desktop = java.awt.Desktop.getDesktop();
 								URI uri = new URI(String.valueOf(url));
 								desktop.browse(uri);
@@ -132,19 +149,20 @@ public class ImportPlugin implements PopulationPluginInterface {
 
 					// set status for user
 					if (uploadCSV && uploadFCS) {
-						result.setWorkspaceString("FCS and CSV file have been uploaded to Tercen.");
+						result.setWorkspaceString(
+								String.format("FCS and CSV file have been uploaded to %s.", hostName));
 					} else if (uploadCSV && !uploadFCS) {
-						result.setWorkspaceString("CSV file has been uploaded to Tercen.");
+						result.setWorkspaceString(String.format("CSV file has been uploaded to %s.", hostName));
 					} else if (!uploadCSV && uploadFCS) {
-						result.setWorkspaceString("FCS file has been uploaded to Tercen.");
+						result.setWorkspaceString(String.format("FCS file has been uploaded to %s.", hostName));
 					} else {
-						result.setWorkspaceString("Files have not been uploaded to Tercen.");
+						result.setWorkspaceString(String.format("File have not been uploaded to %s.", hostName));
 					}
 					// TODO:
 					// Execute a workflow in Tercen given the uploaded data
 				}
 			} else {
-				result.setWorkspaceString("Files have not been uploaded to Tercen.");
+				result.setWorkspaceString(String.format("Files have not been uploaded to %s.", hostName));
 			}
 		} catch (ServiceError e) {
 			e.printStackTrace();
@@ -168,10 +186,27 @@ public class ImportPlugin implements PopulationPluginInterface {
 
 	@Override
 	public boolean promptForOptions(SElement arg0, List<String> arg1) {
+		// Load properties files
+		Properties prop = new Properties();
+		File jarfile = new File(ImportPlugin.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+		String propertyFilePath = jarfile.getParent() + File.separator + "tercen.properties";
+		try {
+			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
+			hostName = prop.getProperty("host");
+			teamName = prop.getProperty("team");
+			projectName = prop.getProperty("project");
+			domain = prop.getProperty("domain");
+			userName = prop.getProperty("user");
+			passWord = prop.getProperty("password");
+		} catch (IOException e) {
+			e.printStackTrace();
+			// some error reading properties file, use default settings
+		}
+
 		// show confirm dialog
 		List<Object> componentList = new ArrayList<Object>();
 
-		FJLabel fjLabel1 = new FJLabel(confirmText);
+		FJLabel fjLabel1 = new FJLabel(String.format("Are you sure to upload files to %s?", hostName));
 		componentList.add(fjLabel1);
 
 		// checkboxes
@@ -190,10 +225,11 @@ public class ImportPlugin implements PopulationPluginInterface {
 			uploadFCS = sampleFileCheckbox.isSelected();
 			uploadCSV = csvFileCheckbox.isSelected();
 			openBrowser = browserFileCheckbox.isSelected();
+			return true;
 		} else {
 			upload = false;
+			return false;
 		}
-		return true;
 	}
 
 	@Override
@@ -202,6 +238,12 @@ public class ImportPlugin implements PopulationPluginInterface {
 		uploadFCS = arg0.getBool("uploadFCS");
 		uploadCSV = arg0.getBool("uploadCSV");
 		openBrowser = arg0.getBool("openBrowser");
+		hostName = arg0.getString("host");
+		teamName = arg0.getString("team");
+		projectName = arg0.getString("project");
+		domain = arg0.getString("domain");
+		userName = arg0.getString("user");
+		passWord = arg0.getString("pwd");
 	}
 
 	@Override

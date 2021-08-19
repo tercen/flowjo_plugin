@@ -52,6 +52,7 @@ public class Utils {
 
 	private static void removeProjectFileIfExists(TercenClient client, Project project, String filename)
 			throws ServiceError {
+		// TODO find a better way to find a file with name filename
 		List<ProjectDocument> projectDocs = client.projectDocumentService.findProjectObjectsByLastModifiedDate(null,
 				null, 100, 0, true, false);
 		if (projectDocs.size() > 0) {

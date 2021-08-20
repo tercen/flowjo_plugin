@@ -2,6 +2,10 @@ package com.tercen;
 
 import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,7 +20,10 @@ import java.util.Properties;
 
 import javax.swing.Icon;
 import javax.swing.JOptionPane;
+import javax.swing.JSeparator;
 
+import com.tercen.client.impl.TercenClient;
+import com.tercen.model.impl.Project;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.core.Sample;
 import com.treestar.lib.FJPluginHelper;
@@ -24,9 +31,12 @@ import com.treestar.lib.core.ExportFileTypes;
 import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
 import com.treestar.lib.file.FJFileRef;
+import com.treestar.lib.gui.FJButton;
+import com.treestar.lib.gui.GuiFactory;
 import com.treestar.lib.gui.HBox;
 import com.treestar.lib.gui.panels.FJLabel;
 import com.treestar.lib.gui.swing.FJCheckBox;
+import com.treestar.lib.gui.text.FJTextField;
 import com.treestar.lib.xml.SElement;
 
 public class ImportPlugin implements PopulationPluginInterface {
@@ -42,6 +52,25 @@ public class ImportPlugin implements PopulationPluginInterface {
 	private static final String USERNAME = "test";
 	private static final String PASSWORD = "test";
 
+	private static final int fixedToolTipWidth = 300;
+	private static final int fixedLabelWidth = 130;
+	private static final int fixedFieldWidth = 250;
+	private static final int fixedLabelHeigth = 25;
+	private static final int fixedFieldHeigth = 25;
+
+	private static final String SAVE_UPLOAD_FIELDS_TEXT = "Save upload fields";
+	private static final String ENABLE_UPLOAD_FIELDS_TEXT = "Enable upload fields";
+	private static final String Failed = "Failed";
+	private static final String sampleLabel = "Upload Sample FCS file";
+	private static final String sampleTooltip = "Should the FCS file be uploaded?";
+	private static final boolean fSample = true;
+	private static final String csvLabel = "Upload CSV file";
+	private static final String csvTooltip = "Should the CSV file be uploaded?";
+	private static final boolean fCsv = true;
+	private static final String browserLabel = "Open browser window to Tercen";
+	private static final String browserTooltip = "Should a browser window be opened to see the uploaded files?";
+	private static final boolean fBrowser = true;
+
 	private String hostName = HOSTNAME_URL;
 	private String teamName = TEAM_NAME;
 	private String projectName = PROJECT_NAME;
@@ -52,18 +81,6 @@ public class ImportPlugin implements PopulationPluginInterface {
 	private boolean uploadFCS;
 	private boolean uploadCSV;
 	private boolean openBrowser;
-
-	private static final int fixedToolTipWidth = 300;
-	private static final String Failed = "Failed";
-	private static final String sampleLabel = "Upload Sample FCS file";
-	private static final String sampleTooltip = "Should the FCS file be uploaded?";
-	private boolean fSample = true;
-	private static final String csvLabel = "Upload CSV file";
-	private static final String csvTooltip = "Should the CSV file be uploaded?";
-	private boolean fCsv = true;
-	private static final String browserLabel = "Open browser window to Tercen";
-	private static final String browserTooltip = "Should a browser window be opened to see the uploaded files?";
-	private boolean fBrowser = true;
 
 	@Override
 	public SElement getElement() {
@@ -113,11 +130,21 @@ public class ImportPlugin implements PopulationPluginInterface {
 					result.setWorkspaceString(ImportPlugin.Failed);
 				} else {
 					LinkedHashMap uploadResult = null;
+					TercenClient client = null;
+					Project project = null;
+
+					// create client and get project (will be created if it doesn't exist)
+					if (uploadCSV || uploadFCS) {
+						List<Object> clientProject = Utils.getClientAndProject(hostName, teamName, projectName, domain,
+								userName, passWord);
+						client = (TercenClient) clientProject.get(0);
+						project = (Project) clientProject.get(1);
+					}
+
 					// upload csv file
 					if (uploadCSV) {
 						String fileName = sampleFile.getPath();
-						uploadResult = Utils.uploadCsvFile(hostName, teamName, projectName, domain, userName, passWord,
-								fileName);
+						uploadResult = Utils.uploadCsvFile(client, project, fileName);
 					}
 
 					// upload fcs-zip file
@@ -125,8 +152,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 						Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
 						FJFileRef fileRef = sample.getFileRef();
 						String fileName = fileRef.getLocalFilepath();
-						uploadResult = Utils.uploadZipFile(hostName, teamName, projectName, domain, userName, passWord,
-								fileName);
+						uploadResult = Utils.uploadZipFile(client, project, fileName);
 						result.setWorkspaceString(uploadResult.toString());
 					}
 
@@ -166,7 +192,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 			}
 		} catch (ServiceError e) {
 			e.printStackTrace();
-			result.setWorkspaceString(e.getMessage());
+			result.setWorkspaceString(e.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 			result.setWorkspaceString(e.getMessage());
@@ -184,9 +210,18 @@ public class ImportPlugin implements PopulationPluginInterface {
 		return checkbox;
 	}
 
-	@Override
-	public boolean promptForOptions(SElement arg0, List<String> arg1) {
-		// Load properties files
+	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip) {
+		FJLabel label = new FJLabel(labelText);
+		FJTextField field = new FJTextField();
+		field.setText(fieldValue);
+		field.setEditable(false);
+		field.setToolTipText("<html><p width=\"" + fixedToolTipWidth + "\">" + fieldTooltip + "</p></html>");
+		GuiFactory.setSizes(field, new Dimension(fixedFieldWidth, fixedFieldHeigth));
+		GuiFactory.setSizes(label, new Dimension(fixedLabelWidth, fixedLabelHeigth));
+		return new Component[] { label, field };
+	}
+
+	private void readPropertiesFile() {
 		Properties prop = new Properties();
 		File jarfile = new File(ImportPlugin.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		String propertyFilePath = jarfile.getParent() + File.separator + "tercen.properties";
@@ -202,11 +237,19 @@ public class ImportPlugin implements PopulationPluginInterface {
 			e.printStackTrace();
 			// some error reading properties file, use default settings
 		}
+	}
+
+	@Override
+	public boolean promptForOptions(SElement arg0, List<String> arg1) {
+		// read tercen upload properties
+		readPropertiesFile();
 
 		// show confirm dialog
 		List<Object> componentList = new ArrayList<Object>();
 
-		FJLabel fjLabel1 = new FJLabel(String.format("Are you sure to upload files to %s?", hostName));
+		FJLabel fjLabel1 = new FJLabel("Are you sure to upload files to Tercen?");
+		Font boldFont = new Font("Verdana", Font.BOLD, 12);
+		fjLabel1.setFont(boldFont);
 		componentList.add(fjLabel1);
 
 		// checkboxes
@@ -216,7 +259,43 @@ public class ImportPlugin implements PopulationPluginInterface {
 		componentList.add(new HBox(new Component[] { sampleFileCheckbox }));
 		componentList.add(new HBox(new Component[] { csvFileCheckbox }));
 		componentList.add(new HBox(new Component[] { browserFileCheckbox }));
-		// TODO add option to select team name, project name etc?
+
+		componentList.add(new JSeparator());
+
+		// Add fields to change tercen upload settings
+
+		Component[] hostLabelField = createLabelTextFieldCombo("Host", hostName, hostName);
+		Component[] teamLabelField = createLabelTextFieldCombo("Team", teamName, teamName);
+		Component[] projectLabelField = createLabelTextFieldCombo("Project", projectName, projectName);
+		Component[] domainLabelField = createLabelTextFieldCombo("Domain", domain, domain);
+		Component[] userLabelField = createLabelTextFieldCombo("User", userName, userName);
+		Component[] passwordLabelField = createLabelTextFieldCombo("Password", passWord, passWord);
+
+		componentList.add(new HBox(hostLabelField));
+		componentList.add(new HBox(teamLabelField));
+		componentList.add(new HBox(projectLabelField));
+		componentList.add(new HBox(domainLabelField));
+		componentList.add(new HBox(userLabelField));
+		componentList.add(new HBox(passwordLabelField));
+
+		FJButton button = new FJButton();
+		button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
+		button.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				((FJTextField) hostLabelField[1]).setEditable(!((FJTextField) hostLabelField[1]).isEditable());
+				((FJTextField) teamLabelField[1]).setEditable(!((FJTextField) teamLabelField[1]).isEditable());
+				((FJTextField) projectLabelField[1]).setEditable(!((FJTextField) projectLabelField[1]).isEditable());
+				((FJTextField) domainLabelField[1]).setEditable(!((FJTextField) domainLabelField[1]).isEditable());
+				((FJTextField) userLabelField[1]).setEditable(!((FJTextField) userLabelField[1]).isEditable());
+				((FJTextField) passwordLabelField[1]).setEditable(!((FJTextField) passwordLabelField[1]).isEditable());
+				if (button.getText() == ENABLE_UPLOAD_FIELDS_TEXT) {
+					button.setText(SAVE_UPLOAD_FIELDS_TEXT);
+				} else {
+					button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
+				}
+			}
+		});
+		componentList.add(button);
 
 		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
 				getName() + " " + getVersion(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -225,6 +304,12 @@ public class ImportPlugin implements PopulationPluginInterface {
 			uploadFCS = sampleFileCheckbox.isSelected();
 			uploadCSV = csvFileCheckbox.isSelected();
 			openBrowser = browserFileCheckbox.isSelected();
+			hostName = ((FJTextField) hostLabelField[1]).getText();
+			teamName = ((FJTextField) teamLabelField[1]).getText();
+			projectName = ((FJTextField) projectLabelField[1]).getText();
+			domain = ((FJTextField) domainLabelField[1]).getText();
+			userName = ((FJTextField) userLabelField[1]).getText();
+			passWord = ((FJTextField) passwordLabelField[1]).getText();
 			return true;
 		} else {
 			upload = false;

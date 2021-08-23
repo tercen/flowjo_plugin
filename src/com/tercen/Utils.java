@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -134,20 +133,17 @@ public class Utils {
 
 	private static void removeProjectFileIfExists(TercenClient client, Project project, String filename)
 			throws ServiceError {
-		// TODO find a better way to find a file with name filename
-		List<ProjectDocument> projectDocs = client.projectDocumentService.findProjectObjectsByLastModifiedDate(null,
-				null, 100, 0, true, false);
-		if (projectDocs.size() > 0) {
-			projectDocs = projectDocs.stream().filter(p -> p.projectId.equals(project.id))
-					.filter(p -> p.name.equals(filename)).collect(Collectors.toList());
+		List<Object> startKey = List.of(project.id, "2000");
+		List<Object> endKey = List.of(project.id, "2100");
 
-			projectDocs.forEach(p -> {
-				try {
-					client.fileService.delete(p.id, p.rev);
-				} catch (ServiceError e) {
-					e.printStackTrace();
-				}
-			});
-		}
+		List<ProjectDocument> projectDocs = client.projectDocumentService.findProjectObjectsByLastModifiedDate(startKey,
+				endKey, 100, 0, false, false);
+		projectDocs.stream().filter(p -> p.subKind.equals("FileDocument") && p.name.equals(filename)).forEach(p -> {
+			try {
+				client.fileService.delete(p.id, p.rev);
+			} catch (ServiceError e) {
+				e.printStackTrace();
+			}
+		});
 	}
 }

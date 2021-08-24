@@ -14,16 +14,20 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
 
+import javax.swing.DefaultListModel;
 import javax.swing.Icon;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.Project;
+import com.tercen.model.impl.Schema;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.core.Sample;
 import com.treestar.lib.FJPluginHelper;
@@ -32,6 +36,7 @@ import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
 import com.treestar.lib.file.FJFileRef;
 import com.treestar.lib.gui.FJButton;
+import com.treestar.lib.gui.FJList;
 import com.treestar.lib.gui.GuiFactory;
 import com.treestar.lib.gui.HBox;
 import com.treestar.lib.gui.panels.FJLabel;
@@ -58,12 +63,15 @@ public class ImportPlugin implements PopulationPluginInterface {
 	private static final int fixedLabelHeigth = 25;
 	private static final int fixedFieldHeigth = 25;
 
+	private static final String channelsLabelLine1 = "FCS channels to be used by flowSOM. Select multiple items by pressing the Shift";
+	private static final String channelsLabelLine2 = "key or toggle items by holding the Ctrl (or Cmd) keys.";
+
 	private static final String SAVE_UPLOAD_FIELDS_TEXT = "Save upload fields";
 	private static final String ENABLE_UPLOAD_FIELDS_TEXT = "Enable upload fields";
 	private static final String Failed = "Failed";
 	private static final String sampleLabel = "Upload Sample FCS file";
 	private static final String sampleTooltip = "Should the FCS file be uploaded?";
-	private static final boolean fSample = true;
+	private static final boolean fSample = false;
 	private static final String csvLabel = "Upload CSV file";
 	private static final String csvTooltip = "Should the CSV file be uploaded?";
 	private static final boolean fCsv = true;
@@ -81,6 +89,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 	private boolean uploadFCS;
 	private boolean uploadCSV;
 	private boolean openBrowser;
+	private ArrayList<String> channels = new ArrayList<String>();
 
 	@Override
 	public SElement getElement() {
@@ -95,6 +104,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 		result.setString("domain", domain);
 		result.setString("user", userName);
 		result.setString("pwd", passWord);
+		result.setString("channels", String.join(",", channels));
 		return result;
 	}
 
@@ -129,7 +139,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 							JOptionPane.ERROR_MESSAGE);
 					result.setWorkspaceString(ImportPlugin.Failed);
 				} else {
-					LinkedHashMap uploadResult = null;
+					Schema uploadResult = null;
 					TercenClient client = null;
 					Project project = null;
 
@@ -144,7 +154,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 					// upload csv file
 					if (uploadCSV) {
 						String fileName = sampleFile.getPath();
-						uploadResult = Utils.uploadCsvFile(client, project, fileName);
+						uploadResult = Utils.uploadCsvFile(client, project, fileName, channels);
 					}
 
 					// upload fcs-zip file
@@ -152,27 +162,24 @@ public class ImportPlugin implements PopulationPluginInterface {
 						Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
 						FJFileRef fileRef = sample.getFileRef();
 						String fileName = fileRef.getLocalFilepath();
-						uploadResult = Utils.uploadZipFile(client, project, fileName);
-						result.setWorkspaceString(uploadResult.toString());
+						LinkedHashMap map = Utils.uploadZipFile(client, project, fileName);
+						result.setWorkspaceString(map.toString());
 					}
 
 					// open browser
 					if (openBrowser) {
 						if (uploadResult != null) {
-							String projectId = (String) uploadResult.get("projectId");
-							if (projectId != null && projectId != "") {
-								String url = Utils.getTercenProjectURL(hostName, teamName, projectId);
-								Desktop desktop = java.awt.Desktop.getDesktop();
-								URI uri = new URI(String.valueOf(url));
-								desktop.browse(uri);
-							}
+							String url = Utils.getTercenProjectURL(hostName, teamName, uploadResult);
+							Desktop desktop = java.awt.Desktop.getDesktop();
+							URI uri = new URI(String.valueOf(url));
+							desktop.browse(uri);
+
 						} else {
 							JOptionPane.showMessageDialog(null,
 									"No files have been uploaded, browser window will not open.",
 									"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
 						}
 					}
-
 					// set status for user
 					if (uploadCSV && uploadFCS) {
 						result.setWorkspaceString(
@@ -184,8 +191,6 @@ public class ImportPlugin implements PopulationPluginInterface {
 					} else {
 						result.setWorkspaceString(String.format("File have not been uploaded to %s.", hostName));
 					}
-					// TODO:
-					// Execute a workflow in Tercen given the uploaded data
 				}
 			} else {
 				result.setWorkspaceString(String.format("Files have not been uploaded to %s.", hostName));
@@ -261,7 +266,12 @@ public class ImportPlugin implements PopulationPluginInterface {
 		componentList.add(new HBox(new Component[] { browserFileCheckbox }));
 
 		componentList.add(new JSeparator());
+		componentList.add(new FJLabel(channelsLabelLine1));
+		componentList.add(new FJLabel(channelsLabelLine2));
 
+		FJList paramList = createParameterList(arg1);
+		componentList.add(new JScrollPane(paramList));
+		componentList.add(new JSeparator());
 		// Add fields to change tercen upload settings
 
 		Component[] hostLabelField = createLabelTextFieldCombo("Host", hostName, hostName);
@@ -310,11 +320,29 @@ public class ImportPlugin implements PopulationPluginInterface {
 			domain = ((FJTextField) domainLabelField[1]).getText();
 			userName = ((FJTextField) userLabelField[1]).getText();
 			passWord = ((FJTextField) passwordLabelField[1]).getText();
+			channels = new ArrayList<String>(paramList.getSelectedValuesList());
 			return true;
 		} else {
 			upload = false;
 			return false;
 		}
+	}
+
+	private FJList createParameterList(List<String> parameters) {
+		FJList paramList;
+		DefaultListModel dlm = new DefaultListModel();
+		for (int i = 0; i < parameters.size(); i++) {
+			dlm.add(i, parameters.get(i));
+		}
+		paramList = new FJList(dlm);
+		paramList.setSelectionMode(2);
+
+		int[] indexes = new int[paramList.getModel().getSize()];
+		for (int i = 0; i < indexes.length; i++) {
+			indexes[i] = i;
+		}
+		paramList.setSelectedIndices(indexes);
+		return paramList;
 	}
 
 	@Override
@@ -329,6 +357,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 		domain = arg0.getString("domain");
 		userName = arg0.getString("user");
 		passWord = arg0.getString("pwd");
+		channels = new ArrayList<String>(Arrays.asList(arg0.getString("channels").split(",")));
 	}
 
 	@Override

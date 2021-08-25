@@ -355,7 +355,12 @@ public class ImportPlugin implements PopulationPluginInterface {
 		domain = arg0.getString("domain");
 		userName = arg0.getString("user");
 		passWord = arg0.getString("pwd");
-		channels = new ArrayList<String>(Arrays.asList(arg0.getString("channels").split(",")));
+		String channelString = arg0.getString("channels");
+		if (channelString.equals("")) {
+			channels = new ArrayList<String>();
+		} else {
+			channels = new ArrayList<String>(Arrays.asList(channelString.split(",")));
+		}
 	}
 
 	@Override

@@ -63,7 +63,7 @@ public class ImportPlugin implements PopulationPluginInterface {
 	private static final int fixedLabelHeigth = 25;
 	private static final int fixedFieldHeigth = 25;
 
-	private static final String channelsLabelLine1 = "FCS channels to be used by flowSOM. Select multiple items by pressing the Shift";
+	private static final String channelsLabelLine1 = "FCS channels to be used by Tercen. Select multiple items by pressing the Shift";
 	private static final String channelsLabelLine2 = "key or toggle items by holding the Ctrl (or Cmd) keys.";
 
 	private static final String SAVE_UPLOAD_FIELDS_TEXT = "Save upload fields";
@@ -337,10 +337,8 @@ public class ImportPlugin implements PopulationPluginInterface {
 		paramList = new FJList(dlm);
 		paramList.setSelectionMode(2);
 
-		int[] indexes = new int[paramList.getModel().getSize()];
-		for (int i = 0; i < indexes.length; i++) {
-			indexes[i] = i;
-		}
+		// TODO: dynamically set selected params?
+		int[] indexes = new int[] {};
 		paramList.setSelectedIndices(indexes);
 		return paramList;
 	}

@@ -3,8 +3,12 @@ package com.tercen;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
@@ -62,12 +66,12 @@ public class Utils {
 		return fileResult.toJson();
 	}
 
-	protected static Schema uploadCsvFile(TercenClient client, Project project, String fullFileName,
+	protected static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
 			ArrayList<String> channels) throws ServiceError, IOException {
 
 		FileDocument fileDoc = new FileDocument();
-		String filename = getFilename(fullFileName);
-		fileDoc.name = filename;
+		String name = getFilename((String) fileNames.toArray()[0]);
+		fileDoc.name = name;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
 		fileDoc.metadata = new CSVFileMetadata();
@@ -75,11 +79,12 @@ public class Utils {
 		fileDoc.metadata.separator = ",";
 		fileDoc.metadata.quote = "\"";
 		fileDoc.metadata.contentEncoding = "iso-8859-1";
-		File file = new File(fullFileName);
-		byte[] bytes = FileUtils.readFileToByteArray(file);
+
+		File mergedFile = getMergedFile(fileNames);
+		byte[] bytes = FileUtils.readFileToByteArray(mergedFile);
 
 		// remove existing file and upload new file
-		removeProjectFileIfExists(client, project, filename);
+		removeProjectFileIfExists(client, project, name);
 		fileDoc = client.fileService.upload(fileDoc, bytes);
 
 		// create task; this will create a dataset from the file on Tercen
@@ -114,6 +119,23 @@ public class Utils {
 		client.userService.connect2(domain, username, password);
 		Project project = getProject(client, teamName, projectName);
 		return Arrays.asList(client, project);
+	}
+
+	// merge csv files into one
+	private static File getMergedFile(HashSet<String> paths) throws IOException {
+		List<String> mergedLines = new ArrayList<>();
+		for (String p : paths) {
+			List<String> lines = Files.readAllLines(Paths.get(p), Charset.forName("UTF-8"));
+			if (!lines.isEmpty()) {
+				if (mergedLines.isEmpty()) {
+					mergedLines.add(lines.get(0)); // add header only once
+				}
+				mergedLines.addAll(lines.subList(1, lines.size()));
+			}
+		}
+		File mergedFile = File.createTempFile("merged-", ".csv");
+		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
+		return mergedFile;
 	}
 
 	private static String getFilename(String fullFileName) {
@@ -162,9 +184,9 @@ public class Utils {
 
 		List<ProjectDocument> projectDocs = client.projectDocumentService.findProjectObjectsByLastModifiedDate(startKey,
 				endKey, 100, 0, false, false);
-		projectDocs.stream().filter(p -> p.subKind.equals("FileDocument") && p.name.equals(filename)).forEach(p -> {
+		projectDocs.stream().filter(p -> p.subKind.equals("TableSchema") && p.name.equals(filename)).forEach(p -> {
 			try {
-				client.fileService.delete(p.id, p.rev);
+				client.tableSchemaService.delete(p.id, p.rev);
 			} catch (ServiceError e) {
 				e.printStackTrace();
 			}

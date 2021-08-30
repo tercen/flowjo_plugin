@@ -121,18 +121,22 @@ public class Utils {
 		return Arrays.asList(client, project);
 	}
 
-	// merge csv files into one
+	// merge csv files into one. The filename column is added after reading the
+	// data. This might need to be optimized.
 	private static File getMergedFile(HashSet<String> paths) throws IOException {
 		List<String> mergedLines = new ArrayList<>();
 		for (String p : paths) {
 			List<String> lines = Files.readAllLines(Paths.get(p), Charset.forName("UTF-8"));
 			if (!lines.isEmpty()) {
 				if (mergedLines.isEmpty()) {
-					mergedLines.add(lines.get(0)); // add header only once
+					mergedLines.add(lines.get(0).concat(", filename")); // add header only once
 				}
-				mergedLines.addAll(lines.subList(1, lines.size()));
+				List<String> content = lines.subList(1, lines.size());
+				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
+				mergedLines.addAll(content);
 			}
 		}
+		// add column filename
 		File mergedFile = File.createTempFile("merged-", ".csv");
 		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
 		return mergedFile;
@@ -140,7 +144,8 @@ public class Utils {
 
 	private static String getFilename(String fullFileName) {
 		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
-		return filenameParts[filenameParts.length - 1];
+		String filename = filenameParts[filenameParts.length - 1];
+		return filename.replace("..ExtNode.csv", "");
 	}
 
 	private static String getCurrentPortalUser() {

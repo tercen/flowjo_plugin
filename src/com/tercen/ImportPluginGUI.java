@@ -5,6 +5,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +39,7 @@ public class ImportPluginGUI {
 	private static final boolean fSample = false;
 	private static final String browserLabel = "Open browser window to Tercen";
 	private static final String browserTooltip = "Should a browser window be opened to see the uploaded files?";
-	private static final boolean fBrowser = true;
+	private static final boolean fBrowser = false;
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -55,7 +57,8 @@ public class ImportPluginGUI {
 		boolean result;
 
 		// show confirm dialog
-		List<Object> componentList = new ArrayList<Object>();
+		// List<Object> componentList = addHeaderComponents();
+		List<Object> componentList = new ArrayList<>();
 
 		FJLabel fjLabel1 = new FJLabel("Upload files to Tercen?");
 		Font boldFont = new Font("Verdana", Font.BOLD, 12);
@@ -77,11 +80,12 @@ public class ImportPluginGUI {
 			componentList.add(new JSeparator());
 		}
 
-		// checkboxes
-		FJCheckBox sampleFileCheckbox = createCheckbox(sampleLabel, sampleTooltip, fSample);
+		// upload properties
+		FJCheckBox uploadCheckbox = createCheckbox(sampleLabel, sampleTooltip, fSample);
+		componentList.add(new HBox(new Component[] { uploadCheckbox }));
+
 		FJCheckBox browserFileCheckbox = createCheckbox(browserLabel, browserTooltip, fBrowser);
-		componentList.add(new HBox(new Component[] { sampleFileCheckbox }));
-		componentList.add(new HBox(new Component[] { browserFileCheckbox }));
+		componentList.add(browserFileCheckbox);
 
 		componentList.add(new JSeparator());
 		componentList.add(new FJLabel(channelsLabelLine1));
@@ -90,8 +94,8 @@ public class ImportPluginGUI {
 		FJList paramList = createParameterList(arg1);
 		componentList.add(new JScrollPane(paramList));
 		componentList.add(new JSeparator());
-		// Add fields to change tercen upload settings
 
+		// Customize upload settings
 		Component[] hostLabelField = createLabelTextFieldCombo("Host", plugin.hostName, plugin.hostName);
 		Component[] teamLabelField = createLabelTextFieldCombo("Team", plugin.teamName, plugin.teamName);
 		Component[] projectLabelField = createLabelTextFieldCombo("Project", plugin.projectName, plugin.projectName);
@@ -125,10 +129,23 @@ public class ImportPluginGUI {
 		});
 		componentList.add(button);
 
+		// init components
+		browserFileCheckbox.setEnabled(fSample);
+		paramList.setEnabled(fSample);
+		button.setEnabled(fSample);
+		uploadCheckbox.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				paramList.setEnabled(uploadCheckbox.isSelected());
+				button.setEnabled(uploadCheckbox.isSelected());
+				browserFileCheckbox.setEnabled(uploadCheckbox.isSelected());
+				browserFileCheckbox.setSelected(uploadCheckbox.isSelected());
+			}
+		});
+
 		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
 				plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 		if (option == JOptionPane.OK_OPTION) {
-			plugin.upload = sampleFileCheckbox.isSelected();
+			plugin.upload = uploadCheckbox.isSelected();
 			plugin.openBrowser = browserFileCheckbox.isSelected();
 			plugin.hostName = ((FJTextField) hostLabelField[1]).getText();
 			plugin.teamName = ((FJTextField) teamLabelField[1]).getText();
@@ -180,5 +197,21 @@ public class ImportPluginGUI {
 		paramList.setSelectedIndices(indexes);
 		return paramList;
 	}
+
+//	private void addHeaderString(List<Component> result, String s) {
+//		FJLabel txt = new FJLabel(s);
+//		txt.setFont(FontUtil.dlogItal12);
+//		result.add(txt);
+//	}
+
+//	private List<Object> addHeaderComponents(String headerText) {
+//		List<Object> result = new ArrayList<>();
+//		FJLabel txt = new FJLabel(headerText);
+//		txt.setFont(FontUtil.dlogBold16);
+//		result.add(txt);
+//		addHeaderString(result, "TODO add explanation about first adding a file and after that uploading the added files");
+//		result.add(new JSeparator());
+//		return result;
+//	}
 
 }

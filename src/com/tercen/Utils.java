@@ -110,7 +110,7 @@ public class Utils {
 
 	// get Tercen URL that creates a new workflow given the uploaded data
 	protected static String getTercenProjectURL(String hostName, String teamName, Schema schema) {
-		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&schemaId=" + schema.id;
+		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tag=flowjo&schemaId=" + schema.id;
 	}
 
 	protected static List<Object> getClientAndProject(String url, String teamName, String projectName, String domain,

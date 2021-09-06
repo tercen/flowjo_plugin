@@ -1,4 +1,4 @@
-package com.tercen;
+package com.tercen.flowjo;
 
 import java.awt.Desktop;
 import java.io.BufferedReader;
@@ -31,9 +31,9 @@ import com.treestar.lib.core.PopulationPluginInterface;
 import com.treestar.lib.file.FJFileRef;
 import com.treestar.lib.xml.SElement;
 
-public class ImportPlugin extends ParameterOptionHolder implements PopulationPluginInterface {
+public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
-	private static final String pluginName = "TercenImportPlugin";
+	private static final String pluginName = "Tercen";
 	private static final String version = "1.0";
 
 	protected enum ImportPluginStateEnum {
@@ -62,9 +62,9 @@ public class ImportPlugin extends ParameterOptionHolder implements PopulationPlu
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
 	protected HashSet<String> samplePops = new HashSet<String>();
-	private ImportPluginGUI gui = new ImportPluginGUI(this);
+	private TercenGUI gui = new TercenGUI(this);
 
-	public ImportPlugin() {
+	public Tercen() {
 		super(pluginName);
 		// read tercen upload properties
 		readPropertiesFile();
@@ -160,7 +160,7 @@ public class ImportPlugin extends ParameterOptionHolder implements PopulationPlu
 				if (!sampleFile.exists()) {
 					JOptionPane.showMessageDialog(null, "Input file does not exist", "ImportPlugin error",
 							JOptionPane.ERROR_MESSAGE);
-					workspaceText = ImportPlugin.Failed;
+					workspaceText = Tercen.Failed;
 				} else {
 					Schema uploadResult = null;
 					TercenClient client = null;
@@ -228,7 +228,7 @@ public class ImportPlugin extends ParameterOptionHolder implements PopulationPlu
 
 	private void readPropertiesFile() {
 		Properties prop = new Properties();
-		File jarfile = new File(ImportPlugin.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+		File jarfile = new File(Tercen.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 		String propertyFilePath = jarfile.getParent() + File.separator + "tercen.properties";
 		try {
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));

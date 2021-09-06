@@ -1,4 +1,4 @@
-package com.tercen;
+package com.tercen.flowjo;
 
 import java.awt.Component;
 import java.awt.Dimension;
@@ -16,7 +16,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 
-import com.tercen.ImportPlugin.ImportPluginStateEnum;
+import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
 import com.treestar.lib.gui.FJButton;
 import com.treestar.lib.gui.FJList;
 import com.treestar.lib.gui.FontUtil;
@@ -27,7 +27,7 @@ import com.treestar.lib.gui.swing.FJCheckBox;
 import com.treestar.lib.gui.text.FJTextField;
 import com.treestar.lib.xml.SElement;
 
-public class ImportPluginGUI {
+public class TercenGUI {
 
 	private static final String channelsLabelLine1 = "FCS channels to be used by Tercen. Select multiple items by pressing the Shift";
 	private static final String channelsLabelLine2 = "key or toggle items by holding the Ctrl (or Cmd) keys.";
@@ -47,9 +47,9 @@ public class ImportPluginGUI {
 	private static final int fixedLabelHeigth = 25;
 	private static final int fixedFieldHeigth = 25;
 
-	private ImportPlugin plugin;
+	private Tercen plugin;
 
-	public ImportPluginGUI(ImportPlugin importPlugin) {
+	public TercenGUI(Tercen importPlugin) {
 		this.plugin = importPlugin;
 	}
 

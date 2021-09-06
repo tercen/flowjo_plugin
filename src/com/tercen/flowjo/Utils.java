@@ -1,4 +1,4 @@
-package com.tercen;
+package com.tercen.flowjo;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

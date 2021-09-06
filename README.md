@@ -11,11 +11,11 @@ Run plugin:
 * Plugin should be available under 'Workspace' -> 'Plugins'
 
 ```
-mvn install:install-file -Dfile="bin\FlowJo.jar" -DgroupId=com.flowjo -DartifactId=flowjo -Dversion=10.8.0 -Dpackaging=jar -DgeneratePom=true
+mvn install:install-file -Dfile="third\FlowJo.jar" -DgroupId=com.flowjo -DartifactId=flowjo -Dversion=10.8.0 -Dpackaging=jar -DgeneratePom=true
 
-mvn install:install-file -Dfile="bin\fjlib-2.4.0.jar" -DgroupId=com.flowjo -DartifactId=flowlib -Dversion=2.4.0 -Dpackaging=jar -DgeneratePom=true
+mvn install:install-file -Dfile="third\fjlib-2.4.0.jar" -DgroupId=com.flowjo -DartifactId=flowlib -Dversion=2.4.0 -Dpackaging=jar -DgeneratePom=true
 
-mvn install:install-file -Dfile="bin\fjengine-2.5.0.jar" -DgroupId=com.flowjo -DartifactId=fjengine -Dversion=2.5.0 -Dpackaging=jar -DgeneratePom=true
+mvn install:install-file -Dfile="third\fjengine-2.5.0.jar" -DgroupId=com.flowjo -DartifactId=fjengine -Dversion=2.5.0 -Dpackaging=jar -DgeneratePom=true
 
 ```
 

@@ -74,11 +74,12 @@ public class Utils {
 		fileDoc.name = name;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
-		fileDoc.metadata = new CSVFileMetadata();
-		fileDoc.metadata.contentType = "text/csv";
-		fileDoc.metadata.separator = ",";
-		fileDoc.metadata.quote = "\"";
-		fileDoc.metadata.contentEncoding = "iso-8859-1";
+		CSVFileMetadata metadata = new CSVFileMetadata();
+		metadata.contentType = "text/csv";
+		metadata.separator = ",";
+		metadata.quote = "\"";
+		metadata.contentEncoding = "iso-8859-1";
+		fileDoc.metadata = metadata;
 
 		File mergedFile = getMergedFile(fileNames);
 		byte[] bytes = FileUtils.readFileToByteArray(mergedFile);

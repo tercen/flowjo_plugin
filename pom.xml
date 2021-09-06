@@ -5,17 +5,23 @@
 	<groupId>com.tercen</groupId>
 	<artifactId>tercen_plugin</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<repositories>
+		<repository>
+			<id>github</id>
+			<url>https://maven.pkg.github.com/tercen/*</url>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>
 			<groupId>com.tercen</groupId>
 			<artifactId>jtson</artifactId>
-			<version>0.0.4</version>
+			<version>0.0.7</version>
 		</dependency>
 		<dependency>
 			<groupId>com.tercen</groupId>
-			<artifactId>java_client</artifactId>
-			<version>0.0.2</version>
+			<artifactId>tercen_java_client</artifactId>
+			<version>0.0.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>

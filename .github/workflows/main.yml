@@ -26,6 +26,8 @@ jobs:
         run: mvn install:install-file -Dfile="third\fjengine-2.5.0.jar" -DgroupId=com.flowjo -DartifactId=fjengine -Dversion=2.5.0 -Dpackaging=jar -DgeneratePom=true
       - name: Assemble
         run: mvn clean compile assembly:single
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v2
         with:
           name: tercen_flowjo_plugin

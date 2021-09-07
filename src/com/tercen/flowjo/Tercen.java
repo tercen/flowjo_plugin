@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Properties;
 
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
 import com.tercen.client.impl.TercenClient;
@@ -33,7 +35,7 @@ import com.treestar.lib.xml.SElement;
 
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
-	private static final String pluginName = "Tercen";
+	private static final String pluginName = "Import to Tercen";
 	private static final String version = "1.0";
 
 	protected enum ImportPluginStateEnum {
@@ -41,12 +43,13 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	}
 
 	// default settings
-	protected static final String HOSTNAME_URL = "http://10.0.2.2:5402/";
+	protected static final String HOSTNAME_URL = "https://tercen.com/";
 	protected static final String TEAM_NAME = "test-team";
 	protected static final String PROJECT_NAME = "myproject";
 	protected static final String DOMAIN = "tercen";
 	protected static final String USERNAME = "test";
 	protected static final String PASSWORD = "test";
+	protected static final String ICON_NAME = "logo.png";
 
 	private static final String Failed = "Failed";
 	protected String hostName = HOSTNAME_URL;
@@ -57,6 +60,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected String passWord = PASSWORD;
 	protected boolean upload;
 	protected boolean openBrowser;
+	private Icon tercenIcon = null;
 	protected ArrayList<String> channels = new ArrayList<String>();
 
 	// properties to gather multiple samples
@@ -256,7 +260,12 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	@Override
 	public Icon getIcon() {
-		return null;
+		if (tercenIcon == null) {
+			URL url = this.getClass().getClassLoader().getResource(ICON_NAME);
+			if (url != null)
+				tercenIcon = new ImageIcon(url);
+		}
+		return tercenIcon;
 	}
 
 	private String uploadZipFile(SElement fcmlQueryElement, TercenClient client, Project project)

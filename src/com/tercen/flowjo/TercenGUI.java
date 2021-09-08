@@ -13,8 +13,10 @@ import java.util.List;
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
+import javax.swing.JTextField;
 
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
 import com.treestar.lib.gui.FJButton;
@@ -119,7 +121,8 @@ public class TercenGUI {
 				((FJTextField) projectLabelField[1]).setEditable(!((FJTextField) projectLabelField[1]).isEditable());
 				((FJTextField) domainLabelField[1]).setEditable(!((FJTextField) domainLabelField[1]).isEditable());
 				((FJTextField) userLabelField[1]).setEditable(!((FJTextField) userLabelField[1]).isEditable());
-				((FJTextField) passwordLabelField[1]).setEditable(!((FJTextField) passwordLabelField[1]).isEditable());
+				((JPasswordField) passwordLabelField[1])
+						.setEditable(!((JPasswordField) passwordLabelField[1]).isEditable());
 				if (button.getText() == ENABLE_UPLOAD_FIELDS_TEXT) {
 					button.setText(SAVE_UPLOAD_FIELDS_TEXT);
 				} else {
@@ -152,7 +155,7 @@ public class TercenGUI {
 			plugin.projectName = ((FJTextField) projectLabelField[1]).getText();
 			plugin.domain = ((FJTextField) domainLabelField[1]).getText();
 			plugin.userName = ((FJTextField) userLabelField[1]).getText();
-			plugin.passWord = ((FJTextField) passwordLabelField[1]).getText();
+			plugin.passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 			plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 			if (plugin.upload) {
 				plugin.pluginState = ImportPluginStateEnum.uploading;
@@ -174,7 +177,12 @@ public class TercenGUI {
 
 	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip) {
 		FJLabel label = new FJLabel(labelText);
-		FJTextField field = new FJTextField();
+		JTextField field;
+		if (labelText.equals("Password")) {
+			field = new JPasswordField();
+		} else {
+			field = new FJTextField();
+		}
 		field.setText(fieldValue);
 		field.setEditable(false);
 		field.setToolTipText("<html><p width=\"" + fixedToolTipWidth + "\">" + fieldTooltip + "</p></html>");

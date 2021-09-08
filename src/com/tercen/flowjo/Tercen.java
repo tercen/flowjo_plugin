@@ -35,7 +35,7 @@ import com.treestar.lib.xml.SElement;
 
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
-	private static final String pluginName = "Import to Tercen";
+	private static final String pluginName = "Import_To_Tercen";
 	private static final String version = "1.0";
 
 	protected enum ImportPluginStateEnum {
@@ -58,8 +58,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected String domain = DOMAIN;
 	protected String userName = USERNAME;
 	protected String passWord = PASSWORD;
-	protected boolean upload;
-	protected boolean openBrowser;
 	private Icon tercenIcon = null;
 	protected ArrayList<String> channels = new ArrayList<String>();
 
@@ -88,8 +86,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	public SElement getElement() {
 		SElement result = super.getElement();
 		result.setName(pluginName);
-		result.setBool("upload", upload);
-		result.setBool("openBrowser", openBrowser);
 		result.setString("host", hostName);
 		result.setString("team", teamName);
 		result.setString("project", projectName);
@@ -112,8 +108,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	@Override
 	public void setElement(SElement element) {
-		upload = element.getBool("upload");
-		openBrowser = element.getBool("openBrowser");
 		hostName = element.getString("host");
 		teamName = element.getString("team");
 		projectName = element.getString("project");
@@ -157,7 +151,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				// add sampleFile
 				samplePops.add(fileName);
 				pluginState = ImportPluginStateEnum.collectingSamples;
-			} else if (pluginState == ImportPluginStateEnum.collectingSamples && !upload) {
+			} else if (pluginState == ImportPluginStateEnum.collectingSamples) {
 				// add sampleFile
 				samplePops.add(fileName);
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
@@ -183,18 +177,16 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					// uploadZipFile(fcmlQueryElement, client, project);
 
 					// open browser
-					if (openBrowser) {
-						if (uploadResult != null) {
-							String url = Utils.getTercenProjectURL(hostName, teamName, uploadResult);
-							Desktop desktop = java.awt.Desktop.getDesktop();
-							URI uri = new URI(String.valueOf(url));
-							desktop.browse(uri);
-							workspaceText = String.format("Sample file (s) has been uploaded to %s.", hostName);
-						} else {
-							JOptionPane.showMessageDialog(null,
-									"No files have been uploaded, browser window will not open.",
-									"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
-						}
+					if (uploadResult != null) {
+						String url = Utils.getTercenProjectURL(hostName, teamName, uploadResult);
+						Desktop desktop = java.awt.Desktop.getDesktop();
+						URI uri = new URI(String.valueOf(url));
+						desktop.browse(uri);
+						workspaceText = String.format("Sample file (s) has been uploaded to %s.", hostName);
+					} else {
+						JOptionPane.showMessageDialog(null,
+								"No files have been uploaded, browser window will not open.", "ImportPlugin warning",
+								JOptionPane.WARNING_MESSAGE);
 					}
 				}
 				pluginState = ImportPluginStateEnum.uploaded;
@@ -220,9 +212,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		} catch (ServiceError e) {
 			e.printStackTrace();
 			result.setWorkspaceString(e.toString());
+			pluginState = ImportPluginStateEnum.error;
 		} catch (IOException e) {
 			e.printStackTrace();
 			result.setWorkspaceString(e.getMessage());
+			pluginState = ImportPluginStateEnum.error;
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 			result.setWorkspaceString(e.getMessage());

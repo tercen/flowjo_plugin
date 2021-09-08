@@ -5,8 +5,6 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,12 +34,6 @@ public class TercenGUI {
 
 	private static final String SAVE_UPLOAD_FIELDS_TEXT = "Save upload fields";
 	private static final String ENABLE_UPLOAD_FIELDS_TEXT = "Enable upload fields";
-	private static final String sampleLabel = "Upload Sample file (s)";
-	private static final String sampleTooltip = "Should the Sample file (s) be uploaded?";
-	private static final boolean fSample = false;
-	private static final String browserLabel = "Open browser window to Tercen";
-	private static final String browserTooltip = "Should a browser window be opened to see the uploaded files?";
-	private static final boolean fBrowser = false;
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -57,113 +49,103 @@ public class TercenGUI {
 
 	public boolean promptForOptions(SElement arg0, List<String> arg1) {
 		boolean result;
-
-		// show confirm dialog
-		// List<Object> componentList = addHeaderComponents();
 		List<Object> componentList = new ArrayList<>();
 
-		FJLabel fjLabel1 = new FJLabel("Upload files to Tercen?");
-		Font boldFont = new Font("Verdana", Font.BOLD, 12);
-		fjLabel1.setFont(boldFont);
-		componentList.add(fjLabel1);
+		// show upload dialog
+		if (this.plugin.pluginState == ImportPluginStateEnum.collectingSamples
+				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
+				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
+			componentList.add(addHeaderString("Upload files to Tercen", FontUtil.dlogBold16));
 
-		if (this.plugin.samplePops.size() > 0) {
-			FJLabel label = new FJLabel("Populations in Data");
-			fjLabel1.setFont(FontUtil.BoldDialog12);
-			HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
-			componentList.add(box);
-			for (String path : this.plugin.samplePops) {
-				FJLabel pathLabel = new FJLabel(path);
-				pathLabel.setFont(FontUtil.dlog12);
-				box = new HBox(new Component[] { Box.createRigidArea(new Dimension(10, 10)), pathLabel,
-						Box.createHorizontalGlue() });
+			if (this.plugin.samplePops.size() > 0) {
+				FJLabel label = new FJLabel("Populations in Data");
+				label.setFont(FontUtil.BoldDialog12);
+				HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
 				componentList.add(box);
-			}
-			componentList.add(new JSeparator());
-		}
-
-		// upload properties
-		FJCheckBox uploadCheckbox = createCheckbox(sampleLabel, sampleTooltip, fSample);
-		componentList.add(new HBox(new Component[] { uploadCheckbox }));
-
-		FJCheckBox browserFileCheckbox = createCheckbox(browserLabel, browserTooltip, fBrowser);
-		componentList.add(browserFileCheckbox);
-
-		componentList.add(new JSeparator());
-		componentList.add(new FJLabel(channelsLabelLine1));
-		componentList.add(new FJLabel(channelsLabelLine2));
-
-		FJList paramList = createParameterList(arg1);
-		componentList.add(new JScrollPane(paramList));
-		componentList.add(new JSeparator());
-
-		// Customize upload settings
-		Component[] hostLabelField = createLabelTextFieldCombo("Host", plugin.hostName, plugin.hostName);
-		Component[] teamLabelField = createLabelTextFieldCombo("Team", plugin.teamName, plugin.teamName);
-		Component[] projectLabelField = createLabelTextFieldCombo("Project", plugin.projectName, plugin.projectName);
-		Component[] domainLabelField = createLabelTextFieldCombo("Domain", plugin.domain, plugin.domain);
-		Component[] userLabelField = createLabelTextFieldCombo("User", plugin.userName, plugin.userName);
-		Component[] passwordLabelField = createLabelTextFieldCombo("Password", plugin.passWord, plugin.passWord);
-
-		componentList.add(new HBox(hostLabelField));
-		componentList.add(new HBox(teamLabelField));
-		componentList.add(new HBox(projectLabelField));
-		componentList.add(new HBox(domainLabelField));
-		componentList.add(new HBox(userLabelField));
-		componentList.add(new HBox(passwordLabelField));
-
-		FJButton button = new FJButton();
-		button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
-		button.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				((FJTextField) hostLabelField[1]).setEditable(!((FJTextField) hostLabelField[1]).isEditable());
-				((FJTextField) teamLabelField[1]).setEditable(!((FJTextField) teamLabelField[1]).isEditable());
-				((FJTextField) projectLabelField[1]).setEditable(!((FJTextField) projectLabelField[1]).isEditable());
-				((FJTextField) domainLabelField[1]).setEditable(!((FJTextField) domainLabelField[1]).isEditable());
-				((FJTextField) userLabelField[1]).setEditable(!((FJTextField) userLabelField[1]).isEditable());
-				((JPasswordField) passwordLabelField[1])
-						.setEditable(!((JPasswordField) passwordLabelField[1]).isEditable());
-				if (button.getText() == ENABLE_UPLOAD_FIELDS_TEXT) {
-					button.setText(SAVE_UPLOAD_FIELDS_TEXT);
-				} else {
-					button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
+				for (String path : this.plugin.samplePops) {
+					FJLabel pathLabel = new FJLabel(path);
+					pathLabel.setFont(FontUtil.dlog12);
+					box = new HBox(new Component[] { Box.createRigidArea(new Dimension(10, 10)), pathLabel,
+							Box.createHorizontalGlue() });
+					componentList.add(box);
 				}
+				componentList.add(new JSeparator());
 			}
-		});
-		componentList.add(button);
 
-		// init components
-		browserFileCheckbox.setEnabled(fSample);
-		paramList.setEnabled(fSample);
-		button.setEnabled(fSample);
-		uploadCheckbox.addItemListener(new ItemListener() {
-			public void itemStateChanged(ItemEvent e) {
-				paramList.setEnabled(uploadCheckbox.isSelected());
-				button.setEnabled(uploadCheckbox.isSelected());
-				browserFileCheckbox.setEnabled(uploadCheckbox.isSelected());
-				browserFileCheckbox.setSelected(uploadCheckbox.isSelected());
-			}
-		});
+			// upload properties
+			componentList.add(new FJLabel(channelsLabelLine1));
+			componentList.add(new FJLabel(channelsLabelLine2));
 
-		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-				plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-		if (option == JOptionPane.OK_OPTION) {
-			plugin.upload = uploadCheckbox.isSelected();
-			plugin.openBrowser = browserFileCheckbox.isSelected();
-			plugin.hostName = ((FJTextField) hostLabelField[1]).getText();
-			plugin.teamName = ((FJTextField) teamLabelField[1]).getText();
-			plugin.projectName = ((FJTextField) projectLabelField[1]).getText();
-			plugin.domain = ((FJTextField) domainLabelField[1]).getText();
-			plugin.userName = ((FJTextField) userLabelField[1]).getText();
-			plugin.passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
-			plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
-			if (plugin.upload) {
+			FJList paramList = createParameterList(arg1);
+			componentList.add(new JScrollPane(paramList));
+			componentList.add(new JSeparator());
+
+			// Customize upload settings
+			Component[] hostLabelField = createLabelTextFieldCombo("Host", plugin.hostName, plugin.hostName);
+			Component[] teamLabelField = createLabelTextFieldCombo("Team", plugin.teamName, plugin.teamName);
+			Component[] projectLabelField = createLabelTextFieldCombo("Project", plugin.projectName,
+					plugin.projectName);
+			Component[] domainLabelField = createLabelTextFieldCombo("Domain", plugin.domain, plugin.domain);
+			Component[] userLabelField = createLabelTextFieldCombo("User", plugin.userName, plugin.userName);
+			Component[] passwordLabelField = createLabelTextFieldCombo("Password", plugin.passWord, plugin.passWord);
+
+			componentList.add(new HBox(hostLabelField));
+			componentList.add(new HBox(teamLabelField));
+			componentList.add(new HBox(projectLabelField));
+			componentList.add(new HBox(domainLabelField));
+			componentList.add(new HBox(userLabelField));
+			componentList.add(new HBox(passwordLabelField));
+
+			FJButton button = new FJButton();
+			button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
+			button.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					((FJTextField) hostLabelField[1]).setEditable(!((FJTextField) hostLabelField[1]).isEditable());
+					((FJTextField) teamLabelField[1]).setEditable(!((FJTextField) teamLabelField[1]).isEditable());
+					((FJTextField) projectLabelField[1])
+							.setEditable(!((FJTextField) projectLabelField[1]).isEditable());
+					((FJTextField) domainLabelField[1]).setEditable(!((FJTextField) domainLabelField[1]).isEditable());
+					((FJTextField) userLabelField[1]).setEditable(!((FJTextField) userLabelField[1]).isEditable());
+					((JPasswordField) passwordLabelField[1])
+							.setEditable(!((JPasswordField) passwordLabelField[1]).isEditable());
+					if (button.getText() == ENABLE_UPLOAD_FIELDS_TEXT) {
+						button.setText(SAVE_UPLOAD_FIELDS_TEXT);
+					} else {
+						button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
+					}
+				}
+			});
+			componentList.add(button);
+
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
+					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
+					JOptionPane.PLAIN_MESSAGE);
+			if (option == JOptionPane.OK_OPTION) {
+				plugin.hostName = ((FJTextField) hostLabelField[1]).getText();
+				plugin.teamName = ((FJTextField) teamLabelField[1]).getText();
+				plugin.projectName = ((FJTextField) projectLabelField[1]).getText();
+				plugin.domain = ((FJTextField) domainLabelField[1]).getText();
+				plugin.userName = ((FJTextField) userLabelField[1]).getText();
+				plugin.passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
+				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 				plugin.pluginState = ImportPluginStateEnum.uploading;
+				result = true;
+			} else {
+				result = false;
 			}
-			result = true;
 		} else {
-			plugin.upload = false;
-			result = false;
+
+			componentList.add(addHeaderString("Tercen Plugin Description", FontUtil.dlogBold16));
+			componentList.addAll(addHeaderComponents());
+
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
+					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
+					JOptionPane.PLAIN_MESSAGE);
+			if (option == JOptionPane.OK_OPTION) {
+				result = true;
+			} else {
+				result = false;
+			}
 		}
 		return result;
 	}
@@ -206,20 +188,33 @@ public class TercenGUI {
 		return paramList;
 	}
 
-//	private void addHeaderString(List<Component> result, String s) {
-//		FJLabel txt = new FJLabel(s);
-//		txt.setFont(FontUtil.dlogItal12);
-//		result.add(txt);
-//	}
+	private FJLabel addHeaderString(String s, Font font) {
+		FJLabel txt = new FJLabel(s);
+		txt.setFont(font);
+		return txt;
+	}
 
-//	private List<Object> addHeaderComponents(String headerText) {
-//		List<Object> result = new ArrayList<>();
-//		FJLabel txt = new FJLabel(headerText);
-//		txt.setFont(FontUtil.dlogBold16);
-//		result.add(txt);
-//		addHeaderString(result, "TODO add explanation about first adding a file and after that uploading the added files");
-//		result.add(new JSeparator());
-//		return result;
-//	}
+	private FJLabel addHeaderString(String s) {
+		return addHeaderString(s, FontUtil.dlogItal12);
+	}
+
+	private List<Object> addHeaderComponents() {
+		List<Object> result = new ArrayList<>();
+		result.add("");
+		result.add(
+				addHeaderString("The Tercen Plugin makes it possible to upload sample files from FlowJo to Tercen."));
+		result.add(addHeaderString("The plugin works in 2 steps:"));
+		result.add(addHeaderString("-   Select files"));
+		result.add(addHeaderString("-   Upload of selected files"));
+		result.add("");
+		result.add(addHeaderString("You are now in the first step. If you click OK this file will be selected."));
+		result.add(addHeaderString("After that, a line with the Tercen plugin will appear below the selected file"));
+		result.add(addHeaderString("You can drag the line to another file to select that file as well"));
+		result.add(addHeaderString("When you have selected the files you need, double click on the Tercen plugin"));
+		result.add(addHeaderString(
+				"This will open the upload dialog. Check and/or change the upload settings and click OK to start the upload to Tercen."));
+		result.add(new JSeparator());
+		return result;
+	}
 
 }

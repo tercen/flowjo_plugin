@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
@@ -28,6 +29,9 @@ import com.treestar.lib.gui.text.FJTextField;
 import com.treestar.lib.xml.SElement;
 
 public class TercenGUI {
+
+	private static final String samplesLabelLine1 = "Sample files to be uploaded to Tercen. Select multiple items by pressing the Shift";
+	private static final String samplesLabelLine2 = "key or toggle items by holding the Ctrl (or Cmd) keys.";
 
 	private static final String channelsLabelLine1 = "FCS channels to be used by Tercen. Select multiple items by pressing the Shift";
 	private static final String channelsLabelLine2 = "key or toggle items by holding the Ctrl (or Cmd) keys.";
@@ -57,25 +61,26 @@ public class TercenGUI {
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 			componentList.add(addHeaderString("Upload files to Tercen", FontUtil.dlogBold16));
 
-			List<FJCheckBox> sampleCheckboxes = new ArrayList<FJCheckBox>();
+			FJList samplePopulationsList = null;
 			if (this.plugin.samplePops.size() > 0) {
 				FJLabel label = new FJLabel("Populations in Data");
 				label.setFont(FontUtil.BoldDialog12);
 				HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
 				componentList.add(box);
-				for (String path : this.plugin.samplePops) {
-					FJCheckBox sampleCheckbox = createCheckbox(path, "Select file for upload", true);
-					componentList.add(new HBox(new Component[] { sampleCheckbox }));
-					sampleCheckboxes.add(sampleCheckbox);
-				}
+
+				componentList.add(new FJLabel(samplesLabelLine1));
+				componentList.add(new FJLabel(samplesLabelLine2));
+
+				samplePopulationsList = createParameterList(new ArrayList<String>(this.plugin.samplePops), true);
+				componentList.add(new JScrollPane(samplePopulationsList));
 				componentList.add(new JSeparator());
 			}
 
-			// upload properties
+			// channels
 			componentList.add(new FJLabel(channelsLabelLine1));
 			componentList.add(new FJLabel(channelsLabelLine2));
 
-			FJList paramList = createParameterList(arg1);
+			FJList paramList = createParameterList(arg1, false);
 			componentList.add(new JScrollPane(paramList));
 			componentList.add(new JSeparator());
 
@@ -128,12 +133,8 @@ public class TercenGUI {
 				plugin.passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 				// set selected sample files
-				Object[] sampleNames = this.plugin.samplePops.toArray();
-				for (int i = 0; i < sampleCheckboxes.size(); i++) {
-					FJCheckBox cb = sampleCheckboxes.get(i);
-					if (cb.isSelected()) {
-						plugin.selectedSamplePops.add((String) sampleNames[i]);
-					}
+				if (samplePopulationsList != null) {
+					plugin.selectedSamplePops.addAll(samplePopulationsList.getSelectedValuesList());
 				}
 				plugin.pluginState = ImportPluginStateEnum.uploading;
 				result = true;
@@ -180,7 +181,7 @@ public class TercenGUI {
 		return new Component[] { label, field };
 	}
 
-	private FJList createParameterList(List<String> parameters) {
+	private FJList createParameterList(List<String> parameters, boolean selectAll) {
 		FJList paramList;
 		DefaultListModel dlm = new DefaultListModel();
 		for (int i = 0; i < parameters.size(); i++) {
@@ -188,9 +189,7 @@ public class TercenGUI {
 		}
 		paramList = new FJList(dlm);
 		paramList.setSelectionMode(2);
-
-		// TODO: dynamically set selected params?
-		int[] indexes = new int[] {};
+		int[] indexes = selectAll ? IntStream.range(0, parameters.size()).toArray() : new int[] {};
 		paramList.setSelectedIndices(indexes);
 		return paramList;
 	}

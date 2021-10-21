@@ -1,7 +1,9 @@
 package com.tercen.flowjo;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -11,8 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.FileUtils;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.CSVFileMetadata;
@@ -46,11 +46,24 @@ public class Utils {
 		fileDoc.metadata = metadata;
 
 		File mergedFile = getMergedFile(fileNames);
-		byte[] bytes = FileUtils.readFileToByteArray(mergedFile);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
-		fileDoc = client.fileService.upload(fileDoc, bytes);
+
+		InputStream inputStream = new FileInputStream(mergedFile);
+		try {
+			byte[] block = new byte[1024 * 1024];
+			int bytesRead = 0;
+			while ((bytesRead = inputStream.read(block)) != -1) {
+				byte[] uploadBytes = Arrays.copyOfRange(block, 0, bytesRead);
+				fileDoc = client.fileService.append(fileDoc, uploadBytes);
+			}
+		} catch (Exception e) {
+			// any error -> remove fileDoc
+			client.fileService.delete(fileDoc.id, fileDoc.rev);
+		} finally {
+			inputStream.close();
+		}
 
 		// create task; this will create a dataset from the file on Tercen
 		CSVTask task = new CSVTask();

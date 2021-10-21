@@ -1,6 +1,5 @@
 package com.tercen.flowjo;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -9,12 +8,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 
@@ -33,38 +29,6 @@ import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 public class Utils {
 
 	private static final String Separator = "\\";
-
-	protected static LinkedHashMap uploadZipFile(TercenClient client, Project project, String fullFileName)
-			throws ServiceError, IOException {
-
-		FileDocument fileDoc = new FileDocument();
-		String filename = getFilename(fullFileName);
-		String ext = filename.substring(filename.lastIndexOf("."));
-		String outFilename = filename.replace(ext, ".zip");
-		fileDoc.name = outFilename;
-		fileDoc.projectId = project.id;
-		fileDoc.acl.owner = project.acl.owner;
-		fileDoc.metadata.contentType = "application/zip";
-		fileDoc.metadata.contentEncoding = "zip,iso-8859-1";
-		File file = new File(fullFileName);
-
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ZipOutputStream zos = new ZipOutputStream(bos);
-		ZipEntry entry = new ZipEntry(file.getName());
-		byte[] bytes = FileUtils.readFileToByteArray(file);
-		zos.putNextEntry(entry);
-		zos.write(bytes, 0, bytes.length);
-		zos.closeEntry();
-		zos.close();
-
-		byte[] zipBytes = bos.toByteArray();
-		bos.close();
-		// remove existing file and upload new file
-		removeProjectFileIfExists(client, project, outFilename);
-		FileDocument fileResult = client.fileService.upload(fileDoc, zipBytes);
-
-		return fileResult.toJson();
-	}
 
 	protected static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
 			ArrayList<String> channels) throws ServiceError, IOException {

@@ -12,7 +12,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
 
@@ -24,13 +23,10 @@ import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
 import com.tercen.service.ServiceError;
-import com.treestar.flowjo.core.Sample;
 import com.treestar.flowjo.engine.utility.ParameterOptionHolder;
-import com.treestar.lib.FJPluginHelper;
 import com.treestar.lib.core.ExportFileTypes;
 import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
-import com.treestar.lib.file.FJFileRef;
 import com.treestar.lib.xml.SElement;
 
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
@@ -64,6 +60,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
 	protected HashSet<String> samplePops = new HashSet<String>();
+	protected HashSet<String> selectedSamplePops = new HashSet<String>();
 	private TercenGUI gui = new TercenGUI(this);
 
 	public Tercen() {
@@ -103,6 +100,15 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			}
 			result.addContent(pops);
 		}
+		if (!this.selectedSamplePops.isEmpty()) {
+			SElement pops = new SElement("SelectedPopulations");
+			for (String pop : this.selectedSamplePops) {
+				SElement popElem = new SElement("SelectedPopulation");
+				popElem.setString("path", pop);
+				pops.addContent(popElem);
+			}
+			result.addContent(pops);
+		}
 		return result;
 	}
 
@@ -126,6 +132,13 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			this.samplePops.clear();
 			for (SElement popElem : pops.getChildren("Population")) {
 				this.samplePops.add(popElem.getString("path"));
+			}
+		}
+		pops = element.getChild("SelectedPopulations");
+		if (pops != null) {
+			this.selectedSamplePops.clear();
+			for (SElement popElem : pops.getChildren("SelectedPopulation")) {
+				this.selectedSamplePops.add(popElem.getString("path"));
 			}
 		}
 	}
@@ -171,10 +184,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					project = (Project) clientProject.get(1);
 
 					// upload csv file
-					uploadResult = Utils.uploadCsvFile(client, project, samplePops, channels);
-
-					// Disable for now: upload fcs-zip file
-					// uploadZipFile(fcmlQueryElement, client, project);
+					if (selectedSamplePops.size() > 0) {
+						uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels);
+					}
 
 					// open browser
 					if (uploadResult != null) {
@@ -187,6 +199,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						JOptionPane.showMessageDialog(null,
 								"No files have been uploaded, browser window will not open.", "ImportPlugin warning",
 								JOptionPane.WARNING_MESSAGE);
+						workspaceText = "Selected";
 					}
 				}
 				pluginState = ImportPluginStateEnum.uploaded;
@@ -197,7 +210,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				result.setWorkspaceString("Empty");
 				break;
 			case collectingSamples:
-				result.setWorkspaceString("" + samplePops.size() + " Classes");
+				result.setWorkspaceString("Selected");
 				break;
 			case uploading:
 				result.setWorkspaceString("Uploading");
@@ -260,14 +273,5 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				tercenIcon = new ImageIcon(url);
 		}
 		return tercenIcon;
-	}
-
-	private String uploadZipFile(SElement fcmlQueryElement, TercenClient client, Project project)
-			throws ServiceError, IOException {
-		Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
-		FJFileRef fileRef = sample.getFileRef();
-		String fcsFileName = fileRef.getLocalFilepath();
-		LinkedHashMap map = Utils.uploadZipFile(client, project, fcsFileName);
-		return map.toString();
 	}
 }

@@ -57,17 +57,16 @@ public class TercenGUI {
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 			componentList.add(addHeaderString("Upload files to Tercen", FontUtil.dlogBold16));
 
+			List<FJCheckBox> sampleCheckboxes = new ArrayList<FJCheckBox>();
 			if (this.plugin.samplePops.size() > 0) {
 				FJLabel label = new FJLabel("Populations in Data");
 				label.setFont(FontUtil.BoldDialog12);
 				HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
 				componentList.add(box);
 				for (String path : this.plugin.samplePops) {
-					FJLabel pathLabel = new FJLabel(path);
-					pathLabel.setFont(FontUtil.dlog12);
-					box = new HBox(new Component[] { Box.createRigidArea(new Dimension(10, 10)), pathLabel,
-							Box.createHorizontalGlue() });
-					componentList.add(box);
+					FJCheckBox sampleCheckbox = createCheckbox(path, "Select file for upload", true);
+					componentList.add(new HBox(new Component[] { sampleCheckbox }));
+					sampleCheckboxes.add(sampleCheckbox);
 				}
 				componentList.add(new JSeparator());
 			}
@@ -128,6 +127,14 @@ public class TercenGUI {
 				plugin.userName = ((FJTextField) userLabelField[1]).getText();
 				plugin.passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
+				// set selected sample files
+				Object[] sampleNames = this.plugin.samplePops.toArray();
+				for (int i = 0; i < sampleCheckboxes.size(); i++) {
+					FJCheckBox cb = sampleCheckboxes.get(i);
+					if (cb.isSelected()) {
+						plugin.selectedSamplePops.add((String) sampleNames[i]);
+					}
+				}
 				plugin.pluginState = ImportPluginStateEnum.uploading;
 				result = true;
 			} else {

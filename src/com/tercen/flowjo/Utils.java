@@ -1,9 +1,7 @@
 package com.tercen.flowjo;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -50,20 +48,11 @@ public class Utils {
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
 
-		InputStream inputStream = new FileInputStream(mergedFile);
-		try {
-			byte[] block = new byte[1024 * 1024];
-			int bytesRead = 0;
-			while ((bytesRead = inputStream.read(block)) != -1) {
-				byte[] uploadBytes = Arrays.copyOfRange(block, 0, bytesRead);
-				fileDoc = client.fileService.append(fileDoc, uploadBytes);
-			}
-		} catch (Exception e) {
-			// any error -> remove fileDoc
-			client.fileService.delete(fileDoc.id, fileDoc.rev);
-		} finally {
-			inputStream.close();
-		}
+		int blocksize = 1024 * 1024;
+		int iterations = (int) mergedFile.length() / (blocksize);
+		ProgressBar progressBar = new ProgressBar(iterations);
+		progressBar.setVisible(true);
+		fileDoc = progressBar.uploadFile(mergedFile, client, fileDoc, blocksize);
 
 		// create task; this will create a dataset from the file on Tercen
 		CSVTask task = new CSVTask();

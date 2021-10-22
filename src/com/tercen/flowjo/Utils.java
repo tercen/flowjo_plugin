@@ -14,10 +14,7 @@ import java.util.regex.Pattern;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.CSVFileMetadata;
-import com.tercen.model.impl.CSVTask;
-import com.tercen.model.impl.FailedState;
 import com.tercen.model.impl.FileDocument;
-import com.tercen.model.impl.InitState;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.ProjectDocument;
 import com.tercen.model.impl.Schema;
@@ -26,7 +23,8 @@ import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
 
-	private static final String Separator = "\\";
+	private static final String SEPARATOR = "\\";
+	private static final int BLOCKSIZE = 1024 * 1024;
 
 	protected static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
 			ArrayList<String> channels) throws ServiceError, IOException {
@@ -48,31 +46,10 @@ public class Utils {
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
 
-		int blocksize = 1024 * 1024;
-		int iterations = (int) mergedFile.length() / (blocksize);
-		ProgressBar progressBar = new ProgressBar(iterations);
-		progressBar.setVisible(true);
-		fileDoc = progressBar.uploadFile(mergedFile, client, fileDoc, blocksize);
-
-		// create task; this will create a dataset from the file on Tercen
-		CSVTask task = new CSVTask();
-		task.state = new InitState();
-		task.fileDocumentId = fileDoc.id;
-		task.owner = project.acl.owner;
-		task.projectId = project.id;
-		task.params.separator = ",";
-		task.params.encoding = "iso-8859-1";
-		task.params.quote = "\"";
-		task.gatherNames = channels;
-		task.valueName = "value";
-		task.variableName = "channel";
-		task = (CSVTask) client.taskService.create(task);
-		client.taskService.runTask(task.id);
-		task = (CSVTask) client.taskService.waitDone(task.id);
-		if (task.state instanceof FailedState) {
-			throw new ServiceError(task.state.toString());
-		}
-		return client.tableSchemaService.get(task.schemaId);
+		int iterations = (int) mergedFile.length() / (BLOCKSIZE);
+		UploadProgressTask uploadProgressTask = new UploadProgressTask(iterations);
+		uploadProgressTask.setVisible(true);
+		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, BLOCKSIZE);
 	}
 
 	// get Tercen URL that creates a new workflow given the uploaded data
@@ -110,7 +87,7 @@ public class Utils {
 	}
 
 	private static String getFilename(String fullFileName) {
-		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.Separator), "\\\\").split("\\\\");
+		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.SEPARATOR), "\\\\").split("\\\\");
 		String filename = filenameParts[filenameParts.length - 1];
 		return filename.replace("..ExtNode.csv", "");
 	}

@@ -152,6 +152,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	public ExternalAlgorithmResults invokeAlgorithm(SElement fcmlQueryElement, File sampleFile, File outputFolder) {
 		ExternalAlgorithmResults result = new ExternalAlgorithmResults();
 		String workspaceText = "";
+		UploadProgressTask uploadProgressTask = new UploadProgressTask();
 
 		try {
 			if (pluginState == ImportPluginStateEnum.error) {
@@ -185,7 +186,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 					// upload csv file
 					if (selectedSamplePops.size() > 0) {
-						uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels);
+						uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels,
+								uploadProgressTask);
 					}
 
 					// open browser
@@ -223,6 +225,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			}
 
 		} catch (ServiceError e) {
+			uploadProgressTask.setVisible(false);
 			e.printStackTrace();
 			result.setWorkspaceString(e.toString());
 			pluginState = ImportPluginStateEnum.error;

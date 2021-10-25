@@ -24,10 +24,10 @@ import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 public class Utils {
 
 	private static final String SEPARATOR = "\\";
-	private static final int BLOCKSIZE = 1024 * 1024;
+	private static final int MIN_BLOCKSIZE = 1024 * 1024;
 
 	protected static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
-			ArrayList<String> channels) throws ServiceError, IOException {
+			ArrayList<String> channels, UploadProgressTask uploadProgressTask) throws ServiceError, IOException {
 
 		FileDocument fileDoc = new FileDocument();
 		String name = getFilename((String) fileNames.toArray()[0]);
@@ -46,10 +46,21 @@ public class Utils {
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
 
-		int iterations = (int) mergedFile.length() / (BLOCKSIZE);
-		UploadProgressTask uploadProgressTask = new UploadProgressTask(iterations);
+		int blockSize = getBlockSize(mergedFile);
+		System.out.println("BlockSize: " + blockSize);
+		int iterations = (int) (mergedFile.length() / blockSize);
+		uploadProgressTask.setIterations(iterations);
 		uploadProgressTask.setVisible(true);
-		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, BLOCKSIZE);
+		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, blockSize);
+	}
+
+	private static int getBlockSize(File mergedFile) {
+		int blockSize = MIN_BLOCKSIZE;
+		int fileSize = (int) mergedFile.length();
+		if (fileSize > 10 * (1024 * 1024)) {
+			blockSize = fileSize / 10;
+		}
+		return blockSize;
 	}
 
 	// get Tercen URL that creates a new workflow given the uploaded data

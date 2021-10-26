@@ -19,6 +19,9 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.CSVTask;
 import com.tercen.model.impl.FailedState;
@@ -31,6 +34,7 @@ import com.tercen.service.ServiceError;
 public class UploadProgressTask extends JFrame {
 
 	private static final long serialVersionUID = 1L;
+	private static final Logger logger = LogManager.getLogger(UploadProgressTask.class);
 	private static final int CSV_TASK_COUNT = 4;
 	private JProgressBar progressBar;
 
@@ -86,6 +90,7 @@ public class UploadProgressTask extends JFrame {
 			int bytesRead = 0;
 			while ((bytesRead = inputStream.read(block)) != -1) {
 				progressBar.setValue(i++);
+				logger.debug(String.format("file upload progress: %d %%", 100 * i / progressBar.getMaximum()));
 				byte[] uploadBytes = Arrays.copyOfRange(block, 0, bytesRead);
 				fileDoc = client.fileService.append(fileDoc, uploadBytes);
 			}
@@ -108,17 +113,22 @@ public class UploadProgressTask extends JFrame {
 		task.gatherNames = channels;
 		task.valueName = "value";
 		task.variableName = "channel";
+		logger.debug("create task");
 		task = (CSVTask) client.taskService.create(task);
 		progressBar.setValue(i++);
+		logger.debug("run task");
 		client.taskService.runTask(task.id);
 		progressBar.setValue(i++);
+		logger.debug("waitDone");
 		task = (CSVTask) client.taskService.waitDone(task.id);
 		progressBar.setValue(i++);
 		if (task.state instanceof FailedState) {
 			throw new ServiceError(task.state.toString());
 		}
+		logger.debug("get schema");
 		Schema schema = client.tableSchemaService.get(task.schemaId);
 		progressBar.setValue(i);
+		logger.debug("return schema");
 		return schema;
 	}
 }

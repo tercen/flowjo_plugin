@@ -19,6 +19,10 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
@@ -31,6 +35,7 @@ import com.treestar.lib.xml.SElement;
 
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
+	private static final Logger logger = LogManager.getLogger(Tercen.class);
 	private static final String pluginName = "Import_To_Tercen";
 	private static final String version = "1.0";
 
@@ -65,7 +70,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	public Tercen() {
 		super(pluginName);
-		// read tercen upload properties
+		PropertyConfigurator.configure(getClass().getResource("/log4j.properties"));
+		logger.debug("Read upload properties file");
 		readPropertiesFile();
 	}
 

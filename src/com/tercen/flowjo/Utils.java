@@ -47,7 +47,6 @@ public class Utils {
 		removeProjectFileIfExists(client, project, name);
 
 		int blockSize = getBlockSize(mergedFile);
-		System.out.println("BlockSize: " + blockSize);
 		int iterations = (int) (mergedFile.length() / blockSize);
 		uploadProgressTask.setIterations(iterations);
 		uploadProgressTask.setVisible(true);

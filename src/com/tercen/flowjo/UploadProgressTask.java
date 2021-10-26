@@ -35,7 +35,6 @@ public class UploadProgressTask extends JFrame {
 	private JProgressBar progressBar;
 
 	public UploadProgressTask() {
-		// add to maxItems for the 2nd phase: CSVTask
 		progressBar = new JProgressBar();
 		progressBar.setSize(new Dimension(200, 80));
 		progressBar.setValue(0);
@@ -61,6 +60,7 @@ public class UploadProgressTask extends JFrame {
 	}
 
 	public void setIterations(int maxItems) {
+		// add to maxItems for the 2nd phase: CSVTask
 		progressBar.setMaximum(maxItems + CSV_TASK_COUNT);
 	}
 

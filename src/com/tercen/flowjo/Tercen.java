@@ -26,6 +26,7 @@ import org.apache.log4j.PropertyConfigurator;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
+import com.tercen.model.impl.User;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.engine.utility.ParameterOptionHolder;
 import com.treestar.lib.core.ExportFileTypes;
@@ -181,34 +182,45 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					workspaceText = Tercen.Failed;
 				} else {
 					Schema uploadResult = null;
-					TercenClient client = null;
-					Project project = null;
 
-					// create client and get project (will be created if it doesn't exist)
-					List<Object> clientProject = Utils.getClientAndProject(hostName, teamName, projectName, domain,
-							userName, passWord);
-					client = (TercenClient) clientProject.get(0);
-					project = (Project) clientProject.get(1);
-
-					// upload csv file
-					if (selectedSamplePops.size() > 0) {
-						uploadProgressTask = new UploadProgressTask();
-						uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels,
-								uploadProgressTask);
-					}
-
-					// open browser
-					if (uploadResult != null) {
-						String url = Utils.getTercenProjectURL(hostName, teamName, uploadResult);
-						Desktop desktop = java.awt.Desktop.getDesktop();
-						URI uri = new URI(String.valueOf(url));
-						desktop.browse(uri);
-						workspaceText = String.format("Sample file (s) has been uploaded to %s.", hostName);
-					} else {
-						JOptionPane.showMessageDialog(null,
-								"No files have been uploaded, browser window will not open.", "ImportPlugin warning",
-								JOptionPane.WARNING_MESSAGE);
+					TercenClient client = new TercenClient(hostName);
+					String flowJoUser = Utils.getCurrentPortalUser();
+					if (flowJoUser == null) {
+						JOptionPane.showMessageDialog(null, "You need to be logged in, to be able to use this plugin.",
+								"ImportPlugin error", JOptionPane.ERROR_MESSAGE);
 						workspaceText = "Selected";
+						logger.error(String.format("FlowJo user %s not logged in, can't upload", flowJoUser));
+					} else {
+						List<User> users = Utils.getTercenUser(client, flowJoUser);
+						if (users.size() == 0) {
+							logger.debug(String.format("User %s not found in Tercen, create user\".", flowJoUser));
+							Utils.createTercenUser(client, flowJoUser);
+						} else {
+							// Get project (will be created if it doesn't exist)
+							Project project = Utils.getProject(client, teamName, projectName, domain, userName,
+									passWord);
+
+							// upload csv file
+							if (selectedSamplePops.size() > 0) {
+								uploadProgressTask = new UploadProgressTask();
+								uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels,
+										uploadProgressTask);
+							}
+
+							// open browser
+							if (uploadResult != null) {
+								String url = Utils.getTercenProjectURL(hostName, teamName, uploadResult);
+								Desktop desktop = java.awt.Desktop.getDesktop();
+								URI uri = new URI(String.valueOf(url));
+								desktop.browse(uri);
+								workspaceText = String.format("Sample file (s) has been uploaded to %s.", hostName);
+							} else {
+								JOptionPane.showMessageDialog(null,
+										"No files have been uploaded, browser window will not open.",
+										"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
+								workspaceText = "Selected";
+							}
+						}
 					}
 				}
 				pluginState = ImportPluginStateEnum.uploaded;

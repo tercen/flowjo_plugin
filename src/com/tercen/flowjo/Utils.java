@@ -6,18 +6,20 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 import com.tercen.client.impl.TercenClient;
+import com.tercen.model.base.Vocabulary;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.ProjectDocument;
 import com.tercen.model.impl.Schema;
+import com.tercen.model.impl.User;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
@@ -67,12 +69,23 @@ public class Utils {
 		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tag=flowjo&schemaId=" + schema.id;
 	}
 
-	protected static List<Object> getClientAndProject(String url, String teamName, String projectName, String domain,
+	protected static List<User> getTercenUser(TercenClient client, String user) throws ServiceError {
+		List<String> usernames = new ArrayList<String>();
+		usernames.add(user);
+		return client.userService.findUserByEmail(usernames, false);
+	}
+
+	protected static User createTercenUser(TercenClient client, String email) throws ServiceError {
+		LinkedHashMap userProperties = new LinkedHashMap();
+		userProperties.put(Vocabulary.email_DP, email);
+		User newUser = new User(userProperties);
+		return client.userService.createUser(newUser, "");
+	}
+
+	protected static Project getProject(TercenClient client, String teamName, String projectName, String domain,
 			String username, String password) throws ServiceError {
-		TercenClient client = new TercenClient(url);
 		client.userService.connect2(domain, username, password);
-		Project project = getProject(client, teamName, projectName);
-		return Arrays.asList(client, project);
+		return getProject(client, teamName, projectName);
 	}
 
 	// merge csv files into one. The filename column is added after reading the
@@ -102,8 +115,8 @@ public class Utils {
 		return filename.replace("..ExtNode.csv", "");
 	}
 
-	private static String getCurrentPortalUser() {
-		String result = "unknown";
+	protected static String getCurrentPortalUser() {
+		String result = null;
 		try {
 			CloudAuthInfo cai = CloudAuthInfo.getInstance();
 			if (cai != null && cai.isLoggedIn()) {

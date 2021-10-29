@@ -9,13 +9,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 
 import javax.swing.JFrame;
@@ -88,38 +85,6 @@ public class UploadProgressTask extends JFrame {
 		}
 	}
 
-	public URI addQueryParameters(URI uri, LinkedHashMap<String, String> queryParameters)
-			throws UnsupportedEncodingException {
-		if (queryParameters.isEmpty()) {
-			return uri;
-		}
-
-		StringBuffer sb = new StringBuffer(uri.toString());
-		sb.append("?");
-
-		for (Entry<String, String> entry : queryParameters.entrySet()) {
-			sb.append(URLEncoder.encode(entry.getKey(), java.nio.charset.StandardCharsets.UTF_8.toString()));
-			sb.append("=");
-			sb.append(URLEncoder.encode(entry.getValue(), java.nio.charset.StandardCharsets.UTF_8.toString()));
-			sb.append("&");
-		}
-
-		// remove last &
-		String str = sb.toString();
-		str = str.substring(0, str.length() - 1);
-
-		return URI.create(str);
-
-	}
-
-	static String urlEncodeUTF8(String s) {
-		try {
-			return URLEncoder.encode(s, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new UnsupportedOperationException(e);
-		}
-	}
-
 	public Schema uploadFile(File file, TercenClient client, Project project, FileDocument fileDoc,
 			ArrayList<String> channels, int blocksize) throws ServiceError, IOException {
 		InputStream inputStream = new FileInputStream(file);
@@ -165,7 +130,8 @@ public class UploadProgressTask extends JFrame {
 		String json = new ObjectMapper().writeValueAsString(params);
 		URI clientUrl = client.tercenURI.resolve(baseUri);
 		String wsScheme = clientUrl.getScheme().equals("https") ? "wss" : "ws";
-		String url = clientUrl.toString().replace(clientUrl.getScheme(), wsScheme) + "?params=" + urlEncodeUTF8(json);
+		String url = clientUrl.toString().replace(clientUrl.getScheme(), wsScheme) + "?params="
+				+ Utils.urlEncodeUTF8(json);
 		TercenWebSocketListener listener = new TercenWebSocketListener(latch);
 		logger.debug("Connect to: " + url);
 		client.httpClient.createWebsocket(url, listener);

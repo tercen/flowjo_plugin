@@ -45,7 +45,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	}
 
 	// default settings
-	protected static final String HOSTNAME_URL = "https://tercen2.com/";
+	protected static final String HOSTNAME_URL = "https://tercen.com/";
 	protected static final String TEAM_NAME = "test-team";
 	protected static final String DOMAIN = "tercen";
 	protected static final String USERNAME = "test";

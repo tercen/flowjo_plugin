@@ -2,6 +2,8 @@ package com.tercen.flowjo;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -163,5 +165,13 @@ public class Utils {
 				e.printStackTrace();
 			}
 		});
+	}
+
+	protected static String urlEncodeUTF8(String s) {
+		try {
+			return URLEncoder.encode(s, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			throw new UnsupportedOperationException(e);
+		}
 	}
 }

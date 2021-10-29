@@ -45,9 +45,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	}
 
 	// default settings
-	protected static final String HOSTNAME_URL = "https://tercen.com/";
+	protected static final String HOSTNAME_URL = "https://tercen2.com/";
 	protected static final String TEAM_NAME = "test-team";
-	protected static final String PROJECT_NAME = "myproject";
 	protected static final String DOMAIN = "tercen";
 	protected static final String USERNAME = "test";
 	protected static final String PASSWORD = "test";
@@ -56,8 +55,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	private static final String Failed = "Failed";
 	protected String hostName = HOSTNAME_URL;
 	protected String teamName = TEAM_NAME;
-	protected String projectName = PROJECT_NAME;
-	protected String domain = DOMAIN;
+	protected String projectName = "FlowJo_Import";
 	protected String userName = USERNAME;
 	protected String passWord = PASSWORD;
 	private Icon tercenIcon = null;
@@ -92,8 +90,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		result.setName(pluginName);
 		result.setString("host", hostName);
 		result.setString("team", teamName);
-		result.setString("project", projectName);
-		result.setString("domain", domain);
 		result.setString("user", userName);
 		result.setString("pwd", passWord);
 		result.setString("channels", String.join(",", channels));
@@ -123,8 +119,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	public void setElement(SElement element) {
 		hostName = element.getString("host");
 		teamName = element.getString("team");
-		projectName = element.getString("project");
-		domain = element.getString("domain");
 		userName = element.getString("user");
 		passWord = element.getString("pwd");
 		String channelString = element.getString("channels");
@@ -196,9 +190,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 							logger.debug(String.format("User %s not found in Tercen, create user\".", flowJoUser));
 							Utils.createTercenUser(client, flowJoUser);
 						} else {
-							// Get project (will be created if it doesn't exist)
-							Project project = Utils.getProject(client, teamName, projectName, domain, userName,
-									passWord);
+							// Get or create project if it doesn't exist
+							// TODO set projectName
+							Project project = Utils.getProject(client, teamName, projectName, userName, passWord);
 
 							// upload csv file
 							if (selectedSamplePops.size() > 0) {
@@ -269,8 +263,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
 			hostName = prop.getProperty("host");
 			teamName = prop.getProperty("team");
-			projectName = prop.getProperty("project");
-			domain = prop.getProperty("domain");
 			userName = prop.getProperty("user");
 			passWord = prop.getProperty("password");
 		} catch (IOException e) {

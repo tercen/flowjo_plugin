@@ -9,8 +9,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map.Entry;
+import java.util.concurrent.CountDownLatch;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -22,6 +28,7 @@ import javax.swing.event.ChangeListener;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.CSVTask;
 import com.tercen.model.impl.FailedState;
@@ -35,7 +42,7 @@ public class UploadProgressTask extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 	private static final Logger logger = LogManager.getLogger(UploadProgressTask.class);
-	private static final int CSV_TASK_COUNT = 4;
+	private static final int CSV_TASK_COUNT = 3;
 	private JProgressBar progressBar;
 
 	public UploadProgressTask() {
@@ -54,7 +61,7 @@ public class UploadProgressTask extends JFrame {
 			}
 		});
 		setTitle("Upload Progress");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setLayout(new BorderLayout());
 		add(new TestPane(progressBar));
 		pack();
@@ -78,6 +85,38 @@ public class UploadProgressTask extends JFrame {
 			gbc.gridx = 0;
 			gbc.gridy = 0;
 			add(progressBar, gbc);
+		}
+	}
+
+	public URI addQueryParameters(URI uri, LinkedHashMap<String, String> queryParameters)
+			throws UnsupportedEncodingException {
+		if (queryParameters.isEmpty()) {
+			return uri;
+		}
+
+		StringBuffer sb = new StringBuffer(uri.toString());
+		sb.append("?");
+
+		for (Entry<String, String> entry : queryParameters.entrySet()) {
+			sb.append(URLEncoder.encode(entry.getKey(), java.nio.charset.StandardCharsets.UTF_8.toString()));
+			sb.append("=");
+			sb.append(URLEncoder.encode(entry.getValue(), java.nio.charset.StandardCharsets.UTF_8.toString()));
+			sb.append("&");
+		}
+
+		// remove last &
+		String str = sb.toString();
+		str = str.substring(0, str.length() - 1);
+
+		return URI.create(str);
+
+	}
+
+	static String urlEncodeUTF8(String s) {
+		try {
+			return URLEncoder.encode(s, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			throw new UnsupportedOperationException(e);
 		}
 	}
 
@@ -116,12 +155,28 @@ public class UploadProgressTask extends JFrame {
 		logger.debug("create task");
 		task = (CSVTask) client.taskService.create(task);
 		progressBar.setValue(i++);
-		logger.debug("run task");
-		client.taskService.runTask(task.id);
+
+		// Start task handler in websocket thread
+		CountDownLatch latch = new CountDownLatch(1);
+		URI baseUri = URI.create("api/v1/evt" + "/" + "listenTaskChannel");
+		LinkedHashMap params = new LinkedHashMap();
+		params.put("taskId", task.id);
+		params.put("start", true);
+		String json = new ObjectMapper().writeValueAsString(params);
+		URI clientUrl = client.tercenURI.resolve(baseUri);
+		String wsScheme = clientUrl.getScheme().equals("https") ? "wss" : "ws";
+		String url = clientUrl.toString().replace(clientUrl.getScheme(), wsScheme) + "?params=" + urlEncodeUTF8(json);
+		TercenWebSocketListener listener = new TercenWebSocketListener(latch);
+		logger.debug("Connect to: " + url);
+		client.httpClient.createWebsocket(url, listener);
+		try {
+			latch.await();
+		} catch (InterruptedException e) {
+			logger.error(e.getMessage());
+		} // Wait for countdown
+		task = (CSVTask) client.taskService.get(task.id);
 		progressBar.setValue(i++);
-		logger.debug("waitDone");
-		task = (CSVTask) client.taskService.waitDone(task.id);
-		progressBar.setValue(i++);
+
 		if (task.state instanceof FailedState) {
 			throw new ServiceError(task.state.toString());
 		}

@@ -82,9 +82,9 @@ public class Utils {
 		return client.userService.createUser(newUser, "");
 	}
 
-	protected static Project getProject(TercenClient client, String teamName, String projectName, String domain,
-			String username, String password) throws ServiceError {
-		client.userService.connect2(domain, username, password);
+	protected static Project getProject(TercenClient client, String teamName, String projectName, String username,
+			String password) throws ServiceError {
+		client.userService.connect2(Tercen.DOMAIN, username, password);
 		return getProject(client, teamName, projectName);
 	}
 

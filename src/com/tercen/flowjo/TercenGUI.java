@@ -87,16 +87,11 @@ public class TercenGUI {
 			// Customize upload settings
 			Component[] hostLabelField = createLabelTextFieldCombo("Host", plugin.hostName, plugin.hostName);
 			Component[] teamLabelField = createLabelTextFieldCombo("Team", plugin.teamName, plugin.teamName);
-			Component[] projectLabelField = createLabelTextFieldCombo("Project", plugin.projectName,
-					plugin.projectName);
-			Component[] domainLabelField = createLabelTextFieldCombo("Domain", plugin.domain, plugin.domain);
 			Component[] userLabelField = createLabelTextFieldCombo("User", plugin.userName, plugin.userName);
 			Component[] passwordLabelField = createLabelTextFieldCombo("Password", plugin.passWord, plugin.passWord);
 
 			componentList.add(new HBox(hostLabelField));
 			componentList.add(new HBox(teamLabelField));
-			componentList.add(new HBox(projectLabelField));
-			componentList.add(new HBox(domainLabelField));
 			componentList.add(new HBox(userLabelField));
 			componentList.add(new HBox(passwordLabelField));
 
@@ -106,9 +101,6 @@ public class TercenGUI {
 				public void actionPerformed(ActionEvent e) {
 					((FJTextField) hostLabelField[1]).setEditable(!((FJTextField) hostLabelField[1]).isEditable());
 					((FJTextField) teamLabelField[1]).setEditable(!((FJTextField) teamLabelField[1]).isEditable());
-					((FJTextField) projectLabelField[1])
-							.setEditable(!((FJTextField) projectLabelField[1]).isEditable());
-					((FJTextField) domainLabelField[1]).setEditable(!((FJTextField) domainLabelField[1]).isEditable());
 					((FJTextField) userLabelField[1]).setEditable(!((FJTextField) userLabelField[1]).isEditable());
 					((JPasswordField) passwordLabelField[1])
 							.setEditable(!((JPasswordField) passwordLabelField[1]).isEditable());
@@ -127,8 +119,6 @@ public class TercenGUI {
 			if (option == JOptionPane.OK_OPTION) {
 				plugin.hostName = ((FJTextField) hostLabelField[1]).getText();
 				plugin.teamName = ((FJTextField) teamLabelField[1]).getText();
-				plugin.projectName = ((FJTextField) projectLabelField[1]).getText();
-				plugin.domain = ((FJTextField) domainLabelField[1]).getText();
 				plugin.userName = ((FJTextField) userLabelField[1]).getText();
 				plugin.passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());

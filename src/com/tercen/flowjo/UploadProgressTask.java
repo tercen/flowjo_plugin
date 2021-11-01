@@ -144,7 +144,7 @@ public class UploadProgressTask extends JFrame {
 		progressBar.setValue(i++);
 
 		if (task.state instanceof FailedState) {
-			throw new ServiceError(task.state.toString());
+			throw new ServiceError(((FailedState) task.state).reason);
 		}
 		logger.debug("get schema");
 		Schema schema = client.tableSchemaService.get(task.schemaId);

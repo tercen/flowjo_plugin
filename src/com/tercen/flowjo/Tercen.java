@@ -28,7 +28,10 @@ import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.service.ServiceError;
+import com.treestar.flowjo.application.workspace.Workspace;
+import com.treestar.flowjo.core.Sample;
 import com.treestar.flowjo.engine.utility.ParameterOptionHolder;
+import com.treestar.lib.FJPluginHelper;
 import com.treestar.lib.core.ExportFileTypes;
 import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
@@ -55,7 +58,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	private static final String Failed = "Failed";
 	protected String hostName = HOSTNAME_URL;
 	protected String teamName = TEAM_NAME;
-	protected String projectName = "FlowJo_Import";
+	protected String projectName = "";
 	protected String userName = USERNAME;
 	protected String passWord = PASSWORD;
 	private Icon tercenIcon = null;
@@ -152,6 +155,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	@Override
 	public ExternalAlgorithmResults invokeAlgorithm(SElement fcmlQueryElement, File sampleFile, File outputFolder) {
 		ExternalAlgorithmResults result = new ExternalAlgorithmResults();
+		Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
+		Workspace wsp = sample.getWorkspace();
 		String workspaceText = "";
 		UploadProgressTask uploadProgressTask = null;
 
@@ -191,7 +196,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 							Utils.createTercenUser(client, flowJoUser);
 						} else {
 							// Get or create project if it doesn't exist
-							// TODO set projectName
+							projectName = Utils.getTercenProjectName(wsp);
 							Project project = Utils.getProject(client, teamName, projectName, userName, passWord);
 
 							// upload csv file

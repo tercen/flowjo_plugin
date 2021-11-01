@@ -7,6 +7,8 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -23,6 +25,7 @@ import com.tercen.model.impl.ProjectDocument;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.service.ServiceError;
+import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
@@ -173,5 +176,15 @@ public class Utils {
 		} catch (UnsupportedEncodingException e) {
 			throw new UnsupportedOperationException(e);
 		}
+	}
+
+	public static String getTercenProjectName(Workspace wsp) {
+		String pluginFolder = wsp.getPluginFolder();
+		String workspaceName = pluginFolder.substring(pluginFolder.lastIndexOf("\\") + 1);
+		return workspaceName + "_" + Utils.getCurrentLocalDateTimeStamp();
+	}
+
+	public static String getCurrentLocalDateTimeStamp() {
+		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm_ss"));
 	}
 }

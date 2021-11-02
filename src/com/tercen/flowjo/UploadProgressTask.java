@@ -93,10 +93,11 @@ public class UploadProgressTask extends JFrame {
 			byte[] block = new byte[blocksize];
 			int bytesRead = 0;
 			while ((bytesRead = inputStream.read(block)) != -1) {
-				progressBar.setValue(i++);
+				progressBar.setValue(i);
 				logger.debug(String.format("file upload progress: %d %%", 100 * i / progressBar.getMaximum()));
 				byte[] uploadBytes = Arrays.copyOfRange(block, 0, bytesRead);
 				fileDoc = client.fileService.append(fileDoc, uploadBytes);
+				i++;
 			}
 		} catch (Exception e) {
 			// any error -> remove fileDoc
@@ -121,8 +122,6 @@ public class UploadProgressTask extends JFrame {
 		task = (CSVTask) client.taskService.create(task);
 		progressBar.setValue(i++);
 
-		// Start task handler in websocket thread
-		CountDownLatch latch = new CountDownLatch(1);
 		URI baseUri = URI.create("api/v1/evt" + "/" + "listenTaskChannel");
 		LinkedHashMap params = new LinkedHashMap();
 		params.put("taskId", task.id);
@@ -132,20 +131,39 @@ public class UploadProgressTask extends JFrame {
 		String wsScheme = clientUrl.getScheme().equals("https") ? "wss" : "ws";
 		String url = clientUrl.toString().replace(clientUrl.getScheme(), wsScheme) + "?params="
 				+ Utils.urlEncodeUTF8(json);
-		TercenWebSocketListener listener = new TercenWebSocketListener(latch);
-		logger.debug("Connect to: " + url);
-		client.httpClient.createWebsocket(url, listener);
-		try {
-			latch.await();
-		} catch (InterruptedException e) {
-			logger.error(e.getMessage());
-		} // Wait for countdown
+
+		// Start task handler in websocket thread
+		TercenWebSocketListener listener = new TercenWebSocketListener();
+		int connectionRetries = 3;
+		for (int j = 1; j <= connectionRetries; j++) {
+			if (j == 1 || listener.hasError()) {
+				if (listener.hasError()) {
+					logger.error(listener.getThrowable().getMessage());
+				}
+				logger.debug("Connecting to (" + j + "): " + url);
+				CountDownLatch latch = new CountDownLatch(1);
+				listener.setCountDownLatch(latch);
+				client.httpClient.createWebsocket(url, listener);
+				try {
+					latch.await();
+				} catch (InterruptedException e) {
+					logger.error(e.getMessage());
+				}
+			}
+		}
+
+		if (listener.hasError()) {
+			throw new ServiceError(listener.getThrowable().getMessage());
+		}
+
+		logger.debug("get task");
 		task = (CSVTask) client.taskService.get(task.id);
 		progressBar.setValue(i++);
 
 		if (task.state instanceof FailedState) {
 			throw new ServiceError(((FailedState) task.state).reason);
 		}
+		logger.debug("task state: " + task.state.subKind);
 		logger.debug("get schema");
 		Schema schema = client.tableSchemaService.get(task.schemaId);
 		progressBar.setValue(i);

@@ -13,9 +13,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.base.Vocabulary;
 import com.tercen.model.impl.CSVFileMetadata;
@@ -186,5 +189,10 @@ public class Utils {
 
 	public static String getCurrentLocalDateTimeStamp() {
 		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm_ss"));
+	}
+
+	private String toJson(Map map) throws JsonProcessingException {
+		ObjectMapper mapper = new ObjectMapper();
+		return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(map);
 	}
 }

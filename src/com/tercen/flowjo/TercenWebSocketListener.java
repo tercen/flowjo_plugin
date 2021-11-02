@@ -28,9 +28,9 @@ public final class TercenWebSocketListener extends WebSocketListener {
 	private static final Logger logger = LogManager.getLogger(TercenWebSocketListener.class);
 	private CountDownLatch latch;
 	private long baseTime = System.currentTimeMillis();
+	public Throwable throwable = null;
 
-	public TercenWebSocketListener(CountDownLatch latch) {
-		this.latch = latch;
+	public TercenWebSocketListener() {
 	}
 
 	@Override
@@ -59,6 +59,7 @@ public final class TercenWebSocketListener extends WebSocketListener {
 			map = (LinkedHashMap) jtson.decodeTSON(bytes.toByteArray());
 			String kind = (String) map.get(Vocabulary.KIND);
 			if (kind.equals("websocketdone")) {
+				webSocket.send(bytes);
 				webSocket.close(1000, "Disconnecting websocket");
 				logger.debug("onMessage websocketdone received");
 			} else {
@@ -68,27 +69,49 @@ public final class TercenWebSocketListener extends WebSocketListener {
 					State state = tse.state;
 					if (state instanceof FailedState || state instanceof CanceledState || state instanceof DoneState) {
 						logger.debug("onMessage final state");
+						setThrowable(null);
 						latch.countDown();
 					}
 				}
 			}
 		} catch (TsonError e) {
 			logger.error(e.getMessage());
+			setThrowable(e);
 		} catch (IOException e) {
 			logger.error(e.getMessage());
+			setThrowable(e);
 		}
 	}
 
 	@Override
 	public void onClosing(WebSocket webSocket, int code, String reason) {
-		webSocket.close(1000, null);
 		logger.debug("CLOSE: " + code + " " + reason);
+		webSocket.close(1000, null);
+		setThrowable(null);
+		latch.countDown();
 	}
 
 	@Override
 	public void onFailure(WebSocket webSocket, Throwable t, Response response) {
 		logger.debug("onFailure");
-		t.printStackTrace();
+		webSocket.close(1000, null);
+		setThrowable(t);
 		latch.countDown();
+	}
+
+	public void setThrowable(Throwable t) {
+		this.throwable = t;
+	}
+
+	public Throwable getThrowable() {
+		return this.throwable;
+	}
+
+	public void setCountDownLatch(CountDownLatch latch) {
+		this.latch = latch;
+	}
+
+	public boolean hasError() {
+		return (getThrowable() != null);
 	}
 }

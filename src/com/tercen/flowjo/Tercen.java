@@ -30,6 +30,7 @@ import com.tercen.model.impl.User;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.core.Sample;
+import com.treestar.flowjo.core.nodes.AppNode;
 import com.treestar.flowjo.engine.utility.ParameterOptionHolder;
 import com.treestar.lib.FJPluginHelper;
 import com.treestar.lib.core.ExportFileTypes;
@@ -40,8 +41,9 @@ import com.treestar.lib.xml.SElement;
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
 	private static final Logger logger = LogManager.getLogger(Tercen.class);
-	private static final String pluginName = "Import_To_Tercen";
-	private static final String version = "1.0";
+	protected static final String pluginName = "Import_To_Tercen";
+	protected static final String version = "1.0";
+	protected static final String CSV_FILE_NAME = "csvFileName";
 
 	protected enum ImportPluginStateEnum {
 		empty, collectingSamples, uploading, uploaded, error;
@@ -63,6 +65,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected String passWord = PASSWORD;
 	private Icon tercenIcon = null;
 	protected ArrayList<String> channels = new ArrayList<String>();
+	private String csvFileName;
 
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
@@ -91,21 +94,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	public SElement getElement() {
 		SElement result = super.getElement();
 		result.setName(pluginName);
-		result.setString("host", hostName);
-		result.setString("team", teamName);
-		result.setString("user", userName);
-		result.setString("pwd", passWord);
 		result.setString("channels", String.join(",", channels));
 		result.setString("pluginState", pluginState.toString());
-		if (!this.samplePops.isEmpty()) {
-			SElement pops = new SElement("Populations");
-			for (String pop : this.samplePops) {
-				SElement popElem = new SElement("Population");
-				popElem.setString("path", pop);
-				pops.addContent(popElem);
-			}
-			result.addContent(pops);
-		}
+		result.setString(CSV_FILE_NAME, csvFileName);
 		if (!this.selectedSamplePops.isEmpty()) {
 			SElement pops = new SElement("SelectedPopulations");
 			for (String pop : this.selectedSamplePops) {
@@ -120,10 +111,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	@Override
 	public void setElement(SElement element) {
-		hostName = element.getString("host");
-		teamName = element.getString("team");
-		userName = element.getString("user");
-		passWord = element.getString("pwd");
 		String channelString = element.getString("channels");
 		if (channelString.equals("")) {
 			channels = new ArrayList<String>();
@@ -131,14 +118,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			channels = new ArrayList<String>(Arrays.asList(channelString.split(",")));
 		}
 		this.pluginState = ImportPluginStateEnum.valueOf(element.getString("pluginState"));
-		SElement pops = element.getChild("Populations");
-		if (pops != null) {
-			this.samplePops.clear();
-			for (SElement popElem : pops.getChildren("Population")) {
-				this.samplePops.add(popElem.getString("path"));
-			}
-		}
-		pops = element.getChild("SelectedPopulations");
+		this.csvFileName = element.getString(CSV_FILE_NAME);
+		SElement pops = element.getChild("SelectedPopulations");
 		if (pops != null) {
 			this.selectedSamplePops.clear();
 			for (SElement popElem : pops.getChildren("SelectedPopulation")) {
@@ -152,11 +133,34 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		return new ArrayList<String>();
 	}
 
+	public void setWorkspaceText(List<AppNode> nodeList, String text) {
+		for (AppNode appNode : nodeList) {
+			if (appNode.isExternalPopNode()) {
+				appNode.setAnnotation(text);
+				System.out.println(appNode.getAnnotation());
+			}
+		}
+	}
+
+	public void setWorkspaceUploadText(List<AppNode> nodeList, String text) {
+		for (AppNode appNode : nodeList) {
+			if (appNode.isExternalPopNode()) {
+				// check if file has been selected for upload
+				String csvFileName = Utils.getCsvFileName(appNode);
+				if (this.selectedSamplePops.contains(csvFileName)) {
+					appNode.setAnnotation(text);
+				}
+			}
+		}
+	}
+
 	@Override
 	public ExternalAlgorithmResults invokeAlgorithm(SElement fcmlQueryElement, File sampleFile, File outputFolder) {
 		ExternalAlgorithmResults result = new ExternalAlgorithmResults();
 		Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
 		Workspace wsp = sample.getWorkspace();
+		List<AppNode> nodeList = Utils.getTercenNodes(sample);
+
 		String workspaceText = "";
 		UploadProgressTask uploadProgressTask = null;
 
@@ -168,12 +172,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 			String fileName = sampleFile.getPath();
 			if (pluginState == ImportPluginStateEnum.empty) {
-				// add sampleFile
-				samplePops.add(fileName);
+				csvFileName = fileName;
 				pluginState = ImportPluginStateEnum.collectingSamples;
 			} else if (pluginState == ImportPluginStateEnum.collectingSamples) {
-				// add sampleFile
-				samplePops.add(fileName);
+				csvFileName = fileName;
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
 				if (!sampleFile.exists()) {
 					JOptionPane.showMessageDialog(null, "Input file does not exist", "ImportPlugin error",
@@ -212,7 +214,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 								Desktop desktop = java.awt.Desktop.getDesktop();
 								URI uri = new URI(String.valueOf(url));
 								desktop.browse(uri);
-								workspaceText = String.format("Sample file (s) has been uploaded to %s.", hostName);
+								workspaceText = String.format("Uploaded to %s.", hostName);
 							} else {
 								JOptionPane.showMessageDialog(null,
 										"No files have been uploaded, browser window will not open.",
@@ -227,16 +229,17 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 			switch (pluginState) {
 			case empty:
-				result.setWorkspaceString("Empty");
+				setWorkspaceText(nodeList, "Empty");
 				break;
 			case collectingSamples:
-				result.setWorkspaceString("Selected");
+				setWorkspaceText(nodeList, "Selected");
 				break;
 			case uploading:
-				result.setWorkspaceString("Uploading");
+				setWorkspaceText(nodeList, "Uploading");
 				break;
 			case uploaded:
-				result.setWorkspaceString(workspaceText);
+				nodeList = Utils.getAllSelectedTercenNodes(wsp);
+				setWorkspaceUploadText(nodeList, workspaceText);
 				break;
 			default:
 				break;
@@ -247,15 +250,15 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				uploadProgressTask.setVisible(false);
 			}
 			e.printStackTrace();
-			result.setWorkspaceString(e.toString());
+			setWorkspaceText(nodeList, e.toString());
 			pluginState = ImportPluginStateEnum.error;
 		} catch (IOException e) {
 			e.printStackTrace();
-			result.setWorkspaceString(e.getMessage());
+			setWorkspaceText(nodeList, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
-			result.setWorkspaceString(e.getMessage());
+			setWorkspaceText(nodeList, e.getMessage());
 		}
 		return result;
 	}
@@ -278,6 +281,16 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	@Override
 	public boolean promptForOptions(SElement arg0, List<String> arg1) {
+		if (this.pluginState == ImportPluginStateEnum.collectingSamples
+				|| this.pluginState == ImportPluginStateEnum.uploaded
+				|| this.pluginState == ImportPluginStateEnum.error) {
+			Sample sample = FJPluginHelper.getSample(arg0);
+			Workspace wsp = sample.getWorkspace();
+			List<AppNode> nodeList = Utils.getAllSelectedTercenNodes(wsp);
+			for (AppNode node : nodeList) {
+				samplePops.add(Utils.getCsvFileName(node));
+			}
+		}
 		return gui.promptForOptions(arg0, arg1);
 	}
 

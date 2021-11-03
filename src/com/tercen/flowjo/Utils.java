@@ -12,9 +12,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,6 +31,11 @@ import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
+import com.treestar.flowjo.core.Sample;
+import com.treestar.flowjo.core.SampleList;
+import com.treestar.flowjo.core.nodes.AppNode;
+import com.treestar.flowjo.core.nodes.SampleNode;
+import com.treestar.flowjo.core.nodes.templating.ExternalPopNode;
 import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
@@ -194,5 +201,57 @@ public class Utils {
 	private String toJson(Map map) throws JsonProcessingException {
 		ObjectMapper mapper = new ObjectMapper();
 		return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(map);
+	}
+
+	public static List<AppNode> getTercenNodes(AppNode theNode, boolean selectedOrUploaded) {
+		List<AppNode> popList = new ArrayList<AppNode>();
+		Queue<AppNode> q = new LinkedList<>();
+		q.add(theNode);
+		while (!q.isEmpty()) {
+			int l = q.size();
+			// If this node has children
+			while (l > 0) {
+				AppNode appNode = q.peek();
+				q.remove();
+				if (!appNode.isSampleNode() && appNode.getParent() != null) {
+					if (appNode instanceof ExternalPopNode && appNode.getName().contains("Import_To_Tercen")) {
+						if (!selectedOrUploaded
+								|| (selectedOrUploaded && (appNode.getAnnotation().equalsIgnoreCase("Selected")
+										|| appNode.getAnnotation().startsWith("Uploaded")))) {
+							popList.add(appNode);
+						}
+					}
+				}
+				// Put all children of the node in a list:
+				for (int i = 0; i < appNode.getChildren().size(); i++)
+					q.add(appNode.getChild(i));
+				l--;
+			}
+		}
+		return popList;
+	}
+
+	public static List<AppNode> getTercenNodes(Sample sample) {
+		List<AppNode> popList = new ArrayList<AppNode>();
+		if (sample != null) {
+			SampleNode node = sample.getSampleNode();
+			popList = Utils.getTercenNodes(node, false);
+		}
+		return popList;
+	}
+
+	public static List<AppNode> getAllSelectedTercenNodes(Workspace wsp) {
+		List<AppNode> popList = new ArrayList<AppNode>();
+		SampleList sampleList = wsp.getSampleMgr().getSamples();
+		for (Sample sam : sampleList) {
+			SampleNode node = sam.getSampleNode();
+			List<AppNode> tempList = Utils.getTercenNodes(node, true);
+			popList.addAll(tempList);
+		}
+		return popList;
+	}
+
+	public static String getCsvFileName(AppNode appNode) {
+		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.CSV_FILE_NAME);
 	}
 }

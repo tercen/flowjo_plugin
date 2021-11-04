@@ -195,7 +195,7 @@ public class Utils {
 	}
 
 	public static String getCurrentLocalDateTimeStamp() {
-		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm_ss"));
+		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss"));
 	}
 
 	public static String toJson(Map map) throws JsonProcessingException {
@@ -213,7 +213,7 @@ public class Utils {
 				AppNode appNode = q.peek();
 				q.remove();
 				if (!appNode.isSampleNode() && appNode.getParent() != null) {
-					if (appNode instanceof ExternalPopNode && appNode.getName().contains("Import_To_Tercen")) {
+					if (appNode instanceof ExternalPopNode && appNode.getName().contains(Tercen.pluginName)) {
 						if (!selectedOrUploaded
 								|| (selectedOrUploaded && (appNode.getAnnotation().equalsIgnoreCase("Selected")
 										|| appNode.getAnnotation().startsWith("Uploaded")))) {

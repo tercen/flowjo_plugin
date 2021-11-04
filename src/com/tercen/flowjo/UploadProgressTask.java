@@ -25,7 +25,6 @@ import javax.swing.event.ChangeListener;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.CSVTask;
 import com.tercen.model.impl.FailedState;
@@ -106,6 +105,11 @@ public class UploadProgressTask extends JFrame {
 			inputStream.close();
 		}
 
+		return handleCsvTask(client, project, fileDoc, channels, i);
+	}
+
+	private Schema handleCsvTask(TercenClient client, Project project, FileDocument fileDoc, ArrayList<String> channels,
+			int i) throws ServiceError, IOException {
 		// create task; this will create a dataset from the file on Tercen
 		CSVTask task = new CSVTask();
 		task.state = new InitState();
@@ -123,14 +127,13 @@ public class UploadProgressTask extends JFrame {
 		progressBar.setValue(i++);
 
 		URI baseUri = URI.create("api/v1/evt" + "/" + "listenTaskChannel");
-		LinkedHashMap params = new LinkedHashMap();
+		LinkedHashMap<String, Object> params = new LinkedHashMap<String, Object>();
 		params.put("taskId", task.id);
 		params.put("start", true);
-		String json = new ObjectMapper().writeValueAsString(params);
 		URI clientUrl = client.tercenURI.resolve(baseUri);
 		String wsScheme = clientUrl.getScheme().equals("https") ? "wss" : "ws";
 		String url = clientUrl.toString().replace(clientUrl.getScheme(), wsScheme) + "?params="
-				+ Utils.urlEncodeUTF8(json);
+				+ Utils.urlEncodeUTF8(Utils.toJson(params));
 
 		// Start task handler in websocket thread
 		TercenWebSocketListener listener = new TercenWebSocketListener();

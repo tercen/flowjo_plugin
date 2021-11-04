@@ -198,9 +198,8 @@ public class Utils {
 		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd_MM_yyyy_HH_mm_ss"));
 	}
 
-	private String toJson(Map map) throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
-		return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(map);
+	public static String toJson(Map map) throws JsonProcessingException {
+		return new ObjectMapper().writeValueAsString(map);
 	}
 
 	public static List<AppNode> getTercenNodes(AppNode theNode, boolean selectedOrUploaded) {

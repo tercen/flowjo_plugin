@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -41,7 +42,7 @@ public class UploadProgressTask extends JFrame {
 	private static final int CSV_TASK_COUNT = 3;
 	private JProgressBar progressBar;
 
-	public UploadProgressTask() {
+	public UploadProgressTask(Tercen tercen) {
 		progressBar = new JProgressBar();
 		progressBar.setSize(new Dimension(200, 80));
 		progressBar.setValue(0);
@@ -64,6 +65,7 @@ public class UploadProgressTask extends JFrame {
 		setLocationRelativeTo(null);
 		setVisible(true);
 		setSize(new Dimension(300, 100));
+		setIconImage(((ImageIcon) tercen.getIcon()).getImage());
 	}
 
 	public void setIterations(int maxItems) {

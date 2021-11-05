@@ -203,7 +203,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 							// upload csv file
 							if (selectedSamplePops.size() > 0) {
-								uploadProgressTask = new UploadProgressTask();
+								uploadProgressTask = new UploadProgressTask(this);
 								uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels,
 										uploadProgressTask);
 							}
@@ -307,5 +307,21 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				tercenIcon = new ImageIcon(url);
 		}
 		return tercenIcon;
+	}
+
+	public String getHostName() {
+		return hostName;
+	}
+
+	public String getTeamName() {
+		return teamName;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public String getPassWord() {
+		return passWord;
 	}
 }

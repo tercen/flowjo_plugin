@@ -30,11 +30,9 @@ import com.treestar.lib.xml.SElement;
 
 public class TercenGUI {
 
-	private static final String samplesLabelLine1 = "Sample files to be uploaded to Tercen. Select multiple items by pressing the Shift";
-	private static final String samplesLabelLine2 = "key or toggle items by holding the Ctrl (or Cmd) keys.";
-
-	private static final String channelsLabelLine1 = "FCS channels to be used by Tercen. Select multiple items by pressing the Shift";
-	private static final String channelsLabelLine2 = "key or toggle items by holding the Ctrl (or Cmd) keys.";
+	private static final String CHOOSE_DATA = "Choose Data";
+	private static final String SELECT_CHANNELS = "Select FCS channels";
+	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
 
 	private static final String SAVE_UPLOAD_FIELDS_TEXT = "Save upload fields";
 	private static final String ENABLE_UPLOAD_FIELDS_TEXT = "Enable upload fields";
@@ -59,17 +57,17 @@ public class TercenGUI {
 		if (this.plugin.pluginState == ImportPluginStateEnum.collectingSamples
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
-			componentList.add(addHeaderString("Upload files to Tercen", FontUtil.dlogBold16));
+			componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 
 			FJList samplePopulationsList = null;
 			if (this.plugin.samplePops.size() > 0) {
-				FJLabel label = new FJLabel("Populations in Data");
+				FJLabel label = new FJLabel(CHOOSE_DATA);
 				label.setFont(FontUtil.BoldDialog12);
 				HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
 				componentList.add(box);
 
-				componentList.add(new FJLabel(samplesLabelLine1));
-				componentList.add(new FJLabel(samplesLabelLine2));
+				componentList.add(new FJLabel(""));
+				componentList.add(new FJLabel(SELECT_TEXT));
 
 				samplePopulationsList = createParameterList(new ArrayList<String>(this.plugin.samplePops), true);
 				componentList.add(new JScrollPane(samplePopulationsList));
@@ -77,8 +75,11 @@ public class TercenGUI {
 			}
 
 			// channels
-			componentList.add(new FJLabel(channelsLabelLine1));
-			componentList.add(new FJLabel(channelsLabelLine2));
+			FJLabel label = new FJLabel(SELECT_CHANNELS);
+			label.setFont(FontUtil.BoldDialog12);
+			HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
+			componentList.add(box);
+			componentList.add(new FJLabel(SELECT_TEXT));
 
 			FJList paramList = createParameterList(arg1, false);
 			componentList.add(new JScrollPane(paramList));

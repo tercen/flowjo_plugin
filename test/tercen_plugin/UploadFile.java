@@ -3,6 +3,9 @@ package tercen_plugin;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.UploadProgressTask;
 import com.tercen.flowjo.Utils;
@@ -19,6 +22,7 @@ public class UploadFile {
 	private static final String USER = "";
 	private static final String PWD = "";
 	private static final String FILE = "C:\\flowjo\\maho\\AMC20170906_ILC_Buffy_phenotype\\Import_To_Tercen\\merged.csv";
+	private static final Logger logger = LogManager.getLogger(UploadFile.class);
 
 	public static void main(String[] args) throws ServiceError {
 
@@ -41,15 +45,15 @@ public class UploadFile {
 			HashSet<String> filenames = new HashSet<String>();
 			filenames.add(FILE);
 			ArrayList<String> channels = new ArrayList<String>();
-			System.out.println("Uploading file: " + FILE);
+			logger.debug("Uploading file: " + FILE);
 			Utils.uploadCsvFile(client, project, filenames, channels, new UploadProgressTask());
 
 			// get task, schema..
 
 		} catch (Exception e) {
-			// any error -> remove fileDoc
-			client.fileService.delete(fileDoc.id, fileDoc.rev);
+			logger.error(e.getMessage());
+			e.printStackTrace();
 		}
-		System.out.println("finished");
+		logger.debug("finished");
 	}
 }

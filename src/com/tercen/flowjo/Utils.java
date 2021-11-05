@@ -43,7 +43,7 @@ public class Utils {
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
 
-	protected static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
+	public static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
 			ArrayList<String> channels, UploadProgressTask uploadProgressTask) throws ServiceError, IOException {
 
 		FileDocument fileDoc = new FileDocument();
@@ -97,7 +97,7 @@ public class Utils {
 		return client.userService.createUser(newUser, "");
 	}
 
-	protected static Project getProject(TercenClient client, String teamName, String projectName, String username,
+	public static Project getProject(TercenClient client, String teamName, String projectName, String username,
 			String password) throws ServiceError {
 		client.userService.connect2(Tercen.DOMAIN, username, password);
 		return getProject(client, teamName, projectName);

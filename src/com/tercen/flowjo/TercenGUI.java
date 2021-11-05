@@ -133,7 +133,7 @@ public class TercenGUI {
 			}
 		} else {
 
-			componentList.add(addHeaderString("Tercen Plugin Description", FontUtil.dlogBold16));
+			componentList.add(addHeaderString("Tercen Plugin Instructions", FontUtil.dlogBold16));
 			componentList.addAll(addHeaderComponents());
 
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
@@ -197,18 +197,10 @@ public class TercenGUI {
 	private List<Object> addHeaderComponents() {
 		List<Object> result = new ArrayList<>();
 		result.add("");
-		result.add(
-				addHeaderString("The Tercen Plugin makes it possible to upload sample files from FlowJo to Tercen."));
-		result.add(addHeaderString("The plugin works in 2 steps:"));
-		result.add(addHeaderString("-   Select files"));
-		result.add(addHeaderString("-   Upload of selected files"));
-		result.add("");
-		result.add(addHeaderString("You are now in the first step. If you click OK this file will be selected."));
-		result.add(addHeaderString("After that, a line with the Tercen plugin will appear below the selected file"));
-		result.add(addHeaderString("You can drag the line to another file to select that file as well"));
-		result.add(addHeaderString("When you have selected the files you need, double click on the Tercen plugin"));
-		result.add(addHeaderString(
-				"This will open the upload dialog. Check and/or change the upload settings and click OK to start the upload to Tercen."));
+		result.add("Press Ok to begin.");
+		result.add("A Tercen connector will be attached to your data selection.");
+		result.add("Drag and Drop the Tercen connector to any other files (or gates) you wish to upload.");
+		result.add("Double Click any Tercen connector line to open the Tercen uploader.");
 		result.add(new JSeparator());
 		return result;
 	}

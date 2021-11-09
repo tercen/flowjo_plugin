@@ -6,7 +6,9 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 import javax.swing.Box;
@@ -17,14 +19,15 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 
+import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
+import com.tercen.service.ServiceError;
 import com.treestar.lib.gui.FJButton;
 import com.treestar.lib.gui.FJList;
 import com.treestar.lib.gui.FontUtil;
 import com.treestar.lib.gui.GuiFactory;
 import com.treestar.lib.gui.HBox;
 import com.treestar.lib.gui.panels.FJLabel;
-import com.treestar.lib.gui.swing.FJCheckBox;
 import com.treestar.lib.gui.text.FJTextField;
 import com.treestar.lib.xml.SElement;
 
@@ -36,6 +39,7 @@ public class TercenGUI {
 
 	private static final String SAVE_UPLOAD_FIELDS_TEXT = "Save upload fields";
 	private static final String ENABLE_UPLOAD_FIELDS_TEXT = "Enable upload fields";
+	private static final String CREATE_USER_TEXT = "Create user";
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -45,8 +49,8 @@ public class TercenGUI {
 
 	private Tercen plugin;
 
-	public TercenGUI(Tercen importPlugin) {
-		this.plugin = importPlugin;
+	public TercenGUI(Tercen plugin) {
+		this.plugin = plugin;
 	}
 
 	public boolean promptForOptions(SElement arg0, List<String> arg1) {
@@ -86,14 +90,13 @@ public class TercenGUI {
 			componentList.add(new JSeparator());
 
 			// Customize upload settings
-			Component[] hostLabelField = createLabelTextFieldCombo("Host", plugin.hostName, plugin.hostName);
-			Component[] teamLabelField = createLabelTextFieldCombo("Team", plugin.teamName, plugin.teamName);
-			Component[] userLabelField = createLabelTextFieldCombo("User", plugin.userName, plugin.userName);
-			Component[] passwordLabelField = createLabelTextFieldCombo("Password", plugin.passWord, plugin.passWord);
+			Component[] hostLabelField = createLabelTextFieldCombo("Host", plugin.hostName, plugin.hostName, false);
+			Component[] teamLabelField = createLabelTextFieldCombo("Team", plugin.teamName, plugin.teamName, false);
+			Component[] passwordLabelField = createLabelTextFieldCombo("Password", plugin.passWord, plugin.passWord,
+					false);
 
 			componentList.add(new HBox(hostLabelField));
 			componentList.add(new HBox(teamLabelField));
-			componentList.add(new HBox(userLabelField));
 			componentList.add(new HBox(passwordLabelField));
 
 			FJButton button = new FJButton();
@@ -102,7 +105,6 @@ public class TercenGUI {
 				public void actionPerformed(ActionEvent e) {
 					((FJTextField) hostLabelField[1]).setEditable(!((FJTextField) hostLabelField[1]).isEditable());
 					((FJTextField) teamLabelField[1]).setEditable(!((FJTextField) teamLabelField[1]).isEditable());
-					((FJTextField) userLabelField[1]).setEditable(!((FJTextField) userLabelField[1]).isEditable());
 					((JPasswordField) passwordLabelField[1])
 							.setEditable(!((JPasswordField) passwordLabelField[1]).isEditable());
 					if (button.getText() == ENABLE_UPLOAD_FIELDS_TEXT) {
@@ -120,7 +122,6 @@ public class TercenGUI {
 			if (option == JOptionPane.OK_OPTION) {
 				plugin.hostName = ((FJTextField) hostLabelField[1]).getText();
 				plugin.teamName = ((FJTextField) teamLabelField[1]).getText();
-				plugin.userName = ((FJTextField) userLabelField[1]).getText();
 				plugin.passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 				// set selected sample files
@@ -149,14 +150,45 @@ public class TercenGUI {
 		return result;
 	}
 
-	private FJCheckBox createCheckbox(String label, String tooltip, boolean selected) {
-		FJCheckBox checkbox = new FJCheckBox(label);
-		checkbox.setToolTipText("<html><p width=\"" + fixedToolTipWidth + "\">" + tooltip + "</p></html>");
-		checkbox.setSelected(selected);
-		return checkbox;
+	public Map<String, Object> createUser(TercenClient client, String emailAddress) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		List<Object> componentList = new ArrayList<>();
+
+		// show create user dialog
+		if (emailAddress != null) {
+			componentList.add(addHeaderString("Create Tercen User", FontUtil.dlogBold16));
+
+			String userName = emailAddress.substring(0, emailAddress.indexOf("@"));
+			Component[] userLabelField = createLabelTextFieldCombo("Username", userName, userName, true);
+			Component[] emailLabelField = createLabelTextFieldCombo("Email", emailAddress, emailAddress, true);
+			Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true);
+
+			componentList.add(new HBox(userLabelField));
+			componentList.add(new HBox(emailLabelField));
+			componentList.add(new HBox(passwordLabelField));
+
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
+					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
+					JOptionPane.PLAIN_MESSAGE);
+			if (option == JOptionPane.OK_OPTION) {
+				userName = ((FJTextField) userLabelField[1]).getText();
+				emailAddress = ((FJTextField) emailLabelField[1]).getText();
+				String passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
+				try {
+					plugin.session = Utils.createTercenUser(client, userName, emailAddress, passWord);
+					result.put("pwd", passWord);
+					result.put("token", plugin.session.token.token);
+				} catch (ServiceError e) {
+					// TODO inform user -> retry?
+					e.printStackTrace();
+				}
+			}
+		}
+		return result;
 	}
 
-	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip) {
+	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
+			boolean editable) {
 		FJLabel label = new FJLabel(labelText);
 		JTextField field;
 		if (labelText.equals("Password")) {
@@ -165,7 +197,7 @@ public class TercenGUI {
 			field = new FJTextField();
 		}
 		field.setText(fieldValue);
-		field.setEditable(false);
+		field.setEditable(editable);
 		field.setToolTipText("<html><p width=\"" + fixedToolTipWidth + "\">" + fieldTooltip + "</p></html>");
 		GuiFactory.setSizes(field, new Dimension(fixedFieldWidth, fixedFieldHeigth));
 		GuiFactory.setSizes(label, new Dimension(fixedLabelWidth, fixedLabelHeigth));

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.swing.Icon;
@@ -27,6 +28,7 @@ import com.tercen.client.impl.TercenClient;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
+import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.core.Sample;
@@ -53,16 +55,16 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected static final String HOSTNAME_URL = "https://tercen.com/";
 	protected static final String TEAM_NAME = "test-team";
 	protected static final String DOMAIN = "tercen";
-	protected static final String USERNAME = "test";
-	protected static final String PASSWORD = "test";
 	protected static final String ICON_NAME = "logo.png";
 
 	private static final String Failed = "Failed";
 	protected String hostName = HOSTNAME_URL;
 	protected String teamName = TEAM_NAME;
-	protected String projectName = "";
-	protected String userName = USERNAME;
-	protected String passWord = PASSWORD;
+	protected String projectName;
+	protected String userName;
+	protected String passWord;
+	protected String token;
+	protected UserSession session;
 	private Icon tercenIcon = null;
 	protected ArrayList<String> channels = new ArrayList<String>();
 	private String csvFileName;
@@ -185,42 +187,47 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					Schema uploadResult = null;
 
 					TercenClient client = new TercenClient(hostName);
-					String flowJoUser = Utils.getCurrentPortalUser();
-					if (flowJoUser == null) {
+					userName = Utils.getCurrentPortalUser();
+					if (userName == null) {
 						JOptionPane.showMessageDialog(null, "You need to be logged in, to be able to use this plugin.",
 								"ImportPlugin error", JOptionPane.ERROR_MESSAGE);
 						workspaceText = "Selected";
-						logger.error(String.format("FlowJo user %s not logged in, can't upload", flowJoUser));
+						logger.error(String.format("FlowJo user %s not logged in, can't upload", userName));
 					} else {
-						List<User> users = Utils.getTercenUser(client, flowJoUser);
+						List<User> users = Utils.getTercenUser(client, userName);
 						if (users.size() == 0) {
-							logger.debug(String.format("User %s not found in Tercen, create user\".", flowJoUser));
-							Utils.createTercenUser(client, flowJoUser);
+							logger.debug(String.format("User %s not found in Tercen, create user\".", userName));
+							// create popup to ask user for credentials
+							Map<String, Object> userResult = gui.createUser(client, userName);
+							if (session != null) {
+								passWord = (String) userResult.get("pwd");
+								token = (String) userResult.get("token");
+								Utils.saveTercenToken(token);
+							}
+						}
+						// Get or create project if it doesn't exist
+						projectName = Utils.getTercenProjectName(wsp);
+						Project project = Utils.getProject(client, teamName, projectName, userName, passWord);
+
+						// upload csv file
+						if (selectedSamplePops.size() > 0) {
+							uploadProgressTask = new UploadProgressTask(this);
+							uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels,
+									uploadProgressTask);
+						}
+
+						// open browser
+						if (uploadResult != null) {
+							String url = Utils.getTercenProjectURL(hostName, teamName, uploadResult);
+							Desktop desktop = java.awt.Desktop.getDesktop();
+							URI uri = new URI(String.valueOf(url));
+							desktop.browse(uri);
+							workspaceText = String.format("Uploaded to %s.", hostName);
 						} else {
-							// Get or create project if it doesn't exist
-							projectName = Utils.getTercenProjectName(wsp);
-							Project project = Utils.getProject(client, teamName, projectName, userName, passWord);
-
-							// upload csv file
-							if (selectedSamplePops.size() > 0) {
-								uploadProgressTask = new UploadProgressTask(this);
-								uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels,
-										uploadProgressTask);
-							}
-
-							// open browser
-							if (uploadResult != null) {
-								String url = Utils.getTercenProjectURL(hostName, teamName, uploadResult);
-								Desktop desktop = java.awt.Desktop.getDesktop();
-								URI uri = new URI(String.valueOf(url));
-								desktop.browse(uri);
-								workspaceText = String.format("Uploaded to %s.", hostName);
-							} else {
-								JOptionPane.showMessageDialog(null,
-										"No files have been uploaded, browser window will not open.",
-										"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
-								workspaceText = "Selected";
-							}
+							JOptionPane.showMessageDialog(null,
+									"No files have been uploaded, browser window will not open.",
+									"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
+							workspaceText = "Selected";
 						}
 					}
 				}
@@ -245,7 +252,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				break;
 			}
 
-		} catch (ServiceError e) {
+		} catch (
+
+		ServiceError e) {
 			if (uploadProgressTask != null) {
 				uploadProgressTask.setVisible(false);
 			}
@@ -271,7 +280,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
 			hostName = prop.getProperty("host");
 			teamName = prop.getProperty("team");
-			userName = prop.getProperty("user");
 			passWord = prop.getProperty("password");
 		} catch (IOException e) {
 			e.printStackTrace();

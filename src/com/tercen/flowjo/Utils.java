@@ -5,7 +5,11 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,6 +23,8 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
@@ -29,6 +35,7 @@ import com.tercen.model.impl.Project;
 import com.tercen.model.impl.ProjectDocument;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
+import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.core.Sample;
@@ -40,6 +47,8 @@ import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
 
+	private static final String TOKEN_FILE_NAME = "token.txt";
+	private static final String TOKEN_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
 
@@ -90,16 +99,30 @@ public class Utils {
 		return client.userService.findUserByEmail(usernames, false);
 	}
 
-	protected static User createTercenUser(TercenClient client, String email) throws ServiceError {
+	protected static UserSession createTercenUser(TercenClient client, String userName, String email, String password)
+			throws ServiceError {
 		LinkedHashMap userProperties = new LinkedHashMap();
+		userProperties.put(Vocabulary.KIND, Vocabulary.User_CLASS);
+		userProperties.put(Vocabulary.isDeleted_DP, false);
+		userProperties.put(Vocabulary.isPublic_DP, false);
+		userProperties.put(Vocabulary.isValidated_DP, false);
+		userProperties.put(Vocabulary.invitationCounts_DP, 0);
+		userProperties.put(Vocabulary.maxInvitation_DP, 0);
+		userProperties.put(Vocabulary.name_DP, userName);
 		userProperties.put(Vocabulary.email_DP, email);
-		User newUser = new User(userProperties);
-		return client.userService.createUser(newUser, "");
+		User newUser = User.createFromJson(userProperties);
+		User user = client.userService.createUser(newUser, password);
+		return client.userService.connect2(Tercen.DOMAIN, userName, password);
 	}
 
 	public static Project getProject(TercenClient client, String teamName, String projectName, String username,
-			String password) throws ServiceError {
-		client.userService.connect2(Tercen.DOMAIN, username, password);
+			String password) throws ServiceError, IOException {
+		if (client.userService.userSession == null
+				|| !client.userService.isTokenValid(client.userService.userSession.token.token)) {
+			UserSession session = client.userService.connect2(Tercen.DOMAIN, username, password);
+			Utils.saveTercenToken(session.token.token);
+		}
+		Object object = client.userService.validateUser(client.userService.userSession.token.token);
 		return getProject(client, teamName, projectName);
 	}
 
@@ -252,5 +275,24 @@ public class Utils {
 
 	public static String getCsvFileName(AppNode appNode) {
 		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.CSV_FILE_NAME);
+	}
+
+	private static Path getTokenFilePath() {
+		FileSystem fs = FileSystems.getDefault();
+		String home = System.getProperty("user.home");
+		return fs.getPath(home, TOKEN_FOLDER_NAME, TOKEN_FILE_NAME);
+	}
+
+	public static void saveTercenToken(String token) throws IOException {
+		Path tokenPath = Utils.getTokenFilePath();
+		Path folderPath = tokenPath.getParent();
+		Files.createDirectories(folderPath);
+		Files.setAttribute(folderPath, "dos:hidden", true);
+		FileUtils.writeStringToFile(new File(tokenPath.toString()), token, StandardCharsets.UTF_8);
+	}
+
+	public static String getTercenToken() throws IOException {
+		Path tokenPath = Utils.getTokenFilePath();
+		return FileUtils.readFileToString(new File(tokenPath.toString()), StandardCharsets.UTF_8);
 	}
 }

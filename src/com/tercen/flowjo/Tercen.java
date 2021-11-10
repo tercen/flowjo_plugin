@@ -204,10 +204,13 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 								token = (String) userResult.get("token");
 								Utils.saveTercenToken(token);
 							}
+						} else {
+							// set token for existing user
+							client.httpClient.setAuthorization(Utils.getTercenToken());
 						}
 						// Get or create project if it doesn't exist
 						projectName = Utils.getTercenProjectName(wsp);
-						Project project = Utils.getProject(client, teamName, projectName, userName, passWord);
+						Project project = Utils.getProject(client, gui, teamName, projectName, userName, passWord);
 
 						// upload csv file
 						if (selectedSamplePops.size() > 0) {
@@ -280,7 +283,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
 			hostName = prop.getProperty("host");
 			teamName = prop.getProperty("team");
-			passWord = prop.getProperty("password");
 		} catch (IOException e) {
 			e.printStackTrace();
 			// some error reading properties file, use default settings

@@ -115,14 +115,16 @@ public class Utils {
 		return client.userService.connect2(Tercen.DOMAIN, userName, password);
 	}
 
-	public static Project getProject(TercenClient client, String teamName, String projectName, String username,
-			String password) throws ServiceError, IOException {
-		if (client.userService.userSession == null
-				|| !client.userService.isTokenValid(client.userService.userSession.token.token)) {
+	public static Project getProject(TercenClient client, TercenGUI gui, String teamName, String projectName,
+			String username, String password) throws ServiceError, IOException {
+		if (client.httpClient.getAuthorization() == null
+				|| !client.userService.isTokenValid(client.httpClient.getAuthorization())) {
+			if (password == null) {
+				password = gui.getTercenPassword();
+			}
 			UserSession session = client.userService.connect2(Tercen.DOMAIN, username, password);
 			Utils.saveTercenToken(session.token.token);
 		}
-		Object object = client.userService.validateUser(client.userService.userSession.token.token);
 		return getProject(client, teamName, projectName);
 	}
 

@@ -92,12 +92,9 @@ public class TercenGUI {
 			// Customize upload settings
 			Component[] hostLabelField = createLabelTextFieldCombo("Host", plugin.hostName, plugin.hostName, false);
 			Component[] teamLabelField = createLabelTextFieldCombo("Team", plugin.teamName, plugin.teamName, false);
-			Component[] passwordLabelField = createLabelTextFieldCombo("Password", plugin.passWord, plugin.passWord,
-					false);
 
 			componentList.add(new HBox(hostLabelField));
 			componentList.add(new HBox(teamLabelField));
-			componentList.add(new HBox(passwordLabelField));
 
 			FJButton button = new FJButton();
 			button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
@@ -105,8 +102,6 @@ public class TercenGUI {
 				public void actionPerformed(ActionEvent e) {
 					((FJTextField) hostLabelField[1]).setEditable(!((FJTextField) hostLabelField[1]).isEditable());
 					((FJTextField) teamLabelField[1]).setEditable(!((FJTextField) teamLabelField[1]).isEditable());
-					((JPasswordField) passwordLabelField[1])
-							.setEditable(!((JPasswordField) passwordLabelField[1]).isEditable());
 					if (button.getText() == ENABLE_UPLOAD_FIELDS_TEXT) {
 						button.setText(SAVE_UPLOAD_FIELDS_TEXT);
 					} else {
@@ -122,7 +117,6 @@ public class TercenGUI {
 			if (option == JOptionPane.OK_OPTION) {
 				plugin.hostName = ((FJTextField) hostLabelField[1]).getText();
 				plugin.teamName = ((FJTextField) teamLabelField[1]).getText();
-				plugin.passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 				// set selected sample files
 				if (samplePopulationsList != null) {
@@ -183,6 +177,23 @@ public class TercenGUI {
 					e.printStackTrace();
 				}
 			}
+		}
+		return result;
+	}
+
+	public String getTercenPassword() {
+		String result = null;
+		List<Object> componentList = new ArrayList<>();
+
+		componentList.add(addHeaderString("Password Prompt", FontUtil.dlogBold16));
+
+		Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true);
+		componentList.add(new HBox(passwordLabelField));
+
+		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
+				plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		if (option == JOptionPane.OK_OPTION) {
+			result = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 		}
 		return result;
 	}

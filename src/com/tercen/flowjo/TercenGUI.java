@@ -3,8 +3,6 @@ package com.tercen.flowjo;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +20,6 @@ import javax.swing.JTextField;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
 import com.tercen.service.ServiceError;
-import com.treestar.lib.gui.FJButton;
 import com.treestar.lib.gui.FJList;
 import com.treestar.lib.gui.FontUtil;
 import com.treestar.lib.gui.GuiFactory;
@@ -89,34 +86,10 @@ public class TercenGUI {
 			componentList.add(new JScrollPane(paramList));
 			componentList.add(new JSeparator());
 
-			// Customize upload settings
-			Component[] hostLabelField = createLabelTextFieldCombo("Host", plugin.hostName, plugin.hostName, false);
-			Component[] teamLabelField = createLabelTextFieldCombo("Team", plugin.teamName, plugin.teamName, false);
-
-			componentList.add(new HBox(hostLabelField));
-			componentList.add(new HBox(teamLabelField));
-
-			FJButton button = new FJButton();
-			button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
-			button.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					((FJTextField) hostLabelField[1]).setEditable(!((FJTextField) hostLabelField[1]).isEditable());
-					((FJTextField) teamLabelField[1]).setEditable(!((FJTextField) teamLabelField[1]).isEditable());
-					if (button.getText() == ENABLE_UPLOAD_FIELDS_TEXT) {
-						button.setText(SAVE_UPLOAD_FIELDS_TEXT);
-					} else {
-						button.setText(ENABLE_UPLOAD_FIELDS_TEXT);
-					}
-				}
-			});
-			componentList.add(button);
-
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
 					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
 					JOptionPane.PLAIN_MESSAGE);
 			if (option == JOptionPane.OK_OPTION) {
-				plugin.hostName = ((FJTextField) hostLabelField[1]).getText();
-				plugin.teamName = ((FJTextField) teamLabelField[1]).getText();
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 				// set selected sample files
 				if (samplePopulationsList != null) {

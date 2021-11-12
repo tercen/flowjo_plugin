@@ -8,27 +8,33 @@ import org.apache.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen;
+import com.tercen.flowjo.TercenGUI;
 import com.tercen.flowjo.UploadProgressTask;
 import com.tercen.flowjo.Utils;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.Project;
+import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
 
 public class UploadFile {
 
 	private static final String PROJECT = "flowjo";
 	private static final String FILE = "C:\\flowjo\\maho\\AMC20170906_ILC_Buffy_phenotype\\Import_To_Tercen\\merged.csv";
+	private static final String USER_NAME = "ger.inberg@tercen.com";
+	private static final String PASSWORD = "test";
+
 	private static final Logger logger = LogManager.getLogger(UploadFile.class);
 
 	public static void main(String[] args) throws ServiceError {
 
 		Tercen plugin = new Tercen();
 		TercenClient client = new TercenClient(plugin.getHostName());
+		TercenGUI gui = new TercenGUI(plugin);
 		FileDocument fileDoc = new FileDocument();
 		try {
-			Project project = Utils.getProject(client, plugin.getTeamName(), PROJECT, plugin.getUserName(),
-					plugin.getPassWord());
+			UserSession session = client.userService.connect2("tercen", USER_NAME, PASSWORD);
+			Project project = Utils.getProject(client, session.user.id, PROJECT);
 
 			String name = FILE.substring(FILE.lastIndexOf("\\") + 1);
 			fileDoc.name = name;

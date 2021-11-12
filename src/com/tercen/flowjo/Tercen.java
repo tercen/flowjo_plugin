@@ -53,13 +53,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	// default settings
 	protected static final String HOSTNAME_URL = "https://tercen.com/";
-	protected static final String TEAM_NAME = "test-team";
 	protected static final String DOMAIN = "tercen";
 	protected static final String ICON_NAME = "logo.png";
 
 	private static final String Failed = "Failed";
 	protected String hostName = HOSTNAME_URL;
-	protected String teamName = TEAM_NAME;
 	protected String projectName;
 	protected String userName;
 	protected String passWord;
@@ -202,15 +200,26 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 							if (session != null) {
 								passWord = (String) userResult.get("pwd");
 								token = (String) userResult.get("token");
-								Utils.saveTercenToken(token);
+								Utils.saveTercenSession(session);
 							}
 						} else {
-							// set token for existing user
-							client.httpClient.setAuthorization(Utils.getTercenToken());
+							// get and check token for existing user
+							session = Utils.getTercenSession();
+							String authorization = client.httpClient.getAuthorization();
+							if (session == null || authorization == null || authorization.equals("")
+									|| !client.userService.isTokenValid(client.httpClient.getAuthorization())) {
+								if (passWord == null) {
+									passWord = gui.getTercenPassword();
+								}
+								session = client.userService.connect2(Tercen.DOMAIN, userName, passWord);
+								Utils.saveTercenSession(session);
+							}
+							client.httpClient.setAuthorization(session.token.token);
 						}
+
 						// Get or create project if it doesn't exist
 						projectName = Utils.getTercenProjectName(wsp);
-						Project project = Utils.getProject(client, gui, teamName, projectName, userName, passWord);
+						Project project = Utils.getProject(client, session.user.id, projectName);
 
 						// upload csv file
 						if (selectedSamplePops.size() > 0) {
@@ -221,7 +230,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 						// open browser
 						if (uploadResult != null) {
-							String url = Utils.getTercenProjectURL(hostName, teamName, uploadResult);
+							String url = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
 							Desktop desktop = java.awt.Desktop.getDesktop();
 							URI uri = new URI(String.valueOf(url));
 							desktop.browse(uri);
@@ -271,6 +280,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 			setWorkspaceText(nodeList, e.getMessage());
+			pluginState = ImportPluginStateEnum.error;
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			setWorkspaceText(nodeList, e.getMessage());
+			pluginState = ImportPluginStateEnum.error;
 		}
 		return result;
 	}
@@ -282,7 +296,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		try {
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
 			hostName = prop.getProperty("host");
-			teamName = prop.getProperty("team");
 		} catch (IOException e) {
 			e.printStackTrace();
 			// some error reading properties file, use default settings
@@ -321,10 +334,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	public String getHostName() {
 		return hostName;
-	}
-
-	public String getTeamName() {
-		return teamName;
 	}
 
 	public String getUserName() {

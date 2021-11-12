@@ -1,11 +1,14 @@
 package com.tercen.flowjo;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -22,8 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.FileUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -115,19 +116,6 @@ public class Utils {
 		return client.userService.connect2(Tercen.DOMAIN, userName, password);
 	}
 
-	public static Project getProject(TercenClient client, TercenGUI gui, String teamName, String projectName,
-			String username, String password) throws ServiceError, IOException {
-		if (client.httpClient.getAuthorization() == null
-				|| !client.userService.isTokenValid(client.httpClient.getAuthorization())) {
-			if (password == null) {
-				password = gui.getTercenPassword();
-			}
-			UserSession session = client.userService.connect2(Tercen.DOMAIN, username, password);
-			Utils.saveTercenToken(session.token.token);
-		}
-		return getProject(client, teamName, projectName);
-	}
-
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
 	private static File getMergedFile(HashSet<String> paths) throws IOException {
@@ -168,7 +156,7 @@ public class Utils {
 		return result;
 	}
 
-	private static Project getProject(TercenClient client, String teamOrUser, String projectName) throws ServiceError {
+	public static Project getProject(TercenClient client, String teamOrUser, String projectName) throws ServiceError {
 
 		List<Object> startKey = List.of(teamOrUser, false, "2000");
 		List<Object> endKey = List.of(teamOrUser, false, "2100");
@@ -285,16 +273,22 @@ public class Utils {
 		return fs.getPath(home, TOKEN_FOLDER_NAME, TOKEN_FILE_NAME);
 	}
 
-	public static void saveTercenToken(String token) throws IOException {
+	public static void saveTercenSession(UserSession session) throws IOException {
 		Path tokenPath = Utils.getTokenFilePath();
 		Path folderPath = tokenPath.getParent();
 		Files.createDirectories(folderPath);
 		Files.setAttribute(folderPath, "dos:hidden", true);
-		FileUtils.writeStringToFile(new File(tokenPath.toString()), token, StandardCharsets.UTF_8);
+		new ObjectOutputStream(new FileOutputStream(tokenPath.toString())).writeObject(session.toJson());
 	}
 
-	public static String getTercenToken() throws IOException {
+	public static UserSession getTercenSession() throws IOException, ClassNotFoundException {
+		UserSession result = null;
 		Path tokenPath = Utils.getTokenFilePath();
-		return FileUtils.readFileToString(new File(tokenPath.toString()), StandardCharsets.UTF_8);
+		if (new File(tokenPath.toString()).exists()) {
+			LinkedHashMap map = (LinkedHashMap) new ObjectInputStream(new FileInputStream(tokenPath.toString()))
+					.readObject();
+			result = UserSession.createFromJson(map);
+		}
+		return result;
 	}
 }

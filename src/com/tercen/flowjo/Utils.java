@@ -48,8 +48,8 @@ import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
 
-	private static final String TOKEN_FILE_NAME = "token.txt";
-	private static final String TOKEN_FOLDER_NAME = ".tercen";
+	private static final String SESSION_FILE_NAME = "session.ser";
+	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
 
@@ -90,8 +90,14 @@ public class Utils {
 	}
 
 	// get Tercen URL that creates a new workflow given the uploaded data
-	protected static String getTercenProjectURL(String hostName, String teamName, Schema schema) {
-		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tag=flowjo&schemaId=" + schema.id;
+	protected static String getTercenProjectURL(String hostName, String teamName, Schema schema)
+			throws UnsupportedEncodingException {
+		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tag=flowjo&schemaId=" + schema.id
+				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName();
+	}
+
+	private static String getWorkflowName() {
+		return "FlowJo-Tercen-Plug-in-workflow";
 	}
 
 	protected static List<User> getTercenUser(TercenClient client, String user) throws ServiceError {
@@ -201,10 +207,13 @@ public class Utils {
 		}
 	}
 
-	public static String getTercenProjectName(Workspace wsp) {
+	public static String getWorkspaceName(Workspace wsp) {
 		String pluginFolder = wsp.getPluginFolder();
-		String workspaceName = pluginFolder.substring(pluginFolder.lastIndexOf("\\") + 1);
-		return workspaceName + "_" + Utils.getCurrentLocalDateTimeStamp();
+		return pluginFolder.substring(pluginFolder.lastIndexOf("\\") + 1);
+	}
+
+	public static String getTercenProjectName(Workspace wsp) {
+		return getWorkspaceName(wsp) + "_" + Utils.getCurrentLocalDateTimeStamp();
 	}
 
 	public static String getCurrentLocalDateTimeStamp() {
@@ -267,14 +276,14 @@ public class Utils {
 		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.CSV_FILE_NAME);
 	}
 
-	private static Path getTokenFilePath() {
+	private static Path getSessionFilePath() {
 		FileSystem fs = FileSystems.getDefault();
 		String home = System.getProperty("user.home");
-		return fs.getPath(home, TOKEN_FOLDER_NAME, TOKEN_FILE_NAME);
+		return fs.getPath(home, SESSION_FOLDER_NAME, SESSION_FILE_NAME);
 	}
 
 	public static void saveTercenSession(UserSession session) throws IOException {
-		Path tokenPath = Utils.getTokenFilePath();
+		Path tokenPath = Utils.getSessionFilePath();
 		Path folderPath = tokenPath.getParent();
 		Files.createDirectories(folderPath);
 		Files.setAttribute(folderPath, "dos:hidden", true);
@@ -283,12 +292,20 @@ public class Utils {
 
 	public static UserSession getTercenSession() throws IOException, ClassNotFoundException {
 		UserSession result = null;
-		Path tokenPath = Utils.getTokenFilePath();
+		Path tokenPath = Utils.getSessionFilePath();
 		if (new File(tokenPath.toString()).exists()) {
 			LinkedHashMap map = (LinkedHashMap) new ObjectInputStream(new FileInputStream(tokenPath.toString()))
 					.readObject();
 			result = UserSession.createFromJson(map);
 		}
 		return result;
+	}
+
+	public static UserSession reconnect(TercenClient client, TercenGUI gui, String userName, String passWord)
+			throws ServiceError {
+		if (passWord == null) {
+			passWord = gui.getTercenPassword();
+		}
+		return client.userService.connect2(Tercen.DOMAIN, userName, passWord);
 	}
 }

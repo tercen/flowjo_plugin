@@ -20,6 +20,7 @@ import javax.swing.JTextField;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
 import com.tercen.service.ServiceError;
+import com.treestar.lib.FJPluginHelper;
 import com.treestar.lib.gui.FJList;
 import com.treestar.lib.gui.FontUtil;
 import com.treestar.lib.gui.GuiFactory;
@@ -70,7 +71,7 @@ public class TercenGUI {
 				componentList.add(new FJLabel(""));
 				componentList.add(new FJLabel(SELECT_TEXT));
 
-				samplePopulationsList = createParameterList(new ArrayList<String>(this.plugin.samplePops), true);
+				samplePopulationsList = createParameterList(new ArrayList<String>(this.plugin.samplePops), arg0, true);
 				componentList.add(new JScrollPane(samplePopulationsList));
 				componentList.add(new JSeparator());
 			}
@@ -82,7 +83,7 @@ public class TercenGUI {
 			componentList.add(box);
 			componentList.add(new FJLabel(SELECT_TEXT));
 
-			FJList paramList = createParameterList(arg1, false);
+			FJList paramList = createParameterList(arg1, arg0, false);
 			componentList.add(new JScrollPane(paramList));
 			componentList.add(new JSeparator());
 
@@ -188,7 +189,7 @@ public class TercenGUI {
 		return new Component[] { label, field };
 	}
 
-	private FJList createParameterList(List<String> parameters, boolean selectAll) {
+	private FJList createParameterList(List<String> parameters, SElement sElement, boolean selectAll) {
 		FJList paramList;
 		DefaultListModel dlm = new DefaultListModel();
 		for (int i = 0; i < parameters.size(); i++) {
@@ -196,7 +197,15 @@ public class TercenGUI {
 		}
 		paramList = new FJList(dlm);
 		paramList.setSelectionMode(2);
-		int[] indexes = selectAll ? IntStream.range(0, parameters.size()).toArray() : new int[] {};
+
+		int[] indexes;
+		if (selectAll) {
+			indexes = IntStream.range(0, parameters.size()).toArray();
+		} else {
+			List<String> compParamNames = FJPluginHelper.getSample(sElement).getParameters(true)
+					.getCompensatedParameterNames();
+			indexes = compParamNames.stream().mapToInt(s -> parameters.indexOf(s)).toArray();
+		}
 		paramList.setSelectedIndices(indexes);
 		return paramList;
 	}

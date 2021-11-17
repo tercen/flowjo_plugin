@@ -186,7 +186,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 					TercenClient client = new TercenClient(hostName);
 					userName = Utils.getCurrentPortalUser();
-					if (userName == null) {
+					if (userName == null || userName.equals("")) {
 						JOptionPane.showMessageDialog(null, "You need to be logged in, to be able to use this plugin.",
 								"ImportPlugin error", JOptionPane.ERROR_MESSAGE);
 						workspaceText = "Selected";
@@ -259,11 +259,12 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				break;
 			}
 
-		} catch (
-
-		ServiceError e) {
+		} catch (ServiceError e) {
 			if (uploadProgressTask != null) {
 				uploadProgressTask.setVisible(false);
+			}
+			if (e.toString().contains("token")) {
+				Utils.removeTercenSession();
 			}
 			e.printStackTrace();
 			setWorkspaceText(nodeList, e.toString());

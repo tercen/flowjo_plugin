@@ -17,6 +17,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -101,8 +102,7 @@ public class Utils {
 	}
 
 	protected static List<User> getTercenUser(TercenClient client, String user) throws ServiceError {
-		List<String> usernames = new ArrayList<String>();
-		usernames.add(user);
+		List<String> usernames = Arrays.asList(user);
 		return client.userService.findUserByEmail(usernames, false);
 	}
 
@@ -287,16 +287,29 @@ public class Utils {
 		Path folderPath = tokenPath.getParent();
 		Files.createDirectories(folderPath);
 		Files.setAttribute(folderPath, "dos:hidden", true);
-		new ObjectOutputStream(new FileOutputStream(tokenPath.toString())).writeObject(session.toJson());
+		ObjectOutputStream objStream = new ObjectOutputStream(new FileOutputStream(tokenPath.toString()));
+		objStream.writeObject(session.toJson());
+		objStream.close();
 	}
 
 	public static UserSession getTercenSession() throws IOException, ClassNotFoundException {
 		UserSession result = null;
-		Path tokenPath = Utils.getSessionFilePath();
-		if (new File(tokenPath.toString()).exists()) {
-			LinkedHashMap map = (LinkedHashMap) new ObjectInputStream(new FileInputStream(tokenPath.toString()))
-					.readObject();
+		Path sessionPath = Utils.getSessionFilePath();
+		if (new File(sessionPath.toString()).exists()) {
+			ObjectInputStream objStream = new ObjectInputStream(new FileInputStream(sessionPath.toString()));
+			LinkedHashMap map = (LinkedHashMap) objStream.readObject();
 			result = UserSession.createFromJson(map);
+			objStream.close();
+		}
+		return result;
+	}
+
+	public static boolean removeTercenSession() {
+		boolean result = false;
+		Path sessionPath = Utils.getSessionFilePath();
+		File session = new File(sessionPath.toString());
+		if (session.exists()) {
+			result = session.delete();
 		}
 		return result;
 	}

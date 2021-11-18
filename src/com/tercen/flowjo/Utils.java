@@ -14,6 +14,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ public class Utils {
 	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
+	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
 	public static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
 			ArrayList<String> channels, UploadProgressTask uploadProgressTask) throws ServiceError, IOException {
@@ -90,15 +93,19 @@ public class Utils {
 		return blockSize;
 	}
 
-	// get Tercen URL that creates a new workflow given the uploaded data
 	protected static String getTercenProjectURL(String hostName, String teamName, Schema schema)
 			throws UnsupportedEncodingException {
-		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tag=flowjo&schemaId=" + schema.id
+		return hostName + teamName + "/p/" + schema.projectId;
+	}
+
+	protected static String getTercenCreateWorkflowURL(String hostName, String teamName, Schema schema)
+			throws UnsupportedEncodingException {
+		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId=" + schema.id
 				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName();
 	}
 
 	private static String getWorkflowName() {
-		return "FlowJo-Tercen-Plug-in-workflow";
+		return "FlowJo-Tercen-Plug-in-workflow-Analysis";
 	}
 
 	protected static List<User> getTercenUser(TercenClient client, String user) throws ServiceError {
@@ -321,4 +328,15 @@ public class Utils {
 		}
 		return client.userService.connect2(Tercen.DOMAIN, userName, passWord);
 	}
+
+//	public static Token extendTercenSession(TercenClient client, UserSession session) throws ServiceError {
+//		String strToken = client.userService.createToken(session.user.id, (int) Duration.ofDays(15).getSeconds());
+//		DecodedJWT jwt = JWT.decode(strToken);
+//		Token token = new Token();
+//		token.expiry = new com.tercen.model.impl.Date();
+//		token.expiry.value = DATE_TIME_FORMAT.format(jwt.getExpiresAt());
+//		token.token = jwt.getToken();
+//		token.userId = session.user.id;
+//		return token;
+//	}
 }

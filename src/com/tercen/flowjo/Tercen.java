@@ -66,6 +66,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	private Icon tercenIcon = null;
 	protected ArrayList<String> channels = new ArrayList<String>();
 	private String csvFileName;
+	protected String projectURL;
 
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
@@ -97,6 +98,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		result.setString("channels", String.join(",", channels));
 		result.setString("pluginState", pluginState.toString());
 		result.setString(CSV_FILE_NAME, csvFileName);
+		result.setString("projectURL", projectURL);
 		if (!this.selectedSamplePops.isEmpty()) {
 			SElement pops = new SElement("SelectedPopulations");
 			for (String pop : this.selectedSamplePops) {
@@ -119,6 +121,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		}
 		this.pluginState = ImportPluginStateEnum.valueOf(element.getString("pluginState"));
 		this.csvFileName = element.getString(CSV_FILE_NAME);
+		this.projectURL = element.getString("projectURL");
 		SElement pops = element.getChild("SelectedPopulations");
 		if (pops != null) {
 			this.selectedSamplePops.clear();
@@ -225,10 +228,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 						// open browser
 						if (uploadResult != null) {
-							String url = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
+							String url = Utils.getTercenCreateWorkflowURL(hostName, session.user.id, uploadResult);
 							Desktop desktop = java.awt.Desktop.getDesktop();
 							URI uri = new URI(String.valueOf(url));
 							desktop.browse(uri);
+							projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
 							workspaceText = String.format("Uploaded to %s.", hostName);
 						} else {
 							JOptionPane.showMessageDialog(null,
@@ -263,22 +267,24 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			if (uploadProgressTask != null) {
 				uploadProgressTask.setVisible(false);
 			}
-			if (e.toString().contains("token")) {
+			String errorMsg = e.toString();
+			if (errorMsg.contains("user.token.bad") || errorMsg.contains("user.token.expired")
+					|| errorMsg.contains("token.not.valid")) {
 				Utils.removeTercenSession();
 			}
-			e.printStackTrace();
+			logger.error(errorMsg);
 			setWorkspaceText(nodeList, e.toString());
 			pluginState = ImportPluginStateEnum.error;
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			setWorkspaceText(nodeList, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
 		} catch (URISyntaxException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			setWorkspaceText(nodeList, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
 		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 			setWorkspaceText(nodeList, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
 		}

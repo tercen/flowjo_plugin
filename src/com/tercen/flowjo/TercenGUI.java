@@ -1,6 +1,7 @@
 package com.tercen.flowjo;
 
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.util.ArrayList;
@@ -11,11 +12,14 @@ import java.util.stream.IntStream;
 
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
+import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
@@ -35,9 +39,7 @@ public class TercenGUI {
 	private static final String SELECT_CHANNELS = "Select FCS channels";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
 
-	private static final String SAVE_UPLOAD_FIELDS_TEXT = "Save upload fields";
-	private static final String ENABLE_UPLOAD_FIELDS_TEXT = "Enable upload fields";
-	private static final String CREATE_USER_TEXT = "Create user";
+	private static final String CREATE_USER_TEXT = "Create Tercen User";
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -87,6 +89,29 @@ public class TercenGUI {
 			componentList.add(new JScrollPane(paramList));
 			componentList.add(new JSeparator());
 
+			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
+				JEditorPane pane = new JEditorPane();
+				pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
+				pane.setEditable(false);
+				pane.setText(String.format("<html><a href='%s'>Tercen Project</a></html>", this.plugin.projectURL));
+				pane.setToolTipText("Go to the Tercen Project");
+
+				pane.addHyperlinkListener(new HyperlinkListener() {
+					@Override
+					public void hyperlinkUpdate(HyperlinkEvent hle) {
+						if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
+							Desktop desktop = Desktop.getDesktop();
+							try {
+								desktop.browse(hle.getURL().toURI());
+							} catch (Exception ex) {
+								ex.printStackTrace();
+							}
+						}
+					}
+				});
+				componentList.add(pane);
+			}
+
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
 					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
 					JOptionPane.PLAIN_MESSAGE);
@@ -124,7 +149,7 @@ public class TercenGUI {
 
 		// show create user dialog
 		if (emailAddress != null) {
-			componentList.add(addHeaderString("Create Tercen User", FontUtil.dlogBold16));
+			componentList.add(addHeaderString(CREATE_USER_TEXT, FontUtil.dlogBold16));
 
 			String userName = emailAddress.substring(0, emailAddress.indexOf("@"));
 			Component[] userLabelField = createLabelTextFieldCombo("Username", userName, userName, true);

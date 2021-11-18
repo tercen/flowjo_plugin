@@ -18,8 +18,12 @@ import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
@@ -35,6 +39,7 @@ import com.treestar.lib.xml.SElement;
 
 public class TercenGUI {
 
+	private static final Logger logger = LogManager.getLogger(TercenGUI.class);
 	private static final String CHOOSE_DATA = "Choose Data";
 	private static final String SELECT_CHANNELS = "Select FCS channels";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
@@ -63,6 +68,30 @@ public class TercenGUI {
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 			componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 
+			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
+				JEditorPane pane = new JEditorPane();
+				pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
+				pane.setEditable(false);
+				pane.setText(String.format("<html><a href='%s'>Tercen Project</a></html>", this.plugin.projectURL));
+				pane.setToolTipText("Go to the Tercen Project");
+				pane.setBackground(UIManager.getColor("Panel.background"));
+				pane.addHyperlinkListener(new HyperlinkListener() {
+					@Override
+					public void hyperlinkUpdate(HyperlinkEvent hle) {
+						if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
+							Desktop desktop = Desktop.getDesktop();
+							try {
+								desktop.browse(hle.getURL().toURI());
+							} catch (Exception ex) {
+								logger.error(ex.getMessage());
+							}
+						}
+					}
+				});
+				componentList.add(pane);
+				componentList.add(new JSeparator());
+			}
+
 			FJList samplePopulationsList = null;
 			if (this.plugin.samplePops.size() > 0) {
 				FJLabel label = new FJLabel(CHOOSE_DATA);
@@ -88,29 +117,6 @@ public class TercenGUI {
 			FJList paramList = createParameterList(arg1, arg0, false);
 			componentList.add(new JScrollPane(paramList));
 			componentList.add(new JSeparator());
-
-			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
-				JEditorPane pane = new JEditorPane();
-				pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
-				pane.setEditable(false);
-				pane.setText(String.format("<html><a href='%s'>Tercen Project</a></html>", this.plugin.projectURL));
-				pane.setToolTipText("Go to the Tercen Project");
-
-				pane.addHyperlinkListener(new HyperlinkListener() {
-					@Override
-					public void hyperlinkUpdate(HyperlinkEvent hle) {
-						if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
-							Desktop desktop = Desktop.getDesktop();
-							try {
-								desktop.browse(hle.getURL().toURI());
-							} catch (Exception ex) {
-								ex.printStackTrace();
-							}
-						}
-					}
-				});
-				componentList.add(pane);
-			}
 
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
 					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,

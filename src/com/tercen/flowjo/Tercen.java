@@ -146,12 +146,14 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	}
 
 	public void setWorkspaceUploadText(List<AppNode> nodeList, String text) {
-		for (AppNode appNode : nodeList) {
-			if (appNode.isExternalPopNode()) {
-				// check if file has been selected for upload
-				String csvFileName = Utils.getCsvFileName(appNode);
-				if (this.selectedSamplePops.contains(csvFileName)) {
-					appNode.setAnnotation(text);
+		if (!text.equals("")) {
+			for (AppNode appNode : nodeList) {
+				if (appNode.isExternalPopNode()) {
+					// check if file has been selected for upload
+					String csvFileName = Utils.getCsvFileName(appNode);
+					if (this.selectedSamplePops.contains(csvFileName)) {
+						appNode.setAnnotation(text);
+					}
 				}
 			}
 		}

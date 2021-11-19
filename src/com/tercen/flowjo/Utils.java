@@ -321,12 +321,12 @@ public class Utils {
 		return result;
 	}
 
-	public static UserSession reconnect(TercenClient client, TercenGUI gui, String userName, String passWord)
+	public static UserSession reconnect(TercenClient client, TercenGUI gui, String userNameOrEmail, String passWord)
 			throws ServiceError {
 		if (passWord == null) {
-			passWord = gui.getTercenPassword();
+			passWord = gui.getTercenPassword(userNameOrEmail);
 		}
-		return client.userService.connect2(Tercen.DOMAIN, userName, passWord);
+		return client.userService.connect2(Tercen.DOMAIN, userNameOrEmail, passWord);
 	}
 
 //	public static Token extendTercenSession(TercenClient client, UserSession session) throws ServiceError {

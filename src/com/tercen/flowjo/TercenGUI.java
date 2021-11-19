@@ -186,13 +186,15 @@ public class TercenGUI {
 		return result;
 	}
 
-	public String getTercenPassword() {
+	public String getTercenPassword(String userNameOrEmail) {
 		String result = null;
 		List<Object> componentList = new ArrayList<>();
 
 		componentList.add(addHeaderString("Tercen Authentication", FontUtil.dlogBold16));
 
+		Component[] emailLabelField = createLabelTextFieldCombo("Email", userNameOrEmail, userNameOrEmail, false);
 		Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true);
+		componentList.add(new HBox(emailLabelField));
 		componentList.add(new HBox(passwordLabelField));
 
 		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),

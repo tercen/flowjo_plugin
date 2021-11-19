@@ -190,7 +190,7 @@ public class TercenGUI {
 		String result = null;
 		List<Object> componentList = new ArrayList<>();
 
-		componentList.add(addHeaderString("Password Prompt", FontUtil.dlogBold16));
+		componentList.add(addHeaderString("Tercen Authentication", FontUtil.dlogBold16));
 
 		Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true);
 		componentList.add(new HBox(passwordLabelField));

@@ -235,6 +235,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 							URI uri = new URI(String.valueOf(url));
 							desktop.browse(uri);
 							projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
+							// add subnode
+							addGatingML(result);
 							workspaceText = String.format("Uploaded to %s.", hostName);
 						} else {
 							JOptionPane.showMessageDialog(null,
@@ -291,6 +293,26 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			pluginState = ImportPluginStateEnum.error;
 		}
 		return result;
+	}
+
+	private void addGatingML(ExternalAlgorithmResults result) {
+		System.out.println("Adding gates to " + pluginName);
+		SElement gate = new SElement("gating:Gating-ML");
+		int curPop = 0;
+
+		SElement rectGateElem = new SElement("gating:RectangleGate");
+		rectGateElem.setString("gating:id", pluginName + "_" + curPop);
+		gate.addContent(rectGateElem);
+
+		// SElement dimElem = new SElement("gating:dimension");
+		// dimElem.setDouble("gating:min", x - epsilon / 2);
+		// dimElem.setDouble("gating:max", x + epsilon / 2);
+		// rectGateElem.addContent(dimElem);
+
+		// SElement fcsDimElem = new SElement("data-type:fcs-dimension");
+		// fcsDimElem.setString("data-type:name", pluginName);
+		// dimElem.addContent(fcsDimElem);
+		result.setGatingML(gate.toString());
 	}
 
 	private void readPropertiesFile() {

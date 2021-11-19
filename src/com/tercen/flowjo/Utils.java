@@ -98,14 +98,14 @@ public class Utils {
 		return hostName + teamName + "/p/" + schema.projectId;
 	}
 
-	protected static String getTercenCreateWorkflowURL(String hostName, String teamName, Schema schema)
+	protected static String getTercenCreateWorkflowURL(String hostName, String teamName, Schema schema, Workspace wsp)
 			throws UnsupportedEncodingException {
 		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId=" + schema.id
-				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName();
+				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName(wsp);
 	}
 
-	private static String getWorkflowName() {
-		return "FlowJo-Tercen-Plug-in-workflow-Analysis";
+	private static String getWorkflowName(Workspace wsp) {
+		return getWorkspaceName(wsp) + "_" + Utils.getCurrentLocalDateTimeStampShort();
 	}
 
 	protected static List<User> getTercenUser(TercenClient client, String user) throws ServiceError {
@@ -225,6 +225,10 @@ public class Utils {
 
 	public static String getCurrentLocalDateTimeStamp() {
 		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss"));
+	}
+
+	public static String getCurrentLocalDateTimeStampShort() {
+		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss"));
 	}
 
 	public static String toJson(Map map) throws JsonProcessingException {

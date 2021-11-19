@@ -72,7 +72,8 @@ public class TercenGUI {
 				JEditorPane pane = new JEditorPane();
 				pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
 				pane.setEditable(false);
-				pane.setText(String.format("<html><a href='%s'>Tercen Project</a></html>", this.plugin.projectURL));
+				pane.setText(
+						String.format("<html><a href='%s'>Go to Tercen Project</a></html>", this.plugin.projectURL));
 				pane.setToolTipText("Go to the Tercen Project");
 				pane.setBackground(UIManager.getColor("Panel.background"));
 				pane.addHyperlinkListener(new HyperlinkListener() {

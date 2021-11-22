@@ -93,15 +93,14 @@ public class Utils {
 		return blockSize;
 	}
 
-	protected static String getTercenProjectURL(String hostName, String teamName, Schema schema)
-			throws UnsupportedEncodingException {
+	protected static String getTercenProjectURL(String hostName, String teamName, Schema schema) {
 		return hostName + teamName + "/p/" + schema.projectId;
 	}
 
 	protected static String getTercenCreateWorkflowURL(String hostName, String teamName, Schema schema, Workspace wsp)
 			throws UnsupportedEncodingException {
 		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId=" + schema.id
-				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName(wsp);
+				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName(wsp).replace(" ", "_");
 	}
 
 	private static String getWorkflowName(Workspace wsp) {

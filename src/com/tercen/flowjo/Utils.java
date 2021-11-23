@@ -246,9 +246,9 @@ public class Utils {
 				q.remove();
 				if (!appNode.isSampleNode() && appNode.getParent() != null) {
 					if (appNode instanceof ExternalPopNode && appNode.getName().contains(Tercen.pluginName)) {
-						if (!selectedOrUploaded
-								|| (selectedOrUploaded && (appNode.getAnnotation().equalsIgnoreCase("Selected")
-										|| appNode.getAnnotation().startsWith("Uploaded")))) {
+						String annotation = appNode.getAnnotation();
+						if (!selectedOrUploaded || (selectedOrUploaded && annotation.equalsIgnoreCase("Selected")
+								|| annotation.startsWith("Uploaded") || annotation.contains("ServiceError"))) {
 							popList.add(appNode);
 						}
 					}

@@ -66,15 +66,15 @@ public class TercenGUI {
 		if (this.plugin.pluginState == ImportPluginStateEnum.collectingSamples
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
-			componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
+				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
 				JEditorPane pane = new JEditorPane();
 				pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
 				pane.setEditable(false);
 				pane.setText(
 						String.format("<html><a href='%s'>Go to Tercen Project</a></html>", this.plugin.projectURL));
-				pane.setToolTipText("Go to the Tercen Project");
+				pane.setToolTipText("Go to existing project");
 				pane.setBackground(UIManager.getColor("Panel.background"));
 				pane.addHyperlinkListener(new HyperlinkListener() {
 					@Override
@@ -90,6 +90,10 @@ public class TercenGUI {
 					}
 				});
 				componentList.add(pane);
+				componentList.add(new JSeparator());
+				componentList.add(addHeaderString("Re-Upload Data", FontUtil.dlogBold16));
+			} else {
+				componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 				componentList.add(new JSeparator());
 			}
 
@@ -119,9 +123,8 @@ public class TercenGUI {
 			componentList.add(new JScrollPane(paramList));
 			componentList.add(new JSeparator());
 
-			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
-					JOptionPane.PLAIN_MESSAGE);
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			if (option == JOptionPane.OK_OPTION) {
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 				// set selected sample files
@@ -138,9 +141,8 @@ public class TercenGUI {
 			componentList.add(addHeaderString("Tercen Plugin Instructions", FontUtil.dlogBold16));
 			componentList.addAll(addHeaderComponents());
 
-			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
-					JOptionPane.PLAIN_MESSAGE);
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			if (option == JOptionPane.OK_OPTION) {
 				result = true;
 			} else {
@@ -148,6 +150,10 @@ public class TercenGUI {
 			}
 		}
 		return result;
+	}
+
+	private String getDialogTitle() {
+		return "Tercen " + plugin.getName() + " V" + plugin.getVersion();
 	}
 
 	public Map<String, Object> createUser(TercenClient client, String emailAddress) {
@@ -167,9 +173,8 @@ public class TercenGUI {
 			componentList.add(new HBox(emailLabelField));
 			componentList.add(new HBox(passwordLabelField));
 
-			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
-					JOptionPane.PLAIN_MESSAGE);
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			if (option == JOptionPane.OK_OPTION) {
 				userName = ((FJTextField) userLabelField[1]).getText();
 				emailAddress = ((FJTextField) emailLabelField[1]).getText();
@@ -198,8 +203,8 @@ public class TercenGUI {
 		componentList.add(new HBox(emailLabelField));
 		componentList.add(new HBox(passwordLabelField));
 
-		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-				plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 		if (option == JOptionPane.OK_OPTION) {
 			result = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 		}

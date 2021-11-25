@@ -51,7 +51,8 @@ public class UploadFile {
 			filenames.add(FILE);
 			ArrayList<String> channels = new ArrayList<String>();
 			logger.debug("Uploading file: " + FILE);
-			Utils.uploadCsvFile(client, project, filenames, channels, new UploadProgressTask(plugin));
+			Utils.uploadCsvFile(plugin, client, project, filenames, channels, new UploadProgressTask(plugin));
+			logger.debug(String.format("Create upload file from %d sample files", 3));
 
 			// get task, schema..
 

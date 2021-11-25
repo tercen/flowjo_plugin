@@ -27,7 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Random;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,13 +56,14 @@ import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
 
+	private static final Logger logger = LogManager.getLogger(Utils.class);
 	private static final String SESSION_FILE_NAME = "session.ser";
 	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
-	public static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
+	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project, HashSet<String> fileNames,
 			ArrayList<String> channels, UploadProgressTask uploadProgressTask) throws ServiceError, IOException {
 
 		FileDocument fileDoc = new FileDocument();
@@ -72,7 +78,7 @@ public class Utils {
 		metadata.contentEncoding = "iso-8859-1";
 		fileDoc.metadata = metadata;
 
-		File mergedFile = getMergedFile(fileNames);
+		File mergedFile = getMergedAndDownSampledFile(fileNames, plugin.maxDataPoints, plugin.seed);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -130,8 +136,9 @@ public class Utils {
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
-	private static File getMergedFile(HashSet<String> paths) throws IOException {
+	private static File getMergedAndDownSampledFile(HashSet<String> paths, long maxRows, long seed) throws IOException {
 		List<String> mergedLines = new ArrayList<>();
+		logger.debug(String.format("Create upload file from %d sample files", paths.size()));
 		for (String p : paths) {
 			List<String> lines = Files.readAllLines(Paths.get(p), Charset.forName("UTF-8"));
 			if (!lines.isEmpty()) {
@@ -143,9 +150,12 @@ public class Utils {
 				mergedLines.addAll(content);
 			}
 		}
+		mergedLines = Utils.downsample(mergedLines, maxRows, seed);
+
 		// add column filename
 		File mergedFile = File.createTempFile("merged-", ".csv");
 		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
+		logger.debug(String.format("Upload file has %d rows", mergedLines.size()));
 		return mergedFile;
 	}
 
@@ -330,6 +340,34 @@ public class Utils {
 			passWord = gui.getTercenPassword(userNameOrEmail);
 		}
 		return client.userService.connect2(Tercen.DOMAIN, userNameOrEmail, passWord);
+	}
+
+	private static List<String> downsample(List<String> lines, long max, long seed) {
+		List<String> result = new ArrayList<>();
+		if (lines != null && lines.size() >= 1) {
+			result.add(lines.get(0).concat(", sample")); // header
+
+			List<String> content = lines.subList(1, lines.size());
+			double nrows = content.size();
+			List<String> contentResult = content;
+			Random random = new Random(seed);
+			if (nrows > max) {
+				logger.debug(String.format("Add sample column and downsample data to max %d rows", max));
+				double fraction = (double) 100 * max / (double) nrows;
+				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
+				contentResult = contentResult.stream().filter(s -> {
+					int i = s.lastIndexOf(",");
+					double d = Double.valueOf(s.substring(i + 1));
+					boolean value = (d < fraction) ? true : false;
+					return value;
+				}).collect(Collectors.toList());
+			} else {
+				logger.debug("Add sample column");
+				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
+			}
+			result.addAll(contentResult);
+		}
+		return result;
 	}
 
 //	public static Token extendTercenSession(TercenClient client, UserSession session) throws ServiceError {

@@ -67,6 +67,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected ArrayList<String> channels = new ArrayList<String>();
 	private String csvFileName;
 	protected String projectURL;
+	protected long seed = 42;
+	protected long maxDataPoints = 10000000;
 
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
@@ -224,7 +226,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						// upload csv file
 						if (selectedSamplePops.size() > 0) {
 							uploadProgressTask = new UploadProgressTask(this);
-							uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels,
+							uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
 									uploadProgressTask);
 						}
 
@@ -301,6 +303,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		try {
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
 			hostName = prop.getProperty("host");
+			maxDataPoints = Long.valueOf(prop.getProperty("max.upload.rows"));
+			seed = Long.valueOf(prop.getProperty("seed"));
 		} catch (IOException e) {
 			e.printStackTrace();
 			// some error reading properties file, use default settings

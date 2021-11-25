@@ -1,4 +1,16 @@
-General notes 
+### FlowJo Tercen Plugin 
+
+#### Run Plugin by using a released version
+
+- Download the latest release from [github](https://github.com/tercen/flowjo_plugin/actions). Click on the latest success workflow (colored green). Then click on "tercen_flowjo_plugin" below Artifacts at the bottom. The downloaded file is a zip file that contains the JAR file.
+* Put the JAR file in the FlowJo plugin directory
+* Put the tercen.properties file in the same directory and adjust properties if needed
+* Restart FlowJo
+* Plugin should be available under 'Workspace' -> 'Plugins'
+
+#### Run/ Debug plugin (Developer)
+
+General note:
 
 - Use JDK9 for developing plugins and debugging.
 
@@ -7,6 +19,7 @@ Run plugin:
 * Install FlowJo plugin files. See below, check the path of your FlowJo installation
 * Create JAR file with dependencies: mvn clean compile assembly:single
 * Put the JAR file in the FlowJo plugin directory
+* Put the tercen.properties file in the same directory and adjust properties if needed
 * Restart FlowJo
 * Plugin should be available under 'Workspace' -> 'Plugins'
 

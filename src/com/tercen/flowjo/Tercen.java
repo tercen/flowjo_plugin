@@ -142,23 +142,29 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		for (AppNode appNode : nodeList) {
 			if (appNode.isExternalPopNode()) {
 				appNode.setAnnotation(text);
-				System.out.println(appNode.getAnnotation());
 			}
 		}
 	}
 
-	public void setWorkspaceUploadText(List<AppNode> nodeList, String text) {
+	public ExternalAlgorithmResults setWorkspaceUploadText(ExternalAlgorithmResults result, List<AppNode> nodeList,
+			String text) {
 		if (!text.equals("")) {
+			boolean anyAppNodeTextSet = false;
 			for (AppNode appNode : nodeList) {
 				if (appNode.isExternalPopNode()) {
 					// check if file has been selected for upload
 					String csvFileName = Utils.getCsvFileName(appNode);
 					if (this.selectedSamplePops.contains(csvFileName)) {
 						appNode.setAnnotation(text);
+						anyAppNodeTextSet = true;
 					}
 				}
 			}
+			if (anyAppNodeTextSet) {
+				result.setWorkspaceString("Double click the Connector to Re-Upload or link to Tercen");
+			}
 		}
+		return result;
 	}
 
 	@Override
@@ -262,7 +268,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				break;
 			case uploaded:
 				nodeList = Utils.getAllSelectedTercenNodes(wsp);
-				setWorkspaceUploadText(nodeList, workspaceText);
+				result = setWorkspaceUploadText(result, nodeList, workspaceText);
 				break;
 			default:
 				break;

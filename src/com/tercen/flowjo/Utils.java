@@ -78,7 +78,7 @@ public class Utils {
 		metadata.contentEncoding = "iso-8859-1";
 		fileDoc.metadata = metadata;
 
-		File mergedFile = getMergedAndDownSampledFile(fileNames, plugin.maxDataPoints, plugin.seed);
+		File mergedFile = getMergedAndDownSampledFile(fileNames, channels, plugin.maxDataPoints, plugin.seed);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -136,14 +136,19 @@ public class Utils {
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
-	private static File getMergedAndDownSampledFile(HashSet<String> paths, long maxRows, long seed) throws IOException {
+	private static File getMergedAndDownSampledFile(HashSet<String> paths, ArrayList<String> channels, long maxRows,
+			long seed) throws IOException {
 		List<String> mergedLines = new ArrayList<>();
 		logger.debug(String.format("Create upload file from %d sample files", paths.size()));
 		for (String p : paths) {
 			List<String> lines = Files.readAllLines(Paths.get(p), Charset.forName("UTF-8"));
 			if (!lines.isEmpty()) {
+				// add header only once
 				if (mergedLines.isEmpty()) {
-					mergedLines.add(lines.get(0).concat(", filename")); // add header only once
+					List<String> headerList = Arrays.asList(lines.get(0).split(","));
+					String header = headerList.stream().map(s -> s.replace("\"", ""))
+							.map(s -> setColumnValue(channels, s)).collect(Collectors.joining(","));
+					mergedLines.add(header.concat(", filename"));
 				}
 				List<String> content = lines.subList(1, lines.size());
 				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
@@ -157,6 +162,17 @@ public class Utils {
 		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
 		logger.debug(String.format("Upload file has %d rows", mergedLines.size()));
 		return mergedFile;
+	}
+
+	// In some cases FlowJo is generated a csv file with shortened column names.
+	// This methods sets the full column name, needed by Tercen.
+	private static String setColumnValue(List<String> channels, String input) {
+		String result = input;
+		List<String> filteredChannels = channels.stream().filter(c -> c.startsWith(input)).collect(Collectors.toList());
+		if (filteredChannels.size() == 1) {
+			result = filteredChannels.get(0);
+		}
+		return result;
 	}
 
 	private static String getFilename(String fullFileName) {

@@ -8,11 +8,8 @@ import org.apache.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen;
-import com.tercen.flowjo.TercenGUI;
 import com.tercen.flowjo.UploadProgressTask;
 import com.tercen.flowjo.Utils;
-import com.tercen.model.impl.CSVFileMetadata;
-import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
@@ -30,29 +27,17 @@ public class UploadFile {
 
 		Tercen plugin = new Tercen();
 		TercenClient client = new TercenClient(plugin.getHostName());
-		TercenGUI gui = new TercenGUI(plugin);
-		FileDocument fileDoc = new FileDocument();
 		try {
 			UserSession session = client.userService.connect2("tercen", USER_NAME, PASSWORD);
 			Project project = Utils.getProject(client, session.user.id, PROJECT);
-
-			String name = FILE.substring(FILE.lastIndexOf("\\") + 1);
-			fileDoc.name = name;
-			fileDoc.projectId = project.id;
-			fileDoc.acl.owner = project.acl.owner;
-			CSVFileMetadata metadata = new CSVFileMetadata();
-			metadata.contentType = "text/csv";
-			metadata.separator = ",";
-			metadata.quote = "\"";
-			metadata.contentEncoding = "iso-8859-1";
-			fileDoc.metadata = metadata;
+			String dataTableName = FILE.substring(FILE.lastIndexOf("\\") + 1);
 
 			HashSet<String> filenames = new HashSet<String>();
 			filenames.add(FILE);
 			ArrayList<String> channels = new ArrayList<String>();
 			logger.debug("Uploading file: " + FILE);
-			Utils.uploadCsvFile(plugin, client, project, filenames, channels, new UploadProgressTask(plugin));
-			logger.debug(String.format("Create upload file from %d sample files", 3));
+			Utils.uploadCsvFile(plugin, client, project, filenames, channels, new UploadProgressTask(plugin),
+					dataTableName);
 
 			// get task, schema..
 

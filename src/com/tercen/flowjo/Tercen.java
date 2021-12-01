@@ -233,7 +233,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						if (selectedSamplePops.size() > 0) {
 							uploadProgressTask = new UploadProgressTask(this);
 							uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
-									uploadProgressTask);
+									uploadProgressTask, Utils.getTercenDataTableName(wsp));
 						}
 
 						// open browser
@@ -309,8 +309,14 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		try {
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
 			hostName = prop.getProperty("host");
-			maxDataPoints = Long.valueOf(prop.getProperty("max.upload.rows"));
-			seed = Long.valueOf(prop.getProperty("seed"));
+			String maxDataPointsStr = prop.getProperty("max.upload.rows");
+			if (Utils.isNumeric(maxDataPointsStr)) {
+				maxDataPoints = Long.valueOf(maxDataPointsStr);
+			}
+			String seedStr = prop.getProperty("seed");
+			if (Utils.isNumeric(maxDataPointsStr)) {
+				seed = Long.valueOf(seedStr);
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			// some error reading properties file, use default settings

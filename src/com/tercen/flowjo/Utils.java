@@ -64,10 +64,11 @@ public class Utils {
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
 	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project, HashSet<String> fileNames,
-			ArrayList<String> channels, UploadProgressTask uploadProgressTask) throws ServiceError, IOException {
+			ArrayList<String> channels, UploadProgressTask uploadProgressTask, String dataTableName)
+			throws ServiceError, IOException {
 
 		FileDocument fileDoc = new FileDocument();
-		String name = getFilename((String) fileNames.toArray()[0]);
+		String name = dataTableName;
 		fileDoc.name = name;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
@@ -256,6 +257,10 @@ public class Utils {
 		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss"));
 	}
 
+	public static String getTercenDataTableName(Workspace wsp) {
+		return "Data_" + getWorkspaceName(wsp) + "_" + Utils.getCurrentLocalDateTimeStampShort();
+	}
+
 	public static String toJson(Map map) throws JsonProcessingException {
 		return new ObjectMapper().writeValueAsString(map);
 	}
@@ -384,6 +389,18 @@ public class Utils {
 			result.addAll(contentResult);
 		}
 		return result;
+	}
+
+	public static boolean isNumeric(String strNum) {
+		if (strNum == null) {
+			return false;
+		}
+		try {
+			long l = Long.valueOf(strNum);
+		} catch (NumberFormatException nfe) {
+			return false;
+		}
+		return true;
 	}
 
 //	public static Token extendTercenSession(TercenClient client, UserSession session) throws ServiceError {

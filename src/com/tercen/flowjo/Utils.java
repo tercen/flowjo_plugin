@@ -79,7 +79,7 @@ public class Utils {
 		metadata.contentEncoding = "iso-8859-1";
 		fileDoc.metadata = metadata;
 
-		File mergedFile = getMergedAndDownSampledFile(fileNames, channels, plugin.maxDataPoints, plugin.seed);
+		File mergedFile = getMergedAndDownSampledFile(fileNames, channels, plugin);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -137,8 +137,8 @@ public class Utils {
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
-	private static File getMergedAndDownSampledFile(HashSet<String> paths, ArrayList<String> channels, long maxRows,
-			long seed) throws IOException {
+	private static File getMergedAndDownSampledFile(HashSet<String> paths, ArrayList<String> channels, Tercen plugin)
+			throws IOException {
 		List<String> mergedLines = new ArrayList<>();
 		logger.debug(String.format("Create upload file from %d sample files", paths.size()));
 		for (String p : paths) {
@@ -156,7 +156,7 @@ public class Utils {
 				mergedLines.addAll(content);
 			}
 		}
-		mergedLines = Utils.downsample(mergedLines, maxRows, seed);
+		mergedLines = Utils.downsample(mergedLines, plugin.maxDataPoints, plugin.seed, plugin.gui);
 
 		// add column filename
 		File mergedFile = File.createTempFile("merged-", ".csv");
@@ -363,30 +363,38 @@ public class Utils {
 		return client.userService.connect2(Tercen.DOMAIN, userNameOrEmail, passWord);
 	}
 
-	private static List<String> downsample(List<String> lines, long max, long seed) {
-		List<String> result = new ArrayList<>();
-		if (lines != null && lines.size() >= 1) {
-			result.add(lines.get(0).concat(", sample")); // header
+	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui) {
+		List<String> result;
+		if (maxDataPoints == -1) {
+			result = lines;
+		} else {
+			result = new ArrayList<>();
+			if (lines != null && lines.size() >= 1) {
+				result.add(lines.get(0).concat(", sample")); // header
+				int ncols = result.get(0).split(",").length;
 
-			List<String> content = lines.subList(1, lines.size());
-			double nrows = content.size();
-			List<String> contentResult = content;
-			Random random = new Random(seed);
-			if (nrows > max) {
-				logger.debug(String.format("Add sample column and downsample data to max %d rows", max));
-				double fraction = (double) 100 * max / (double) nrows;
-				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
-				contentResult = contentResult.stream().filter(s -> {
-					int i = s.lastIndexOf(",");
-					double d = Double.valueOf(s.substring(i + 1));
-					boolean value = (d < fraction) ? true : false;
-					return value;
-				}).collect(Collectors.toList());
-			} else {
-				logger.debug("Add sample column");
-				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
+				List<String> content = lines.subList(1, lines.size());
+				int nrows = content.size();
+				List<String> contentResult = content;
+				Random random = seed == -1 ? new Random() : new Random(seed);
+				if ((nrows * ncols) > maxDataPoints) {
+					int maxRows = Math.round(maxDataPoints / ncols);
+					logger.debug(String.format("Downsample data from %d to %d rows", nrows, maxRows));
+					gui.showDownSampleMessage(nrows, maxRows);
+					double fraction = (double) 100 * maxRows / (double) nrows;
+					contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
+					contentResult = contentResult.stream().filter(s -> {
+						int i = s.lastIndexOf(",");
+						double d = Double.valueOf(s.substring(i + 1));
+						boolean value = (d < fraction) ? true : false;
+						return value;
+					}).collect(Collectors.toList());
+				} else {
+					logger.debug("Add sample column");
+					contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
+				}
+				result.addAll(contentResult);
 			}
-			result.addAll(contentResult);
 		}
 		return result;
 	}

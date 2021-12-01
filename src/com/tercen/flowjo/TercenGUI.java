@@ -211,6 +211,11 @@ public class TercenGUI {
 		return result;
 	}
 
+	public void showDownSampleMessage(int nrows, int maxRows) {
+		JOptionPane.showMessageDialog((Component) null, String.format(
+				"Your data has exceeded the Tercen limit. It will be downsampled from %d to %d rows", nrows, maxRows));
+	}
+
 	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
 			boolean editable) {
 		FJLabel label = new FJLabel(labelText);

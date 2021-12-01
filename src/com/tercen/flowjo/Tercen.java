@@ -68,13 +68,13 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	private String csvFileName;
 	protected String projectURL;
 	protected long seed = 42;
-	protected long maxDataPoints = 10000000;
+	protected long maxDataPoints = 30000000;
 
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
 	protected HashSet<String> samplePops = new HashSet<String>();
 	protected HashSet<String> selectedSamplePops = new HashSet<String>();
-	private TercenGUI gui = new TercenGUI(this);
+	protected TercenGUI gui = new TercenGUI(this);
 
 	public Tercen() {
 		super(pluginName);
@@ -309,7 +309,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		try {
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
 			hostName = prop.getProperty("host");
-			String maxDataPointsStr = prop.getProperty("max.upload.rows");
+			String maxDataPointsStr = prop.getProperty("max.upload.datapoints");
 			if (Utils.isNumeric(maxDataPointsStr)) {
 				maxDataPoints = Long.valueOf(maxDataPointsStr);
 			}

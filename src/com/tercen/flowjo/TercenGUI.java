@@ -83,6 +83,7 @@ public class TercenGUI {
 							Desktop desktop = Desktop.getDesktop();
 							try {
 								desktop.browse(hle.getURL().toURI());
+								JOptionPane.getRootFrame().dispose();
 							} catch (Exception ex) {
 								logger.error(ex.getMessage());
 							}

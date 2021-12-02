@@ -364,37 +364,32 @@ public class Utils {
 	}
 
 	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui) {
-		List<String> result;
-		if (maxDataPoints == -1) {
-			result = lines;
-		} else {
-			result = new ArrayList<>();
-			if (lines != null && lines.size() >= 1) {
-				result.add(lines.get(0).concat(", sample")); // header
-				int ncols = result.get(0).split(",").length;
+		List<String> result = new ArrayList<>();
+		if (lines != null && lines.size() >= 1) {
+			result.add(lines.get(0).concat(", sample")); // header
+			int ncols = result.get(0).split(",").length;
 
-				List<String> content = lines.subList(1, lines.size());
-				int nrows = content.size();
-				List<String> contentResult = content;
-				Random random = seed == -1 ? new Random() : new Random(seed);
-				if ((nrows * ncols) > maxDataPoints) {
-					int maxRows = Math.round(maxDataPoints / ncols);
-					logger.debug(String.format("Downsample data from %d to %d rows", nrows, maxRows));
-					gui.showDownSampleMessage(nrows, maxRows);
-					double fraction = (double) 100 * maxRows / (double) nrows;
-					contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
-					contentResult = contentResult.stream().filter(s -> {
-						int i = s.lastIndexOf(",");
-						double d = Double.valueOf(s.substring(i + 1));
-						boolean value = (d < fraction) ? true : false;
-						return value;
-					}).collect(Collectors.toList());
-				} else {
-					logger.debug("Add sample column");
-					contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
-				}
-				result.addAll(contentResult);
+			List<String> content = lines.subList(1, lines.size());
+			int nrows = content.size();
+			List<String> contentResult = content;
+			Random random = seed == -1 ? new Random() : new Random(seed);
+			if (maxDataPoints != -1 && (nrows * ncols) > maxDataPoints) {
+				int maxRows = Math.round(maxDataPoints / ncols);
+				logger.debug(String.format("Downsample data from %d to %d rows", nrows, maxRows));
+				gui.showDownSampleMessage(nrows, maxRows);
+				double fraction = (double) 100 * maxRows / (double) nrows;
+				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
+				contentResult = contentResult.stream().filter(s -> {
+					int i = s.lastIndexOf(",");
+					double d = Double.valueOf(s.substring(i + 1));
+					boolean value = (d < fraction) ? true : false;
+					return value;
+				}).collect(Collectors.toList());
+			} else {
+				logger.debug("Add sample column");
+				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
 			}
+			result.addAll(contentResult);
 		}
 		return result;
 	}

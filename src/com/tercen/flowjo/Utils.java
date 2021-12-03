@@ -79,7 +79,7 @@ public class Utils {
 		metadata.contentEncoding = "iso-8859-1";
 		fileDoc.metadata = metadata;
 
-		File mergedFile = getMergedAndDownSampledFile(fileNames, channels, plugin);
+		File mergedFile = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -87,7 +87,7 @@ public class Utils {
 		int blockSize = getBlockSize(mergedFile);
 		int iterations = (int) (mergedFile.length() / blockSize);
 		uploadProgressTask.setIterations(iterations);
-		uploadProgressTask.setVisible(true);
+		uploadProgressTask.showDialog();
 		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, blockSize);
 	}
 
@@ -137,8 +137,8 @@ public class Utils {
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
-	private static File getMergedAndDownSampledFile(HashSet<String> paths, ArrayList<String> channels, Tercen plugin)
-			throws IOException {
+	private static File getMergedAndDownSampledFile(HashSet<String> paths, ArrayList<String> channels, Tercen plugin,
+			UploadProgressTask uploadProgressTask) throws IOException {
 		List<String> mergedLines = new ArrayList<>();
 		logger.debug(String.format("Create upload file from %d sample files", paths.size()));
 		for (String p : paths) {
@@ -156,7 +156,8 @@ public class Utils {
 				mergedLines.addAll(content);
 			}
 		}
-		mergedLines = Utils.downsample(mergedLines, plugin.maxDataPoints, plugin.seed, plugin.gui);
+		mergedLines = Utils.downsample(mergedLines, plugin.maxDataPoints, plugin.seed, plugin.gui, uploadProgressTask,
+				channels.size());
 
 		// add column filename
 		File mergedFile = File.createTempFile("merged-", ".csv");
@@ -363,7 +364,8 @@ public class Utils {
 		return client.userService.connect2(Tercen.DOMAIN, userNameOrEmail, passWord);
 	}
 
-	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui) {
+	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui,
+			UploadProgressTask uploadProgressTask, int channelSize) {
 		List<String> result = new ArrayList<>();
 		if (lines != null && lines.size() >= 1) {
 			result.add(lines.get(0).concat(", sample")); // header
@@ -376,7 +378,9 @@ public class Utils {
 			if (maxDataPoints != -1 && (nrows * ncols) > maxDataPoints) {
 				int maxRows = Math.round(maxDataPoints / ncols);
 				logger.debug(String.format("Downsample data from %d to %d rows", nrows, maxRows));
-				gui.showDownSampleMessage(nrows, maxRows);
+				uploadProgressTask.setMessage(String.format(
+						"Downsampling from %d to %d events across all files with %d channels, %d datapoints.", nrows,
+						maxRows, channelSize, maxDataPoints));
 				double fraction = (double) 100 * maxRows / (double) nrows;
 				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
 				contentResult = contentResult.stream().filter(s -> {

@@ -17,6 +17,7 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.border.EmptyBorder;
@@ -41,10 +42,13 @@ public class UploadProgressTask extends JFrame {
 	private static final Logger logger = LogManager.getLogger(UploadProgressTask.class);
 	private static final int CSV_TASK_COUNT = 3;
 	private JProgressBar progressBar;
+	private String downSampleMessage;
+	private Tercen plugin;
 
-	public UploadProgressTask(Tercen tercen) {
+	public UploadProgressTask(Tercen plugin) {
+		this.plugin = plugin;
 		progressBar = new JProgressBar();
-		progressBar.setSize(new Dimension(200, 80));
+		progressBar.setSize(new Dimension(600, 80));
 		progressBar.setValue(0);
 		progressBar.setStringPainted(true);
 		progressBar.addChangeListener(new ChangeListener() {
@@ -57,6 +61,9 @@ public class UploadProgressTask extends JFrame {
 				}
 			}
 		});
+	}
+
+	public void showDialog() {
 		setTitle("Upload Progress");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setLayout(new BorderLayout());
@@ -64,13 +71,21 @@ public class UploadProgressTask extends JFrame {
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
-		setSize(new Dimension(300, 100));
-		setIconImage(((ImageIcon) tercen.getIcon()).getImage());
+		if (downSampleMessage != null && !downSampleMessage.equals("")) {
+			setSize(new Dimension(700, 150));
+		} else {
+			setSize(new Dimension(300, 100));
+		}
+		setIconImage(((ImageIcon) this.plugin.getIcon()).getImage());
 	}
 
 	public void setIterations(int maxItems) {
 		// add to maxItems for the 2nd phase: CSVTask
 		progressBar.setMaximum(maxItems + CSV_TASK_COUNT);
+	}
+
+	public void setMessage(String message) {
+		downSampleMessage = message;
 	}
 
 	public class TestPane extends JPanel {
@@ -79,10 +94,17 @@ public class UploadProgressTask extends JFrame {
 			setBorder(new EmptyBorder(10, 10, 10, 10));
 			setLayout(new GridBagLayout());
 			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.weightx = 0.5;
 			gbc.insets = new Insets(4, 4, 4, 4);
 			gbc.gridx = 0;
 			gbc.gridy = 0;
 			add(progressBar, gbc);
+			gbc.gridy = 1;
+			gbc.insets = new Insets(14, 4, 4, 4);
+			if (downSampleMessage != null && !downSampleMessage.equals("")) {
+				add(new JLabel("<html><i>" + downSampleMessage + "</i></html>"), gbc);
+			}
 		}
 	}
 

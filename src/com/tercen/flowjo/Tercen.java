@@ -44,7 +44,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	private static final Logger logger = LogManager.getLogger(Tercen.class);
 	protected static final String pluginName = "Connector";
-	protected static final String version = "0.0.14";
+	protected static final String version = "0.0.15";
 	protected static final String CSV_FILE_NAME = "csvFileName";
 
 	protected enum ImportPluginStateEnum {
@@ -67,8 +67,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected ArrayList<String> channels = new ArrayList<String>();
 	private String csvFileName;
 	protected String projectURL;
-	protected long seed = 42;
-	protected long maxDataPoints = 30000000;
+	protected long seed = -1;
+	protected long maxDataPoints = -1;
 
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;

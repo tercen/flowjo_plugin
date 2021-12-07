@@ -44,7 +44,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	private static final Logger logger = LogManager.getLogger(Tercen.class);
 	protected static final String pluginName = "Connector";
-	protected static final String version = "0.0.15";
+	protected static final String version = "0.0.16";
 	protected static final String CSV_FILE_NAME = "csvFileName";
 
 	protected enum ImportPluginStateEnum {
@@ -200,10 +200,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					TercenClient client = new TercenClient(hostName);
 					userName = Utils.getCurrentPortalUser();
 					if (userName == null || userName.equals("")) {
-						JOptionPane.showMessageDialog(null, "You need to be logged in, to be able to use this plugin.",
-								"ImportPlugin error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, "FlowJo username needs to be set.", "ImportPlugin error",
+								JOptionPane.ERROR_MESSAGE);
 						workspaceText = "Selected";
-						logger.error(String.format("FlowJo user %s not logged in, can't upload", userName));
+						logger.error("FlowJo username is not set, can't upload");
 					} else {
 						List<User> users = Utils.getTercenUser(client, userName);
 						if (users.size() == 0) {

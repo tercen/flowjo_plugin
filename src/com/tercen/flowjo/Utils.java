@@ -52,6 +52,7 @@ import com.treestar.flowjo.core.SampleList;
 import com.treestar.flowjo.core.nodes.AppNode;
 import com.treestar.flowjo.core.nodes.SampleNode;
 import com.treestar.flowjo.core.nodes.templating.ExternalPopNode;
+import com.treestar.flowjo.engine.EngineManager;
 import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
@@ -324,11 +325,21 @@ public class Utils {
 		return fs.getPath(home, SESSION_FOLDER_NAME, SESSION_FILE_NAME);
 	}
 
+	public static boolean isWindows() {
+		if (EngineManager.isWindows()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	public static void saveTercenSession(UserSession session) throws IOException {
 		Path tokenPath = Utils.getSessionFilePath();
 		Path folderPath = tokenPath.getParent();
 		Files.createDirectories(folderPath);
-		Files.setAttribute(folderPath, "dos:hidden", true);
+		if (Utils.isWindows()) {
+			Files.setAttribute(folderPath, "dos:hidden", true);
+		}
 		ObjectOutputStream objStream = new ObjectOutputStream(new FileOutputStream(tokenPath.toString()));
 		objStream.writeObject(session.toJson());
 		objStream.close();

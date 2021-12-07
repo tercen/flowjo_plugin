@@ -161,7 +161,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				}
 			}
 			if (anyAppNodeTextSet) {
-				result.setWorkspaceString("Double click the Connector to Re-Upload or link to Tercen");
+				result.setWorkspaceString("Double Click to access your Tercen project.");
 			}
 		}
 		return result;

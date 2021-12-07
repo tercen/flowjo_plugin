@@ -18,6 +18,7 @@ import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
@@ -138,8 +139,9 @@ public class TercenGUI {
 				result = false;
 			}
 		} else {
-
-			componentList.add(addHeaderString("Tercen Plugin Instructions", FontUtil.dlogBold16));
+			FJLabel headerLabel = addHeaderString("<html><center>Instructions</center><html>", FontUtil.dlogBold16);
+			headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+			componentList.add(headerLabel);
 			componentList.addAll(addHeaderComponents());
 
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
@@ -154,7 +156,7 @@ public class TercenGUI {
 	}
 
 	private String getDialogTitle() {
-		return "Tercen " + plugin.getName() + " V" + plugin.getVersion();
+		return "Tercen Plugin V" + plugin.getVersion();
 	}
 
 	public Map<String, Object> createUser(TercenClient client, String emailAddress) {
@@ -251,22 +253,16 @@ public class TercenGUI {
 	}
 
 	private FJLabel addHeaderString(String s, Font font) {
-		FJLabel txt = new FJLabel(s);
-		txt.setFont(font);
-		return txt;
-	}
-
-	private FJLabel addHeaderString(String s) {
-		return addHeaderString(s, FontUtil.dlogItal12);
+		FJLabel label = new FJLabel(s);
+		label.setFont(font);
+		return label;
 	}
 
 	private List<Object> addHeaderComponents() {
 		List<Object> result = new ArrayList<>();
-		result.add("");
-		result.add("Press Ok to begin.");
-		result.add("A Tercen connector will be attached to your data selection.");
-		result.add("Drag and Drop the Tercen connector to any other files (or gates) you wish to upload.");
-		result.add("Double Click any Tercen connector line to open the Tercen uploader.");
+		result.add("<html><ul>" + "<li>Press Ok to attach the Tercen Connector to your selected population.</li>"
+				+ "<li>Drag and Drop the Tercen connector to any other populations you wish to upload.</li>"
+				+ "<li>Double Click any Tercen Connector line to open the Uploader.</li>" + "</ul></html>");
 		result.add(new JSeparator());
 		return result;
 	}

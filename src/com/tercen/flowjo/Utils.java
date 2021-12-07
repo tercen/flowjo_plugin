@@ -188,7 +188,7 @@ public class Utils {
 		String result = null;
 		try {
 			CloudAuthInfo cai = CloudAuthInfo.getInstance();
-			if (cai != null && cai.isLoggedIn()) {
+			if (cai != null) {
 				result = cai.getUsername();
 			}
 		} catch (Exception e) {

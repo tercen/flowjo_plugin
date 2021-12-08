@@ -131,6 +131,7 @@ public class TercenGUI {
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 				// set selected sample files
 				if (samplePopulationsList != null) {
+					plugin.selectedSamplePops.clear();
 					plugin.selectedSamplePops.addAll(samplePopulationsList.getSelectedValuesList());
 				}
 				plugin.pluginState = ImportPluginStateEnum.uploading;

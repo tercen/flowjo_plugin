@@ -331,6 +331,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			Sample sample = FJPluginHelper.getSample(arg0);
 			Workspace wsp = sample.getWorkspace();
 			List<AppNode> nodeList = Utils.getAllSelectedTercenNodes(wsp);
+			samplePops.clear();
 			for (AppNode node : nodeList) {
 				samplePops.add(Utils.getCsvFileName(node));
 			}

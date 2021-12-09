@@ -45,7 +45,8 @@ public class TercenGUI {
 	private static final String SELECT_CHANNELS = "Select FCS channels";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
 
-	private static final String CREATE_USER_TEXT = "Create Tercen User";
+	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
+	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -70,27 +71,10 @@ public class TercenGUI {
 
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
 				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
-				JEditorPane pane = new JEditorPane();
-				pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
-				pane.setEditable(false);
+				JEditorPane pane = createPaneWithLink(true);
 				pane.setText(
 						String.format("<html><a href='%s'>Go to Tercen Project</a></html>", this.plugin.projectURL));
 				pane.setToolTipText("Go to existing project");
-				pane.setBackground(UIManager.getColor("Panel.background"));
-				pane.addHyperlinkListener(new HyperlinkListener() {
-					@Override
-					public void hyperlinkUpdate(HyperlinkEvent hle) {
-						if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
-							Desktop desktop = Desktop.getDesktop();
-							try {
-								desktop.browse(hle.getURL().toURI());
-								JOptionPane.getRootFrame().dispose();
-							} catch (Exception ex) {
-								logger.error(ex.getMessage());
-							}
-						}
-					}
-				});
 				componentList.add(pane);
 				componentList.add(new JSeparator());
 				componentList.add(addHeaderString("Re-Upload Data", FontUtil.dlogBold16));
@@ -166,7 +150,11 @@ public class TercenGUI {
 
 		// show create user dialog
 		if (emailAddress != null) {
-			componentList.add(addHeaderString(CREATE_USER_TEXT, FontUtil.dlogBold16));
+			componentList.add(addHeaderString(CREATE_USER_TITLE_TEXT, FontUtil.dlogBold16));
+			FJLabel subTitleLabel = new FJLabel(CREATE_USER_SUBTITLE_TEXT);
+			subTitleLabel.setFont(FontUtil.BoldDialog12);
+			componentList.add(subTitleLabel);
+			componentList.add(new FJLabel("<html><br/></html>"));
 
 			String userName = emailAddress.substring(0, emailAddress.indexOf("@"));
 			Component[] userLabelField = createLabelTextFieldCombo("Username", userName, userName, true);
@@ -176,6 +164,17 @@ public class TercenGUI {
 			componentList.add(new HBox(userLabelField));
 			componentList.add(new HBox(emailLabelField));
 			componentList.add(new HBox(passwordLabelField));
+			componentList.add(new FJLabel("<html><p/></html>"));
+
+			FJLabel licenseLabel = new FJLabel("Tercen Licence");
+			licenseLabel.setFont(FontUtil.BoldDialog12);
+			componentList.add(licenseLabel);
+			JEditorPane pane = createPaneWithLink(false);
+			pane.setText("<html><div>By clicking OK you agree to upload under our standard terms and conditions.<br/>"
+					+ "Click the links to find out more about Tercen <a href='https://www.tercen.com/terms-of-service'>Terms of Service</a>"
+					+ " and <a href='https://www.tercen.com/privacy-policy'>Privacy Policy</a>.<br/>If you have any questions contact "
+					+ "<a href='mailto:support@tercen.com'>support@tercen.com</a> and we will be happy to answer them.</div></html>");
+			componentList.add(pane);
 
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -268,4 +267,27 @@ public class TercenGUI {
 		return result;
 	}
 
+	private JEditorPane createPaneWithLink(boolean hideParentOnClick) {
+		JEditorPane pane = new JEditorPane();
+		pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
+		pane.setEditable(false);
+		pane.setBackground(UIManager.getColor("Panel.background"));
+		pane.addHyperlinkListener(new HyperlinkListener() {
+			@Override
+			public void hyperlinkUpdate(HyperlinkEvent hle) {
+				if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
+					Desktop desktop = Desktop.getDesktop();
+					try {
+						desktop.browse(hle.getURL().toURI());
+						if (hideParentOnClick) {
+							JOptionPane.getRootFrame().dispose();
+						}
+					} catch (Exception ex) {
+						logger.error(ex.getMessage());
+					}
+				}
+			}
+		});
+		return pane;
+	}
 }

@@ -183,6 +183,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				return result;
 			}
 
+			// reset state
+			if (pluginState == ImportPluginStateEnum.uploaded) {
+				pluginState = ImportPluginStateEnum.collectingSamples;
+			}
+
 			String fileName = sampleFile.getPath();
 			if (pluginState == ImportPluginStateEnum.empty) {
 				csvFileName = fileName;

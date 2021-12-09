@@ -44,7 +44,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	private static final Logger logger = LogManager.getLogger(Tercen.class);
 	protected static final String pluginName = "Connector";
-	protected static final String version = "0.0.16";
+	protected static final String version = "0.0.17";
 	protected static final String CSV_FILE_NAME = "csvFileName";
 
 	protected enum ImportPluginStateEnum {

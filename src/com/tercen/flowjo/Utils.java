@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
 import java.util.regex.Pattern;
@@ -419,6 +420,19 @@ public class Utils {
 			return false;
 		}
 		return true;
+	}
+
+	protected static String getProjectVersion() {
+		String result = "0.0.0";
+		Properties properties = new Properties();
+		try {
+			properties.load(Utils.class.getResourceAsStream("/pom.properties"));
+			result = properties.getProperty("version");
+		} catch (IOException e) {
+			logger.error("Pom.properties could not be loaded");
+		}
+		logger.debug(String.format("Plugin version: %s", result));
+		return result;
 	}
 
 //	public static Token extendTercenSession(TercenClient client, UserSession session) throws ServiceError {

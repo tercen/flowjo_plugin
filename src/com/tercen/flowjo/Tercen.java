@@ -12,7 +12,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -81,8 +81,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
-	protected HashSet<String> samplePops = new HashSet<String>();
-	protected HashSet<String> selectedSamplePops = new HashSet<String>();
+	protected LinkedHashSet<String> samplePops = new LinkedHashSet<String>();
+	protected LinkedHashSet<String> selectedSamplePops = new LinkedHashSet<String>();
 	protected TercenGUI gui = new TercenGUI(this);
 
 	public Tercen() {

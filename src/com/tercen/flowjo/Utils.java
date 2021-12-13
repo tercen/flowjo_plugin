@@ -20,8 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Random;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -38,6 +39,7 @@ import org.apache.log4j.Logger;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.comparator.SampleComparator;
 import com.tercen.model.base.Vocabulary;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
@@ -49,7 +51,6 @@ import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.core.Sample;
-import com.treestar.flowjo.core.SampleList;
 import com.treestar.flowjo.core.nodes.AppNode;
 import com.treestar.flowjo.core.nodes.SampleNode;
 import com.treestar.flowjo.core.nodes.templating.ExternalPopNode;
@@ -65,9 +66,9 @@ public class Utils {
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
 	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
-	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project, HashSet<String> fileNames,
-			ArrayList<String> channels, UploadProgressTask uploadProgressTask, String dataTableName)
-			throws ServiceError, IOException {
+	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project,
+			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
+			String dataTableName) throws ServiceError, IOException {
 
 		FileDocument fileDoc = new FileDocument();
 		String name = dataTableName;
@@ -139,8 +140,8 @@ public class Utils {
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
-	private static File getMergedAndDownSampledFile(HashSet<String> paths, ArrayList<String> channels, Tercen plugin,
-			UploadProgressTask uploadProgressTask) throws IOException {
+	private static File getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
+			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException {
 		List<String> mergedLines = new ArrayList<>();
 		logger.debug(String.format("Create upload file from %d sample files", paths.size()));
 		for (String p : paths) {
@@ -307,8 +308,9 @@ public class Utils {
 
 	public static List<AppNode> getAllSelectedTercenNodes(Workspace wsp) {
 		List<AppNode> popList = new ArrayList<AppNode>();
-		SampleList sampleList = wsp.getSampleMgr().getSamples();
-		for (Sample sam : sampleList) {
+		TreeSet<Sample> samples = new TreeSet<Sample>(new SampleComparator());
+		wsp.getSampleMgr().getSamples().stream().forEach(samples::add);
+		for (Sample sam : samples) {
 			SampleNode node = sam.getSampleNode();
 			List<AppNode> tempList = Utils.getTercenNodes(node, true);
 			popList.addAll(tempList);

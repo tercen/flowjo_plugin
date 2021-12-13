@@ -1,7 +1,7 @@
 package tercen_plugin;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
@@ -32,7 +32,7 @@ public class UploadFile {
 			Project project = Utils.getProject(client, session.user.id, PROJECT);
 			String dataTableName = FILE.substring(FILE.lastIndexOf("\\") + 1);
 
-			HashSet<String> filenames = new HashSet<String>();
+			LinkedHashSet<String> filenames = new LinkedHashSet<String>();
 			filenames.add(FILE);
 			ArrayList<String> channels = new ArrayList<String>();
 			logger.debug("Uploading file: " + FILE);

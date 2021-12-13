@@ -4,6 +4,7 @@ import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -40,6 +41,8 @@ import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
 import com.treestar.lib.xml.SElement;
 
+import nu.studer.java.util.OrderedProperties;
+
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
 	private static final Logger logger = LogManager.getLogger(Tercen.class);
@@ -51,8 +54,14 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		empty, collectingSamples, uploading, uploaded, error;
 	}
 
+	private static final String TERCEN_PROPERTIES = "tercen.properties";
+	private static final String HOST = "host";
+	private static final String MAX_UPLOAD_DATAPOINTS = "max.upload.datapoints";
+	private static final String SEED = "seed";
 	// default settings
-	protected static final String HOSTNAME_URL = "https://tercen.com/";
+	protected static final String HOSTNAME_URL = "https://stage.tercen.com/";
+	protected static final String MAX_DATAPOINTS_VALUE = "300000000";
+	protected static final String SEED_VALUE = "42";
 	protected static final String DOMAIN = "tercen";
 	protected static final String ICON_NAME = "logo.png";
 
@@ -310,21 +319,42 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	private void readPropertiesFile() {
 		Properties prop = new Properties();
 		File jarfile = new File(Tercen.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-		String propertyFilePath = jarfile.getParent() + File.separator + "tercen.properties";
+		String propertyFilePath = jarfile.getParent() + File.separator + TERCEN_PROPERTIES;
 		try {
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
-			hostName = prop.getProperty("host");
-			String maxDataPointsStr = prop.getProperty("max.upload.datapoints");
+			hostName = prop.getProperty(HOST);
+			String maxDataPointsStr = prop.getProperty(MAX_UPLOAD_DATAPOINTS);
 			if (Utils.isNumeric(maxDataPointsStr)) {
 				maxDataPoints = Long.valueOf(maxDataPointsStr);
 			}
-			String seedStr = prop.getProperty("seed");
+			String seedStr = prop.getProperty(SEED);
 			if (Utils.isNumeric(maxDataPointsStr)) {
 				seed = Long.valueOf(seedStr);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
-			// some error reading properties file, use default settings
+			logger.error(e.getMessage());
+			if (e.getClass().getName().equalsIgnoreCase("java.io.FileNotFoundException")) {
+				// generate file if it can't be found
+				saveTercenProperties(propertyFilePath);
+				hostName = HOSTNAME_URL;
+				maxDataPoints = Long.valueOf(MAX_DATAPOINTS_VALUE);
+				seed = Long.valueOf(SEED_VALUE);
+			}
+		}
+	}
+
+	private void saveTercenProperties(String path) {
+		OrderedProperties props = new OrderedProperties();
+		props.setProperty(HOST, HOSTNAME_URL);
+		props.setProperty(MAX_UPLOAD_DATAPOINTS, MAX_DATAPOINTS_VALUE);
+		props.setProperty(SEED, SEED_VALUE);
+		try {
+			FileOutputStream outputStream = new FileOutputStream(path);
+			props.store(outputStream, "Property file for Tercen. Put it in the FlowJo plugin directory.");
+			outputStream.close();
+			logger.debug(String.format("Tercen property file has been generated at: %s", path));
+		} catch (IOException e) {
+			logger.error(e.getMessage());
 		}
 	}
 

@@ -443,14 +443,7 @@ public class Utils {
 		return result;
 	}
 
-//	public static Token extendTercenSession(TercenClient client, UserSession session) throws ServiceError {
-//		String strToken = client.userService.createToken(session.user.id, (int) Duration.ofDays(15).getSeconds());
-//		DecodedJWT jwt = JWT.decode(strToken);
-//		Token token = new Token();
-//		token.expiry = new com.tercen.model.impl.Date();
-//		token.expiry.value = DATE_TIME_FORMAT.format(jwt.getExpiresAt());
-//		token.token = jwt.getToken();
-//		token.userId = session.user.id;
-//		return token;
-//	}
+	public static UserSession extendTercenSession(TercenClient client, UserSession session) throws ServiceError {
+		return client.userService.connect2(Tercen.DOMAIN, "", session.token.token);
+	}
 }

@@ -235,6 +235,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 							if (session == null || !client.userService.isTokenValid(session.token.token)) {
 								session = Utils.reconnect(client, gui, userName, passWord);
 								Utils.saveTercenSession(session);
+							} else {
+								session = Utils.extendTercenSession(client, session);
+								Utils.saveTercenSession(session);
 							}
 							client.httpClient.setAuthorization(session.token.token);
 						}

@@ -140,7 +140,7 @@ public class Utils {
 		return client.userService.connect2(Tercen.DOMAIN, userName, password);
 	}
 
-	// merge csv files into one. The filename column is added after reading the
+	// merge csv files into one. The population column is added after reading the
 	// data. This might need to be optimized.
 	private static File getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
 			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException {
@@ -154,17 +154,16 @@ public class Utils {
 					List<String> headerList = Arrays.asList(lines.get(0).split(","));
 					String header = headerList.stream().map(s -> s.replace("\"", ""))
 							.map(s -> setColumnValue(channels, s)).collect(Collectors.joining(","));
-					mergedLines.add(header.concat(", filename"));
+					mergedLines.add(header.concat(", population"));
 				}
 				List<String> content = lines.subList(1, lines.size());
-				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
+				content.replaceAll(s -> s + String.format(", %s", getPopulationName(p)));
 				mergedLines.addAll(content);
 			}
 		}
 		mergedLines = Utils.downsample(mergedLines, plugin.maxDataPoints, plugin.seed, plugin.gui, uploadProgressTask,
 				channels.size());
 
-		// add column filename
 		File mergedFile = File.createTempFile("merged-", ".csv");
 		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
 		logger.debug(String.format("Upload file has %d rows", mergedLines.size()));
@@ -182,7 +181,7 @@ public class Utils {
 		return result;
 	}
 
-	private static String getFilename(String fullFileName) {
+	private static String getPopulationName(String fullFileName) {
 		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.SEPARATOR), "\\\\").split("\\\\");
 		String filename = filenameParts[filenameParts.length - 1];
 		return filename.replace("..ExtNode.csv", "");
@@ -222,18 +221,18 @@ public class Utils {
 		return client.projectService.create(new_project);
 	}
 
-	private static void removeProjectFileIfExists(TercenClient client, Project project, String filename)
+	private static void removeProjectFileIfExists(TercenClient client, Project project, String tableName)
 			throws ServiceError {
 		List<Object> startKey = List.of(project.id, "2000");
 		List<Object> endKey = List.of(project.id, "2100");
 
 		List<ProjectDocument> projectDocs = client.projectDocumentService.findProjectObjectsByLastModifiedDate(startKey,
 				endKey, 100, 0, false, false);
-		projectDocs.stream().filter(p -> p.subKind.equals("TableSchema") && p.name.equals(filename)).forEach(p -> {
+		projectDocs.stream().filter(p -> p.subKind.equals("TableSchema") && p.name.equals(tableName)).forEach(p -> {
 			try {
 				client.tableSchemaService.delete(p.id, p.rev);
 			} catch (ServiceError e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 			}
 		});
 	}
@@ -388,7 +387,7 @@ public class Utils {
 			UploadProgressTask uploadProgressTask, int channelSize) {
 		List<String> result = new ArrayList<>();
 		if (lines != null && lines.size() >= 1) {
-			result.add(lines.get(0).concat(", sample")); // header
+			result.add(lines.get(0).concat(", random_label")); // header
 			int ncols = result.get(0).split(",").length;
 
 			List<String> content = lines.subList(1, lines.size());
@@ -410,7 +409,7 @@ public class Utils {
 					return value;
 				}).collect(Collectors.toList());
 			} else {
-				logger.debug("Add sample column");
+				logger.debug("Add random_label column");
 				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
 			}
 			result.addAll(contentResult);

@@ -107,10 +107,12 @@ public class Utils {
 		return hostName + teamName + "/p/" + schema.projectId;
 	}
 
-	protected static String getTercenCreateWorkflowURL(String hostName, String teamName, Schema schema, Workspace wsp)
-			throws UnsupportedEncodingException {
-		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId=" + schema.id
-				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName(wsp).replace(" ", "_");
+	protected static String getTercenCreateWorkflowURL(TercenClient client, String hostName, String userId,
+			Schema schema, Workspace wsp) throws UnsupportedEncodingException, ServiceError {
+		String token = Utils.createTemporaryToken(client, userId);
+		return hostName + userId + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId=" + schema.id
+				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName(wsp).replace(" ", "_")
+				+ "&token=" + token;
 	}
 
 	private static String getWorkflowName(Workspace wsp) {
@@ -376,6 +378,10 @@ public class Utils {
 			passWord = gui.getTercenPassword(userNameOrEmail);
 		}
 		return client.userService.connect2(Tercen.DOMAIN, userNameOrEmail, passWord);
+	}
+
+	private static String createTemporaryToken(TercenClient client, String userId) throws ServiceError {
+		return client.userService.createToken(userId, 5);
 	}
 
 	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui,

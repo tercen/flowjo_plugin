@@ -228,6 +228,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 								passWord = (String) userResult.get("pwd");
 								token = (String) userResult.get("token");
 								Utils.saveTercenSession(session);
+							} else {
+								pluginState = ImportPluginStateEnum.collectingSamples;
+								return result;
 							}
 						} else {
 							// get and check token for existing user

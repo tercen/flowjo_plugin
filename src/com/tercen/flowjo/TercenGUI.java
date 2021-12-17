@@ -12,6 +12,7 @@ import java.util.stream.IntStream;
 
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
+import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
@@ -187,8 +188,11 @@ public class TercenGUI {
 					result.put("pwd", passWord);
 					result.put("token", plugin.session.token.token);
 				} catch (ServiceError e) {
-					// TODO inform user -> retry?
-					e.printStackTrace();
+					JOptionPane optionPane = new JOptionPane(e.getMessage(), JOptionPane.ERROR_MESSAGE);
+					JDialog dialog = optionPane.createDialog("Failure");
+					dialog.setAlwaysOnTop(true);
+					dialog.setVisible(true);
+					createUser(client, emailAddress);
 				}
 			}
 		}

@@ -158,9 +158,11 @@ public class TercenGUI {
 			componentList.add(new FJLabel("<html><br/></html>"));
 
 			String userName = emailAddress.substring(0, emailAddress.indexOf("@"));
-			Component[] userLabelField = createLabelTextFieldCombo("Username", userName, userName, true);
-			Component[] emailLabelField = createLabelTextFieldCombo("Email", emailAddress, emailAddress, true);
-			Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true);
+			Component[] userLabelField = createLabelTextFieldCombo("Username", userName, userName, true,
+					FontUtil.dlog12);
+			Component[] emailLabelField = createLabelTextFieldCombo("Email", emailAddress, emailAddress, true,
+					FontUtil.dlog12);
+			Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true, FontUtil.dlog12);
 
 			componentList.add(new HBox(userLabelField));
 			componentList.add(new HBox(emailLabelField));
@@ -171,10 +173,11 @@ public class TercenGUI {
 			licenseLabel.setFont(FontUtil.BoldDialog12);
 			componentList.add(licenseLabel);
 			JEditorPane pane = createPaneWithLink(false);
-			pane.setText("<html><div>By clicking OK you agree to upload under our standard terms and conditions.<br/>"
-					+ "Click the links to find out more about Tercen <a href='https://www.tercen.com/terms-of-service'>Terms of Service</a>"
-					+ " and <a href='https://www.tercen.com/privacy-policy'>Privacy Policy</a>.<br/>If you have any questions contact "
-					+ "<a href='mailto:support@tercen.com'>support@tercen.com</a> and we will be happy to answer them.</div></html>");
+			pane.setText(
+					"<html><div style='font-size: 12; font-family: Dialog'>By clicking OK you agree to upload under our standard terms and conditions.<br/>"
+							+ "Click the links to find out more about Tercen <a href='https://www.tercen.com/terms-of-service'>Terms of Service</a>"
+							+ " and <a href='https://www.tercen.com/privacy-policy'>Privacy Policy</a>.<br/>If you have any questions contact "
+							+ "<b>support@tercen.com</b> and we will be happy to answer them.</div></html>");
 			componentList.add(pane);
 
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
@@ -233,6 +236,13 @@ public class TercenGUI {
 		GuiFactory.setSizes(field, new Dimension(fixedFieldWidth, fixedFieldHeigth));
 		GuiFactory.setSizes(label, new Dimension(fixedLabelWidth, fixedLabelHeigth));
 		return new Component[] { label, field };
+	}
+
+	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
+			boolean editable, Font font) {
+		Component[] result = createLabelTextFieldCombo(labelText, fieldValue, fieldTooltip, editable);
+		result[0].setFont(font);
+		return result;
 	}
 
 	private FJList createParameterList(List<String> parameters, SElement sElement, boolean selectAll) {

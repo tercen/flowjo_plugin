@@ -4,6 +4,7 @@ import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ public class TercenGUI {
 	private static final String CHOOSE_DATA = "Choose Data";
 	private static final String SELECT_CHANNELS = "Select FCS channels";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
+	private static final String RETURN_TO_TERCEN = "Return to my project.";
 
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
 	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
@@ -74,7 +76,7 @@ public class TercenGUI {
 				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
 				JEditorPane pane = createPaneWithLink(true);
 				pane.setText(
-						String.format("<html><a href='%s'>Go to Tercen Project</a></html>", this.plugin.projectURL));
+						String.format("<html><a href='%s'>%s</a></html>", this.plugin.projectURL, RETURN_TO_TERCEN));
 				pane.setToolTipText("Go to existing project");
 				componentList.add(pane);
 				componentList.add(new JSeparator());
@@ -286,6 +288,8 @@ public class TercenGUI {
 		pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
 		pane.setEditable(false);
 		pane.setBackground(UIManager.getColor("Panel.background"));
+		Insets margin = pane.getMargin();
+		pane.setMargin(new Insets(margin.top, 0, margin.bottom, margin.right));
 		pane.addHyperlinkListener(new HyperlinkListener() {
 			@Override
 			public void hyperlinkUpdate(HyperlinkEvent hle) {

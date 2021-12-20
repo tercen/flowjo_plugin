@@ -14,8 +14,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -64,7 +62,6 @@ public class Utils {
 	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
-	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
 	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project,
 			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
@@ -109,10 +106,14 @@ public class Utils {
 
 	protected static String getTercenCreateWorkflowURL(TercenClient client, String hostName, String userId,
 			Schema schema, Workspace wsp) throws UnsupportedEncodingException, ServiceError {
-		String token = Utils.createTemporaryToken(client, userId);
 		return hostName + userId + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId=" + schema.id
 				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName(wsp).replace(" ", "_")
-				+ "&token=" + token;
+				+ Utils.addToken(client, userId, false);
+	}
+
+	protected static String addToken(TercenClient client, String userId, boolean onlyParam) throws ServiceError {
+		String addParamStr = onlyParam ? "?" : "&";
+		return String.format("%stoken=%s", addParamStr, Utils.createTemporaryToken(client, userId));
 	}
 
 	private static String getWorkflowName(Workspace wsp) {
@@ -337,7 +338,7 @@ public class Utils {
 		}
 	}
 
-	public static void saveTercenSession(UserSession session) throws IOException {
+	protected static void saveTercenSession(UserSession session) throws IOException {
 		Path tokenPath = Utils.getSessionFilePath();
 		Path folderPath = tokenPath.getParent();
 		Files.createDirectories(folderPath);
@@ -442,7 +443,20 @@ public class Utils {
 		return result;
 	}
 
-	public static UserSession extendTercenSession(TercenClient client, UserSession session) throws ServiceError {
+	public static UserSession getAndExtendTercenSession(TercenClient client, TercenGUI gui, String passWord)
+			throws ClassNotFoundException, IOException, ServiceError {
+		UserSession session = Utils.getTercenSession();
+		if (session == null || !client.userService.isTokenValid(session.token.token)) {
+			session = Utils.reconnect(client, gui, session.user.id, passWord);
+			Utils.saveTercenSession(session);
+		} else {
+			session = Utils.extendTercenSession(client, session);
+			Utils.saveTercenSession(session);
+		}
+		return session;
+	}
+
+	private static UserSession extendTercenSession(TercenClient client, UserSession session) throws ServiceError {
 		return client.userService.connect2(Tercen.DOMAIN, "", session.token.token);
 	}
 }

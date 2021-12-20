@@ -5,6 +5,7 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.apache.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
+import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
 import com.treestar.lib.FJPluginHelper;
 import com.treestar.lib.gui.FJList;
@@ -74,7 +76,7 @@ public class TercenGUI {
 
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
 				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
-				JEditorPane pane = createPaneWithLink(true);
+				JEditorPane pane = createPaneWithLink(true, true);
 				pane.setText(
 						String.format("<html><a href='%s'>%s</a></html>", this.plugin.projectURL, RETURN_TO_TERCEN));
 				pane.setToolTipText("Go to existing project");
@@ -174,7 +176,7 @@ public class TercenGUI {
 			FJLabel licenseLabel = new FJLabel("Tercen Licence");
 			licenseLabel.setFont(FontUtil.BoldDialog12);
 			componentList.add(licenseLabel);
-			JEditorPane pane = createPaneWithLink(false);
+			JEditorPane pane = createPaneWithLink(false, false);
 			pane.setText(
 					"<html><div style='font-size: 12; font-family: Dialog'>By clicking OK you agree to upload under our standard terms and conditions.<br/>"
 							+ "Click the links to find out more about Tercen <a href='https://www.tercen.com/terms-of-service'>Terms of Service</a>"
@@ -283,7 +285,7 @@ public class TercenGUI {
 		return result;
 	}
 
-	private JEditorPane createPaneWithLink(boolean hideParentOnClick) {
+	private JEditorPane createPaneWithLink(boolean hideParentOnClick, boolean addToken) {
 		JEditorPane pane = new JEditorPane();
 		pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
 		pane.setEditable(false);
@@ -296,7 +298,14 @@ public class TercenGUI {
 				if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
 					Desktop desktop = Desktop.getDesktop();
 					try {
-						desktop.browse(hle.getURL().toURI());
+						URI uri = hle.getURL().toURI();
+						if (addToken) {
+							TercenClient client = new TercenClient(plugin.hostName);
+							UserSession session = Utils.getAndExtendTercenSession(client, plugin.gui, plugin.passWord);
+							client.httpClient.setAuthorization(session.token.token);
+							uri = new URI(hle.getURL().toString() + Utils.addToken(client, session.user.id, true));
+						}
+						desktop.browse(uri);
 						if (hideParentOnClick) {
 							JOptionPane.getRootFrame().dispose();
 						}

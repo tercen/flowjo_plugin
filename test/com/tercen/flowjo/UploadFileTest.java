@@ -15,7 +15,7 @@ import com.tercen.model.impl.UserSession;
 public class UploadFileTest {
 
 	private static final String PROJECT = "flowjo";
-	private static final String HOST_NAME = "http://127.0.0.1:5400/";
+	private static final String HOST_NAME = "http://tercen:5400/";
 	private static final String FILE = "SI5_eukaryotic_lineages.csv";
 	private static final String USER_NAME = "admin";
 	private static final String PASSWORD = "admin";

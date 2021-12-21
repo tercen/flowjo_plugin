@@ -1,0 +1,19 @@
+version: '3.3'
+services:
+  couchdb:
+    image: couchdb:1.7.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=admin
+    restart: "no"
+
+  tercen:
+    depends_on:
+      - couchdb
+    image: tercen/tercen:stage
+    environment:
+      - tercen.couchdb.address=couchdb
+      - tercen.couchdb.password=admin
+    restart: "no"
+    ports:
+      - "${IP:-0.0.0.0}:5400:5400"

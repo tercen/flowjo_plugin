@@ -10,7 +10,7 @@ services:
   tercen:
     depends_on:
       - couchdb
-    image: tercen/tercen:stage
+    image: tercen/tercen:prod
     environment:
       - tercen.couchdb.address=couchdb
       - tercen.couchdb.password=admin

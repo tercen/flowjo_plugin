@@ -1,19 +1,40 @@
-version: '3.3'
+version: "3.2"
+
 services:
+
   couchdb:
-    image: couchdb:1.7.2
+    image: ibmcom/couchdb3:3.1.1
+    networks:
+      tercen:
+        aliases:
+          - couchdb
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=admin
-    restart: "no"
+    volumes:
+      - couchdb3-data:/opt/couchdb/data
+    restart: always
 
   tercen:
-    depends_on:
-      - couchdb
-    image: tercen/tercen:prod
     environment:
-      - tercen.couchdb.address=couchdb
-      - tercen.couchdb.password=admin
-    restart: "no"
+      - DISPLAY=:0
+    networks:
+      tercen:
+        aliases:
+          - tercen
+    image: tercen/tercen:stage
+    volumes:
+      - tercen-data:/var/lib/tercen/data
+      - ./config/tercen:/etc/tercen
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    restart: always
     ports:
       - "${IP:-0.0.0.0}:5400:5400"
+
+networks:
+  tercen:
+
+volumes:
+  couchdb3-data:
+  tercen-data:

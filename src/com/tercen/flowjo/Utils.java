@@ -464,11 +464,11 @@ public class Utils {
 	protected static boolean isPluginOutdated(String pluginVersion, Version version) {
 		boolean result = false;
 		String serverPluginVersion = String.format("%s.%s.%s", version.major, version.minor, version.patch);
-		System.out.println(String.format("Server version: %s", serverPluginVersion));
+		logger.debug(String.format("Server supported plugin version: %s", serverPluginVersion));
 		if (serverPluginVersion.compareTo(pluginVersion) > 0) {
 			result = true;
-			System.out.println(String.format("Your plugin version (%s) is not compatible with the server (>= %s)",
-					pluginVersion, serverPluginVersion));
+			logger.warn(String.format("Plugin version (%s) is not compatible with the server (>= %s)", pluginVersion,
+					serverPluginVersion));
 		}
 		return result;
 	}

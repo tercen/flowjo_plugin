@@ -205,11 +205,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				csvFileName = fileName;
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
 				TercenClient client = new TercenClient(hostName);
-//				if (Utils.isPluginOutdated(version, client.userService.getServerVersion("flowjoPlugin"))) {
+				if (Utils.isPluginOutdated(version, client.userService.getServerVersion("flowjoPlugin"))) {
+//					TODO enable below code for plugin version 1.0.0
 //					JOptionPane.showMessageDialog(null, "Plugin version is outdated, please install the latest version",
-//							"ImportPlugin error", JOptionPane.ERROR_MESSAGE);
-//					return result;
-//				}
+//							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
+				}
 
 				if (!sampleFile.exists()) {
 					JOptionPane.showMessageDialog(null, "Input file does not exist", "ImportPlugin error",

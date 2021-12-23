@@ -46,6 +46,7 @@ import com.tercen.model.impl.ProjectDocument;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
+import com.tercen.model.impl.Version;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.core.Sample;
@@ -141,7 +142,7 @@ public class Utils {
 		return client.userService.connect2(Tercen.DOMAIN, userName, password);
 	}
 
-	// merge csv files into one. The population column is added after reading the
+	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
 	private static File getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
 			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException {
@@ -155,10 +156,10 @@ public class Utils {
 					List<String> headerList = Arrays.asList(lines.get(0).split(","));
 					String header = headerList.stream().map(s -> s.replace("\"", ""))
 							.map(s -> setColumnValue(channels, s)).collect(Collectors.joining(","));
-					mergedLines.add(header.concat(", population"));
+					mergedLines.add(header.concat(", filename"));
 				}
 				List<String> content = lines.subList(1, lines.size());
-				content.replaceAll(s -> s + String.format(", %s", getPopulationName(p)));
+				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
 				mergedLines.addAll(content);
 			}
 		}
@@ -182,7 +183,7 @@ public class Utils {
 		return result;
 	}
 
-	private static String getPopulationName(String fullFileName) {
+	private static String getFilename(String fullFileName) {
 		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.SEPARATOR), "\\\\").split("\\\\");
 		String filename = filenameParts[filenameParts.length - 1];
 		return filename.replace("..ExtNode.csv", "");
@@ -458,5 +459,17 @@ public class Utils {
 
 	private static UserSession extendTercenSession(TercenClient client, UserSession session) throws ServiceError {
 		return client.userService.connect2(Tercen.DOMAIN, "", session.token.token);
+	}
+
+	protected static boolean isPluginOutdated(String pluginVersion, Version version) {
+		boolean result = false;
+		String serverPluginVersion = String.format("%s.%s.%s", version.major, version.minor, version.patch);
+		System.out.println(String.format("Server version: %s", serverPluginVersion));
+		if (serverPluginVersion.compareTo(pluginVersion) > 0) {
+			result = true;
+			System.out.println(String.format("Your plugin version (%s) is not compatible with the server (>= %s)",
+					pluginVersion, serverPluginVersion));
+		}
+		return result;
 	}
 }

@@ -16,8 +16,6 @@ services:
     restart: always
 
   tercen:
-    environment:
-      - DISPLAY=:0
     networks:
       tercen:
         aliases:
@@ -27,7 +25,6 @@ services:
       - tercen-data:/var/lib/tercen/data
       - ./config/tercen:/etc/tercen
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/.X11-unix:/tmp/.X11-unix
     restart: always
     ports:
       - "${IP:-0.0.0.0}:5400:5400"

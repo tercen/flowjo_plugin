@@ -204,6 +204,13 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			} else if (pluginState == ImportPluginStateEnum.collectingSamples) {
 				csvFileName = fileName;
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
+				TercenClient client = new TercenClient(hostName);
+//				if (Utils.isPluginOutdated(version, client.userService.getServerVersion("flowjoPlugin"))) {
+//					JOptionPane.showMessageDialog(null, "Plugin version is outdated, please install the latest version",
+//							"ImportPlugin error", JOptionPane.ERROR_MESSAGE);
+//					return result;
+//				}
+
 				if (!sampleFile.exists()) {
 					JOptionPane.showMessageDialog(null, "Input file does not exist", "ImportPlugin error",
 							JOptionPane.ERROR_MESSAGE);
@@ -211,7 +218,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				} else {
 					Schema uploadResult = null;
 
-					TercenClient client = new TercenClient(hostName);
 					userName = Utils.getCurrentPortalUser();
 					if (userName == null || userName.equals("")) {
 						JOptionPane.showMessageDialog(null, "FlowJo username needs to be set.", "ImportPlugin error",

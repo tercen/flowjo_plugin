@@ -281,6 +281,10 @@ public class TercenGUI {
 		result.add("<html><ul>" + "<li>Press Ok to attach the Tercen Connector to your selected population.</li>"
 				+ "<li>Drag and Drop the Tercen connector to any other populations you wish to upload.</li>"
 				+ "<li>Double Click any Tercen Connector line to open the Uploader.</li>" + "</ul></html>");
+		JEditorPane pane = createPaneWithLink(false, false);
+		pane.setText("<html><center><div style='font-size: 12; font-family: Dialog; margin-bottom: 5px;'>"
+				+ "<a href='https://learn.tercen.com'>Learn more</a></div></center></html>");
+		result.add(pane);
 		result.add(new JSeparator());
 		return result;
 	}

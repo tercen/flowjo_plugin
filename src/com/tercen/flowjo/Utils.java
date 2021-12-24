@@ -107,9 +107,11 @@ public class Utils {
 
 	protected static String getTercenCreateWorkflowURL(TercenClient client, String hostName, String userId,
 			Schema schema, Workspace wsp) throws UnsupportedEncodingException, ServiceError {
-		return hostName + userId + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId=" + schema.id
-				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName(wsp).replace(" ", "_")
-				+ Utils.addToken(client, userId, false);
+		String url = hostName + userId + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId="
+				+ schema.id + "&client=tercen.flowjo.plugin&workflow.name="
+				+ Utils.getWorkflowName(wsp).replace(" ", "_");
+		logger.debug("Tercen create workflow URL:" + url);
+		return url + Utils.addToken(client, userId, false);
 	}
 
 	protected static String addToken(TercenClient client, String userId, boolean onlyParam) throws ServiceError {

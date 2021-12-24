@@ -259,7 +259,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						if (uploadResult != null) {
 							String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
 									uploadResult, wsp);
-							logger.debug("Tercen create workflow URL:" + url);
 							Desktop desktop = java.awt.Desktop.getDesktop();
 							URI uri = new URI(String.valueOf(url));
 							desktop.browse(uri);

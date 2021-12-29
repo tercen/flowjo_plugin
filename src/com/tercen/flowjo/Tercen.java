@@ -32,6 +32,7 @@ import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
+import com.tercen.model.impl.Version;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.core.Sample;
@@ -215,11 +216,16 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
 				TercenClient client = new TercenClient(hostName);
 
-				if (autoUpdate
-						&& Utils.isPluginOutdated(version, client.userService.getServerVersion("flowjoPlugin"))) {
-					JOptionPane.showMessageDialog(null,
-							"Your plugin version is outdated. A newer version will be downloaded.",
-							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
+				// Check and update plugin if needed
+				Version pluginServerVersion = client.userService.getServerVersion("flowjoPlugin");
+				if (!Utils.isPluginVersionSupported(version, pluginServerVersion)
+						|| (autoUpdate && Utils.isPluginOutdated(version, gitToken))) {
+					String message = "Your plugin version is outdated. A newer version will be downloaded.";
+					if (!Utils.isPluginVersionSupported(version, pluginServerVersion)) {
+						message = "Your plugin version is not supported anymore. A newer version will be downloaded.";
+					}
+					JOptionPane.showMessageDialog(null, message, "Tercen Plugin V" + getVersion(),
+							JOptionPane.WARNING_MESSAGE);
 					Updater.downloadLatestVersion(this, version, gitToken);
 					JOptionPane.showMessageDialog(null, "The download has been completed, please restart FlowJo.",
 							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);

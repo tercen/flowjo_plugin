@@ -31,8 +31,10 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.http.client.ClientProtocolException;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.json.JSONException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -464,15 +466,20 @@ public class Utils {
 		return client.userService.connect2(Tercen.DOMAIN, "", session.token.token);
 	}
 
-	protected static boolean isPluginOutdated(String pluginVersion, Version version) {
-		boolean result = false;
+	protected static boolean isPluginVersionSupported(String pluginVersion, Version version) throws ServiceError {
+		boolean result = true;
 		String serverPluginVersion = String.format("%s.%s.%s", version.major, version.minor, version.patch);
 		logger.debug(String.format("Server supported plugin version: %s", serverPluginVersion));
 		if (serverPluginVersion.compareTo(pluginVersion) > 0) {
-			result = true;
+			result = false;
 			logger.warn(String.format("Plugin version (%s) is not compatible with the server (>= %s)", pluginVersion,
 					serverPluginVersion));
 		}
 		return result;
+	}
+
+	protected static boolean isPluginOutdated(String pluginVersion, String gitToken)
+			throws JSONException, ClientProtocolException, IOException {
+		return Updater.newVersionAvailable(pluginVersion, gitToken);
 	}
 }

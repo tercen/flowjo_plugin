@@ -43,35 +43,42 @@ public class Updater {
 	public static void downloadLatestVersion(Tercen plugin, String currentPluginVersion, String gitToken)
 			throws IOException, JSONException {
 		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+		logger.debug("Getting artifacts..");
+		JSONObject obj = new JSONObject(doRequest(httpClient, ARTIFACTS_URL, gitToken));
+		JSONArray artifacts = (JSONArray) obj.get("artifacts");
+		JSONObject latestArtifact = (JSONObject) artifacts.get(0);
+		String downloadURL = (String) latestArtifact.get("archive_download_url");
 
+		logger.debug("Downloading latest artifact..");
+		String pluginDir = System.getProperty("user.dir");
+		String outputPath = Paths.get(pluginDir, "out.zip").toString();
+
+		DownloadProgressTask downloadTask = new DownloadProgressTask(plugin);
+		downloadTask.setIterations(2);
+		downloadTask.showDialog();
+
+		downloadZipFile(downloadURL, outputPath, gitToken, downloadTask);
+
+		writeJarFile(pluginDir, outputPath, downloadTask);
+
+		boolean removed = new File(outputPath).delete();
+		if (removed) {
+			logger.debug("Artifact has been removed");
+		}
+	}
+
+	protected static boolean newVersionAvailable(String currentPluginVersion, String gitToken)
+			throws JSONException, ClientProtocolException, IOException {
+		boolean result = false;
+		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
 		JSONArray tags = new JSONArray(doRequest(httpClient, TAGS_URL, gitToken));
 		JSONObject latestTag = (JSONObject) tags.get(0);
 		String latestVersion = (String) latestTag.get("name");
 		if (latestVersion.compareTo(currentPluginVersion) > 0) {
-			logger.debug("Newer plugin version available! Getting artifacts..");
-
-			JSONObject obj = new JSONObject(doRequest(httpClient, ARTIFACTS_URL, gitToken));
-			JSONArray artifacts = (JSONArray) obj.get("artifacts");
-			JSONObject latestArtifact = (JSONObject) artifacts.get(0);
-			String downloadURL = (String) latestArtifact.get("archive_download_url");
-
-			logger.debug("Downloading latest artifact..");
-			String pluginDir = System.getProperty("user.dir");
-			String outputPath = Paths.get(pluginDir, "out.zip").toString();
-
-			DownloadProgressTask downloadTask = new DownloadProgressTask(plugin);
-			downloadTask.setIterations(2);
-			downloadTask.showDialog();
-
-			downloadZipFile(downloadURL, outputPath, gitToken, downloadTask);
-
-			writeJarFile(pluginDir, outputPath, downloadTask);
-
-			boolean removed = new File(outputPath).delete();
-			if (removed) {
-				logger.debug("Artifact has been removed");
-			}
+			logger.debug("Newer plugin version available!");
+			result = true;
 		}
+		return result;
 	}
 
 	private static void writeJarFile(String pluginDir, String outputPath, DownloadProgressTask downloadTask)

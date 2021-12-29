@@ -38,6 +38,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.comparator.SampleComparator;
+import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.base.Vocabulary;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
@@ -241,7 +242,7 @@ public class Utils {
 		});
 	}
 
-	protected static String urlEncodeUTF8(String s) {
+	public static String urlEncodeUTF8(String s) {
 		try {
 			return URLEncoder.encode(s, "UTF-8");
 		} catch (UnsupportedEncodingException e) {

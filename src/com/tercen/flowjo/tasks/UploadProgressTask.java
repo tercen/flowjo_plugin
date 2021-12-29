@@ -1,4 +1,4 @@
-package com.tercen.flowjo;
+package com.tercen.flowjo.tasks;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -28,6 +28,9 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.Tercen;
+import com.tercen.flowjo.TercenWebSocketListener;
+import com.tercen.flowjo.Utils;
 import com.tercen.model.impl.CSVTask;
 import com.tercen.model.impl.FailedState;
 import com.tercen.model.impl.FileDocument;
@@ -67,7 +70,7 @@ public class UploadProgressTask extends JFrame {
 		setTitle("Upload Progress");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setLayout(new BorderLayout());
-		add(new TestPane(progressBar));
+		add(new ProgressPane(progressBar));
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
@@ -88,9 +91,9 @@ public class UploadProgressTask extends JFrame {
 		downSampleMessage = message;
 	}
 
-	public class TestPane extends JPanel {
+	public class ProgressPane extends JPanel {
 
-		public TestPane(JProgressBar progressBar) {
+		public ProgressPane(JProgressBar progressBar) {
 			setBorder(new EmptyBorder(10, 10, 10, 10));
 			setLayout(new GridBagLayout());
 			GridBagConstraints gbc = new GridBagConstraints();

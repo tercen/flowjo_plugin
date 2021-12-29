@@ -24,8 +24,10 @@ import javax.swing.JOptionPane;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
@@ -58,10 +60,15 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	private static final String HOST = "host";
 	private static final String MAX_UPLOAD_DATAPOINTS = "max.upload.datapoints";
 	private static final String SEED = "seed";
+	private static final String AUTO_UPDATE = "autoupdate";
+	private static final String GIT_TOKEN = "git.token";
+
 	// default settings
 	protected static final String HOSTNAME_URL = "https://stage.tercen.com/";
 	protected static final String MAX_DATAPOINTS_VALUE = "300000000";
 	protected static final String SEED_VALUE = "42";
+	protected static final String AUTO_UPDATE_VALUE = "false";
+	protected static final String GIT_TOKEN_VALUE = "";
 	protected static final String DOMAIN = "tercen";
 	protected static final String ICON_NAME = "logo.png";
 
@@ -78,6 +85,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected String projectURL;
 	protected long seed = -1;
 	protected long maxDataPoints = -1;
+	private boolean autoUpdate = false;
+	private String gitToken = "";
 
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
@@ -205,10 +214,16 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				csvFileName = fileName;
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
 				TercenClient client = new TercenClient(hostName);
-				if (Utils.isPluginOutdated(version, client.userService.getServerVersion("flowjoPlugin"))) {
-//					TODO enable below code for plugin version 1.0.0
-//					JOptionPane.showMessageDialog(null, "Plugin version is outdated, please install the latest version",
-//							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
+
+				if (autoUpdate
+						&& Utils.isPluginOutdated(version, client.userService.getServerVersion("flowjoPlugin"))) {
+					JOptionPane.showMessageDialog(null,
+							"Your plugin version is outdated. A newer version will be downloaded.",
+							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
+					Updater.downloadLatestVersion(this, version, gitToken);
+					JOptionPane.showMessageDialog(null, "The download has been completed, please restart FlowJo.",
+							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
+					return result;
 				}
 
 				if (!sampleFile.exists()) {
@@ -317,6 +332,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			logger.error(e.getMessage());
 			setWorkspaceText(nodeList, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
+		} catch (JSONException e) {
+			logger.error(e.getMessage());
+			setWorkspaceText(nodeList, e.getMessage());
+			pluginState = ImportPluginStateEnum.error;
 		}
 		return result;
 	}
@@ -336,6 +355,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			if (Utils.isNumeric(maxDataPointsStr)) {
 				seed = Long.valueOf(seedStr);
 			}
+			autoUpdate = Boolean.valueOf(prop.getProperty(AUTO_UPDATE));
+			gitToken = prop.getProperty(GIT_TOKEN);
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 			if (e.getClass().getName().equalsIgnoreCase("java.io.FileNotFoundException")) {
@@ -344,6 +365,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				hostName = HOSTNAME_URL;
 				maxDataPoints = Long.valueOf(MAX_DATAPOINTS_VALUE);
 				seed = Long.valueOf(SEED_VALUE);
+				autoUpdate = false;
+				gitToken = "";
 			}
 		}
 	}
@@ -353,6 +376,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		props.setProperty(HOST, HOSTNAME_URL);
 		props.setProperty(MAX_UPLOAD_DATAPOINTS, MAX_DATAPOINTS_VALUE);
 		props.setProperty(SEED, SEED_VALUE);
+		props.setProperty(AUTO_UPDATE, AUTO_UPDATE_VALUE);
+		props.setProperty(GIT_TOKEN, GIT_TOKEN_VALUE);
 		try {
 			FileOutputStream outputStream = new FileOutputStream(path);
 			props.store(outputStream, "Property file for Tercen. Put it in the FlowJo plugin directory.");

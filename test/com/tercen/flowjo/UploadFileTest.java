@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.UserSession;

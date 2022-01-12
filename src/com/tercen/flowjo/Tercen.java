@@ -216,14 +216,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				Version pluginServerVersion = client.userService.getServerVersion("flowjoPlugin");
 				if (!Utils.isPluginVersionSupported(version, pluginServerVersion)
 						|| Utils.isPluginOutdated(version, GIT_TOKEN_VALUE)) {
-					String message = "Your plugin version is outdated. A newer version will be downloaded.";
-					if (!Utils.isPluginVersionSupported(version, pluginServerVersion)) {
-						message = "Your plugin version is not supported anymore. A newer version will be downloaded.";
-					}
-					JOptionPane.showMessageDialog(null, message, "Tercen Plugin V" + getVersion(),
-							JOptionPane.WARNING_MESSAGE);
 					Updater.downloadLatestVersion(this, version, GIT_TOKEN_VALUE);
-					JOptionPane.showMessageDialog(null, "The download has been completed, please restart FlowJo.",
+					JOptionPane.showMessageDialog(null, "Your plugin has been updated, please restart FlowJo now.",
 							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
 					return result;
 				}

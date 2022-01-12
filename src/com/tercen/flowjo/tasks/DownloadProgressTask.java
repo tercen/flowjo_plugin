@@ -45,14 +45,14 @@ public class DownloadProgressTask extends JFrame {
 	}
 
 	public void showDialog() {
-		setTitle("Download Progress");
+		setTitle("Updating Tercen plugin, progress..");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setLayout(new BorderLayout());
 		add(new ProgressPane(progressBar));
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
-		setSize(new Dimension(300, 100));
+		setSize(new Dimension(500, 100));
 		setIconImage(((ImageIcon) this.plugin.getIcon()).getImage());
 	}
 

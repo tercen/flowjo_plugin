@@ -195,13 +195,28 @@ public class TercenGUI {
 					result.put("pwd", passWord);
 					result.put("token", plugin.session.token.token);
 				} catch (ServiceError e) {
-					JOptionPane optionPane = new JOptionPane(e.getMessage(), JOptionPane.ERROR_MESSAGE);
+					String userMessage = getFailedUserMessage(userName, e);
+					JOptionPane optionPane = new JOptionPane(userMessage, JOptionPane.ERROR_MESSAGE);
 					JDialog dialog = optionPane.createDialog("Failure");
 					dialog.setAlwaysOnTop(true);
 					dialog.setVisible(true);
 					createUser(client, emailAddress);
 				}
 			}
+		}
+		return result;
+	}
+
+	private String getFailedUserMessage(String userName, ServiceError e) {
+		String result = e.getMessage();
+		if (result.contains("user.create.password.required")) {
+			result = "Oops, you forgot to make a password. Can you try again?";
+		} else if (result.contains("user.create.username.not.valid")) {
+			result = String.format(
+					"Oops, we can't create '%s'. We can only use letters and numbers for User Names. Can you try again?",
+					userName);
+		} else if (result.contains("user.create.username.not.available")) {
+			result = "Oops, this User Name already exists. Looks like somebody got there before you. Can you try again?";
 		}
 		return result;
 	}

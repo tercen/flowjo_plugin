@@ -283,7 +283,7 @@ public class TercenGUI {
 				+ "<li>Double Click any Tercen Connector line to open the Uploader.</li>" + "</ul></html>");
 		JEditorPane pane = createPaneWithLink(false, false);
 		pane.setText("<html><center><div style='font-size: 12; font-family: Dialog; margin-bottom: 5px;'>"
-				+ "<a href='https://learn.tercen.com'>Learn more</a></div></center></html>");
+				+ "<a href='https://app.intercom.com/a/apps/fvhxgh49/articles/articles/5880883/show'>Learn more</a></div></center></html>");
 		result.add(pane);
 		result.add(new JSeparator());
 		return result;

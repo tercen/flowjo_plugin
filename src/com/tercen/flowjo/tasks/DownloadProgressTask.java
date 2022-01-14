@@ -14,15 +14,15 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.tercen.flowjo.Tercen;
 
 public class DownloadProgressTask extends JFrame {
 
 	private static final long serialVersionUID = 1L;
-	private static final Logger logger = LogManager.getLogger(DownloadProgressTask.class);
+	private static final Logger logger = LogManager.getLogger();
 	private JProgressBar progressBar;
 	private Tercen plugin;
 

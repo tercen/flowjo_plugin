@@ -21,9 +21,9 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
@@ -48,7 +48,7 @@ import nu.studer.java.util.OrderedProperties;
 
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
-	private static final Logger logger = LogManager.getLogger(Tercen.class);
+	private static final Logger logger = LogManager.getLogger();
 	protected static final String pluginName = "Connector";
 	protected static final String version = Utils.getProjectVersion();
 	protected static final String CSV_FILE_NAME = "csvFileName";
@@ -93,7 +93,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	public Tercen() {
 		super(pluginName);
-		PropertyConfigurator.configure(getClass().getResource("/log4j.properties"));
+		LoggerContext context = (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
+		context.setConfigLocation(new File("src/main/resources/log4j2.xml").toURI());
 		logger.debug("Read upload properties file");
 		readPropertiesFile();
 	}

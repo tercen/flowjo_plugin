@@ -24,8 +24,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen;
@@ -42,7 +42,7 @@ import com.tercen.service.ServiceError;
 public class UploadProgressTask extends JFrame {
 
 	private static final long serialVersionUID = 1L;
-	private static final Logger logger = LogManager.getLogger(UploadProgressTask.class);
+	private static final Logger logger = LogManager.getLogger();
 	private static final int CSV_TASK_COUNT = 3;
 	private JProgressBar progressBar;
 	private String downSampleMessage;

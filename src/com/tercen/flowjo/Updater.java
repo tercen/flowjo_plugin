@@ -28,7 +28,7 @@ import com.tercen.flowjo.tasks.DownloadProgressTask;
 
 public class Updater {
 
-	private static final Logger logger = LogManager.getLogger(Updater.class);
+	private static final Logger logger = LogManager.getLogger();
 	private static final String PLUGIN_REPO = "tercen/flowjo_plugin";
 	private static final String ARTIFACTS_URL = "https://api.github.com/repos/" + PLUGIN_REPO + "/actions/artifacts";
 	private static final String TAGS_URL = "https://api.github.com/repos/" + PLUGIN_REPO + "/tags";

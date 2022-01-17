@@ -61,7 +61,7 @@ import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
 
-	private static final Logger logger = LogManager.getLogger(Utils.class);
+	private static final Logger logger = LogManager.getLogger();
 	private static final String SESSION_FILE_NAME = "session.ser";
 	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";

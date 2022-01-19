@@ -13,6 +13,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -67,11 +68,19 @@ public class Updater {
 		}
 	}
 
-	protected static boolean newVersionAvailable(String currentPluginVersion, String gitToken)
-			throws JSONException, ClientProtocolException, IOException {
+	protected static boolean newVersionAvailable(String currentPluginVersion, String gitToken) throws JSONException {
 		boolean result = false;
 		CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-		JSONArray tags = new JSONArray(doRequest(httpClient, TAGS_URL, gitToken));
+		logger.debug("Check if new plugin version is available");
+		String tagsResult = "";
+		try {
+			tagsResult = doRequest(httpClient, TAGS_URL, gitToken);
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+			return (result);
+		}
+
+		JSONArray tags = new JSONArray(tagsResult);
 		JSONObject latestTag = (JSONObject) tags.get(0);
 		String latestVersion = (String) latestTag.get("name");
 		if (latestVersion.compareTo(currentPluginVersion) > 0) {
@@ -124,7 +133,12 @@ public class Updater {
 		request.addHeader("Authorization", "token " + gitToken);
 		request.addHeader("content-type", "application/json");
 		HttpResponse result = httpClient.execute(request);
-		return EntityUtils.toString(result.getEntity(), "UTF-8");
+		StatusLine status = result.getStatusLine();
+		if (status.getStatusCode() != 200) {
+			throw new ClientProtocolException(URL + ": " + status.getReasonPhrase());
+		} else {
+			return EntityUtils.toString(result.getEntity(), "UTF-8");
+		}
 	}
 
 	private static void writeToFileOutputStream(InputStream is, FileOutputStream fos) throws IOException {

@@ -1,4 +1,4 @@
-package com.tercen.flowjo;
+package com.tercen.flowjo.tasks;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -17,16 +17,20 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.Tercen;
+import com.tercen.flowjo.TercenWebSocketListener;
+import com.tercen.flowjo.Utils;
 import com.tercen.model.impl.CSVTask;
 import com.tercen.model.impl.FailedState;
 import com.tercen.model.impl.FileDocument;
@@ -38,13 +42,16 @@ import com.tercen.service.ServiceError;
 public class UploadProgressTask extends JFrame {
 
 	private static final long serialVersionUID = 1L;
-	private static final Logger logger = LogManager.getLogger(UploadProgressTask.class);
+	private static final Logger logger = LogManager.getLogger();
 	private static final int CSV_TASK_COUNT = 3;
 	private JProgressBar progressBar;
+	private String downSampleMessage;
+	private Tercen plugin;
 
-	public UploadProgressTask(Tercen tercen) {
+	public UploadProgressTask(Tercen plugin) {
+		this.plugin = plugin;
 		progressBar = new JProgressBar();
-		progressBar.setSize(new Dimension(200, 80));
+		progressBar.setSize(new Dimension(600, 80));
 		progressBar.setValue(0);
 		progressBar.setStringPainted(true);
 		progressBar.addChangeListener(new ChangeListener() {
@@ -57,15 +64,22 @@ public class UploadProgressTask extends JFrame {
 				}
 			}
 		});
+	}
+
+	public void showDialog() {
 		setTitle("Upload Progress");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setLayout(new BorderLayout());
-		add(new TestPane(progressBar));
+		add(new ProgressPane(progressBar));
 		pack();
 		setLocationRelativeTo(null);
 		setVisible(true);
-		setSize(new Dimension(300, 100));
-		setIconImage(((ImageIcon) tercen.getIcon()).getImage());
+		if (downSampleMessage != null && !downSampleMessage.equals("")) {
+			setSize(new Dimension(700, 150));
+		} else {
+			setSize(new Dimension(300, 100));
+		}
+		setIconImage(((ImageIcon) this.plugin.getIcon()).getImage());
 	}
 
 	public void setIterations(int maxItems) {
@@ -73,16 +87,27 @@ public class UploadProgressTask extends JFrame {
 		progressBar.setMaximum(maxItems + CSV_TASK_COUNT);
 	}
 
-	public class TestPane extends JPanel {
+	public void setMessage(String message) {
+		downSampleMessage = message;
+	}
 
-		public TestPane(JProgressBar progressBar) {
+	public class ProgressPane extends JPanel {
+
+		public ProgressPane(JProgressBar progressBar) {
 			setBorder(new EmptyBorder(10, 10, 10, 10));
 			setLayout(new GridBagLayout());
 			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.weightx = 0.5;
 			gbc.insets = new Insets(4, 4, 4, 4);
 			gbc.gridx = 0;
 			gbc.gridy = 0;
 			add(progressBar, gbc);
+			gbc.gridy = 1;
+			gbc.insets = new Insets(14, 4, 4, 4);
+			if (downSampleMessage != null && !downSampleMessage.equals("")) {
+				add(new JLabel("<html><i>" + downSampleMessage + "</i></html>"), gbc);
+			}
 		}
 	}
 

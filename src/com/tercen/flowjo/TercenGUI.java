@@ -4,6 +4,8 @@ import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Insets;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,21 +14,24 @@ import java.util.stream.IntStream;
 
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
+import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
+import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
 import com.treestar.lib.FJPluginHelper;
 import com.treestar.lib.gui.FJList;
@@ -39,12 +44,14 @@ import com.treestar.lib.xml.SElement;
 
 public class TercenGUI {
 
-	private static final Logger logger = LogManager.getLogger(TercenGUI.class);
+	private static final Logger logger = LogManager.getLogger();
 	private static final String CHOOSE_DATA = "Choose Data";
 	private static final String SELECT_CHANNELS = "Select FCS channels";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
+	private static final String RETURN_TO_TERCEN = "Return to my project.";
 
-	private static final String CREATE_USER_TEXT = "Create Tercen User";
+	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
+	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -66,30 +73,18 @@ public class TercenGUI {
 		if (this.plugin.pluginState == ImportPluginStateEnum.collectingSamples
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
-			componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
-				JEditorPane pane = new JEditorPane();
-				pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
-				pane.setEditable(false);
+				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
+				JEditorPane pane = createPaneWithLink(true, true);
 				pane.setText(
-						String.format("<html><a href='%s'>Go to Tercen Project</a></html>", this.plugin.projectURL));
-				pane.setToolTipText("Go to the Tercen Project");
-				pane.setBackground(UIManager.getColor("Panel.background"));
-				pane.addHyperlinkListener(new HyperlinkListener() {
-					@Override
-					public void hyperlinkUpdate(HyperlinkEvent hle) {
-						if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
-							Desktop desktop = Desktop.getDesktop();
-							try {
-								desktop.browse(hle.getURL().toURI());
-							} catch (Exception ex) {
-								logger.error(ex.getMessage());
-							}
-						}
-					}
-				});
+						String.format("<html><a href='%s'>%s</a></html>", this.plugin.projectURL, RETURN_TO_TERCEN));
+				pane.setToolTipText("Go to existing project");
 				componentList.add(pane);
+				componentList.add(new JSeparator());
+				componentList.add(addHeaderString("Re-Upload Data", FontUtil.dlogBold16));
+			} else {
+				componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 				componentList.add(new JSeparator());
 			}
 
@@ -119,13 +114,13 @@ public class TercenGUI {
 			componentList.add(new JScrollPane(paramList));
 			componentList.add(new JSeparator());
 
-			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
-					JOptionPane.PLAIN_MESSAGE);
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			if (option == JOptionPane.OK_OPTION) {
 				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
 				// set selected sample files
 				if (samplePopulationsList != null) {
+					plugin.selectedSamplePops.clear();
 					plugin.selectedSamplePops.addAll(samplePopulationsList.getSelectedValuesList());
 				}
 				plugin.pluginState = ImportPluginStateEnum.uploading;
@@ -134,13 +129,13 @@ public class TercenGUI {
 				result = false;
 			}
 		} else {
-
-			componentList.add(addHeaderString("Tercen Plugin Instructions", FontUtil.dlogBold16));
+			FJLabel headerLabel = addHeaderString("<html><center>Instructions</center><html>", FontUtil.dlogBold16);
+			headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+			componentList.add(headerLabel);
 			componentList.addAll(addHeaderComponents());
 
-			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
-					JOptionPane.PLAIN_MESSAGE);
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			if (option == JOptionPane.OK_OPTION) {
 				result = true;
 			} else {
@@ -150,26 +145,47 @@ public class TercenGUI {
 		return result;
 	}
 
+	private String getDialogTitle() {
+		return "Tercen Plugin V" + plugin.getVersion();
+	}
+
 	public Map<String, Object> createUser(TercenClient client, String emailAddress) {
 		Map<String, Object> result = new HashMap<String, Object>();
 		List<Object> componentList = new ArrayList<>();
 
 		// show create user dialog
 		if (emailAddress != null) {
-			componentList.add(addHeaderString(CREATE_USER_TEXT, FontUtil.dlogBold16));
+			componentList.add(addHeaderString(CREATE_USER_TITLE_TEXT, FontUtil.dlogBold16));
+			FJLabel subTitleLabel = new FJLabel(CREATE_USER_SUBTITLE_TEXT);
+			subTitleLabel.setFont(FontUtil.BoldDialog12);
+			componentList.add(subTitleLabel);
+			componentList.add(new FJLabel("<html><br/></html>"));
 
 			String userName = emailAddress.substring(0, emailAddress.indexOf("@"));
-			Component[] userLabelField = createLabelTextFieldCombo("Username", userName, userName, true);
-			Component[] emailLabelField = createLabelTextFieldCombo("Email", emailAddress, emailAddress, true);
-			Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true);
+			Component[] userLabelField = createLabelTextFieldCombo("Username", userName, userName, true,
+					FontUtil.dlog12);
+			Component[] emailLabelField = createLabelTextFieldCombo("Email", emailAddress, emailAddress, true,
+					FontUtil.dlog12);
+			Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true, FontUtil.dlog12);
 
 			componentList.add(new HBox(userLabelField));
 			componentList.add(new HBox(emailLabelField));
 			componentList.add(new HBox(passwordLabelField));
+			componentList.add(new FJLabel("<html><p/></html>"));
 
-			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-					plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION,
-					JOptionPane.PLAIN_MESSAGE);
+			FJLabel licenseLabel = new FJLabel("Tercen Licence");
+			licenseLabel.setFont(FontUtil.BoldDialog12);
+			componentList.add(licenseLabel);
+			JEditorPane pane = createPaneWithLink(false, false);
+			pane.setText(
+					"<html><div style='font-size: 12; font-family: Dialog'>By clicking OK you agree to upload under our standard terms and conditions.<br/>"
+							+ "Click the links to find out more about Tercen <a href='https://www.tercen.com/terms-of-service'>Terms of Service</a>"
+							+ " and <a href='https://www.tercen.com/privacy-policy'>Privacy Policy</a>.<br/>If you have any questions contact "
+							+ "<b>support@tercen.com</b> and we will be happy to answer them.</div></html>");
+			componentList.add(pane);
+
+			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			if (option == JOptionPane.OK_OPTION) {
 				userName = ((FJTextField) userLabelField[1]).getText();
 				emailAddress = ((FJTextField) emailLabelField[1]).getText();
@@ -179,10 +195,28 @@ public class TercenGUI {
 					result.put("pwd", passWord);
 					result.put("token", plugin.session.token.token);
 				} catch (ServiceError e) {
-					// TODO inform user -> retry?
-					e.printStackTrace();
+					String userMessage = getFailedUserMessage(userName, e);
+					JOptionPane optionPane = new JOptionPane(userMessage, JOptionPane.ERROR_MESSAGE);
+					JDialog dialog = optionPane.createDialog("Failure");
+					dialog.setAlwaysOnTop(true);
+					dialog.setVisible(true);
+					createUser(client, emailAddress);
 				}
 			}
+		}
+		return result;
+	}
+
+	private String getFailedUserMessage(String userName, ServiceError e) {
+		String result = e.getMessage();
+		if (result.contains("user.create.password.required")) {
+			result = "Oops, you forgot to make a password. Can you try again?";
+		} else if (result.contains("user.create.username.not.valid")) {
+			result = String.format(
+					"Oops, we can't create '%s'. We can only use letters and numbers for User Names. Can you try again?",
+					userName);
+		} else if (result.contains("user.create.username.not.available")) {
+			result = "Oops, this User Name already exists. Looks like somebody got there before you. Can you try again?";
 		}
 		return result;
 	}
@@ -198,8 +232,8 @@ public class TercenGUI {
 		componentList.add(new HBox(emailLabelField));
 		componentList.add(new HBox(passwordLabelField));
 
-		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(),
-				plugin.getName() + " " + plugin.getVersion(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 		if (option == JOptionPane.OK_OPTION) {
 			result = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 		}
@@ -221,6 +255,13 @@ public class TercenGUI {
 		GuiFactory.setSizes(field, new Dimension(fixedFieldWidth, fixedFieldHeigth));
 		GuiFactory.setSizes(label, new Dimension(fixedLabelWidth, fixedLabelHeigth));
 		return new Component[] { label, field };
+	}
+
+	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
+			boolean editable, Font font) {
+		Component[] result = createLabelTextFieldCombo(labelText, fieldValue, fieldTooltip, editable);
+		result[0].setFont(font);
+		return result;
 	}
 
 	private FJList createParameterList(List<String> parameters, SElement sElement, boolean selectAll) {
@@ -245,24 +286,54 @@ public class TercenGUI {
 	}
 
 	private FJLabel addHeaderString(String s, Font font) {
-		FJLabel txt = new FJLabel(s);
-		txt.setFont(font);
-		return txt;
-	}
-
-	private FJLabel addHeaderString(String s) {
-		return addHeaderString(s, FontUtil.dlogItal12);
+		FJLabel label = new FJLabel(s);
+		label.setFont(font);
+		return label;
 	}
 
 	private List<Object> addHeaderComponents() {
 		List<Object> result = new ArrayList<>();
-		result.add("");
-		result.add("Press Ok to begin.");
-		result.add("A Tercen connector will be attached to your data selection.");
-		result.add("Drag and Drop the Tercen connector to any other files (or gates) you wish to upload.");
-		result.add("Double Click any Tercen connector line to open the Tercen uploader.");
+		result.add("<html><ul>" + "<li>Press Ok to attach the Tercen Connector to your selected population.</li>"
+				+ "<li>Drag and Drop the Tercen connector to any other populations you wish to upload.</li>"
+				+ "<li>Double Click any Tercen Connector line to open the Uploader.</li>" + "</ul></html>");
+		JEditorPane pane = createPaneWithLink(false, false);
+		pane.setText("<html><center><div style='font-size: 12; font-family: Dialog; margin-bottom: 5px;'>"
+				+ "<a href='https://app.intercom.com/a/apps/fvhxgh49/articles/articles/5880883/show'>Learn more</a></div></center></html>");
+		result.add(pane);
 		result.add(new JSeparator());
 		return result;
 	}
 
+	private JEditorPane createPaneWithLink(boolean hideParentOnClick, boolean addToken) {
+		JEditorPane pane = new JEditorPane();
+		pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
+		pane.setEditable(false);
+		pane.setBackground(UIManager.getColor("Panel.background"));
+		Insets margin = pane.getMargin();
+		pane.setMargin(new Insets(margin.top, 0, margin.bottom, margin.right));
+		pane.addHyperlinkListener(new HyperlinkListener() {
+			@Override
+			public void hyperlinkUpdate(HyperlinkEvent hle) {
+				if (HyperlinkEvent.EventType.ACTIVATED.equals(hle.getEventType())) {
+					Desktop desktop = Desktop.getDesktop();
+					try {
+						URI uri = hle.getURL().toURI();
+						if (addToken) {
+							TercenClient client = new TercenClient(plugin.hostName);
+							UserSession session = Utils.getAndExtendTercenSession(client, plugin.gui, plugin.passWord);
+							client.httpClient.setAuthorization(session.token.token);
+							uri = new URI(hle.getURL().toString() + Utils.addToken(client, session.user.id, true));
+						}
+						desktop.browse(uri);
+						if (hideParentOnClick) {
+							JOptionPane.getRootFrame().dispose();
+						}
+					} catch (Exception ex) {
+						logger.error(ex.getMessage());
+					}
+				}
+			}
+		});
+		return pane;
+	}
 }

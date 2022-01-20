@@ -4,6 +4,7 @@ import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -11,7 +12,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -20,15 +21,18 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
+import com.tercen.model.impl.Version;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.core.Sample;
@@ -40,19 +44,30 @@ import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
 import com.treestar.lib.xml.SElement;
 
+import nu.studer.java.util.OrderedProperties;
+
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
-	private static final Logger logger = LogManager.getLogger(Tercen.class);
+	private static final Logger logger = LogManager.getLogger();
 	protected static final String pluginName = "Connector";
-	protected static final String version = "1.0";
+	protected static final String version = Utils.getProjectVersion();
 	protected static final String CSV_FILE_NAME = "csvFileName";
 
 	protected enum ImportPluginStateEnum {
 		empty, collectingSamples, uploading, uploaded, error;
 	}
 
+	private static final String TERCEN_PROPERTIES = "tercen.properties";
+	private static final String HOST = "host";
+	private static final String MAX_UPLOAD_DATAPOINTS = "max.upload.datapoints";
+	private static final String SEED = "seed";
+
 	// default settings
-	protected static final String HOSTNAME_URL = "https://tercen.com/";
+	protected static final String HOSTNAME_URL = "https://stage.tercen.com/";
+	protected static final String MAX_DATAPOINTS_VALUE = "300000000";
+	protected static final String SEED_VALUE = "42";
+	protected static final String AUTO_UPDATE_VALUE = "false";
+	protected static final String GIT_TOKEN_VALUE = "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";
 	protected static final String DOMAIN = "tercen";
 	protected static final String ICON_NAME = "logo.png";
 
@@ -67,16 +82,19 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected ArrayList<String> channels = new ArrayList<String>();
 	private String csvFileName;
 	protected String projectURL;
+	protected long seed = -1;
+	protected long maxDataPoints = -1;
 
 	// properties to gather multiple samples
 	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
-	protected HashSet<String> samplePops = new HashSet<String>();
-	protected HashSet<String> selectedSamplePops = new HashSet<String>();
-	private TercenGUI gui = new TercenGUI(this);
+	protected LinkedHashSet<String> samplePops = new LinkedHashSet<String>();
+	protected LinkedHashSet<String> selectedSamplePops = new LinkedHashSet<String>();
+	protected TercenGUI gui = new TercenGUI(this);
 
 	public Tercen() {
 		super(pluginName);
-		PropertyConfigurator.configure(getClass().getResource("/log4j.properties"));
+		LoggerContext context = (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
+		context.setConfigLocation(new File("src/main/resources/log4j2.xml").toURI());
 		logger.debug("Read upload properties file");
 		readPropertiesFile();
 	}
@@ -140,23 +158,29 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		for (AppNode appNode : nodeList) {
 			if (appNode.isExternalPopNode()) {
 				appNode.setAnnotation(text);
-				System.out.println(appNode.getAnnotation());
 			}
 		}
 	}
 
-	public void setWorkspaceUploadText(List<AppNode> nodeList, String text) {
+	public ExternalAlgorithmResults setWorkspaceUploadText(ExternalAlgorithmResults result, List<AppNode> nodeList,
+			String text) {
 		if (!text.equals("")) {
+			boolean anyAppNodeTextSet = false;
 			for (AppNode appNode : nodeList) {
 				if (appNode.isExternalPopNode()) {
 					// check if file has been selected for upload
 					String csvFileName = Utils.getCsvFileName(appNode);
 					if (this.selectedSamplePops.contains(csvFileName)) {
 						appNode.setAnnotation(text);
+						anyAppNodeTextSet = true;
 					}
 				}
 			}
+			if (anyAppNodeTextSet) {
+				result.setWorkspaceString("Double Click to access your Tercen project.");
+			}
 		}
+		return result;
 	}
 
 	@Override
@@ -175,6 +199,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				return result;
 			}
 
+			// reset state
+			if (pluginState == ImportPluginStateEnum.uploaded) {
+				pluginState = ImportPluginStateEnum.collectingSamples;
+			}
+
 			String fileName = sampleFile.getPath();
 			if (pluginState == ImportPluginStateEnum.empty) {
 				csvFileName = fileName;
@@ -182,6 +211,18 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			} else if (pluginState == ImportPluginStateEnum.collectingSamples) {
 				csvFileName = fileName;
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
+				TercenClient client = new TercenClient(hostName);
+
+				// Check and update plugin if needed
+				Version pluginServerVersion = client.userService.getServerVersion("flowjoPlugin");
+				if (!Utils.isPluginVersionSupported(version, pluginServerVersion)
+						|| Utils.isPluginOutdated(version, GIT_TOKEN_VALUE)) {
+					Updater.downloadLatestVersion(this, version, GIT_TOKEN_VALUE);
+					JOptionPane.showMessageDialog(null, "Your plugin has been updated, please restart FlowJo now.",
+							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
+					return result;
+				}
+
 				if (!sampleFile.exists()) {
 					JOptionPane.showMessageDialog(null, "Input file does not exist", "ImportPlugin error",
 							JOptionPane.ERROR_MESSAGE);
@@ -189,13 +230,12 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				} else {
 					Schema uploadResult = null;
 
-					TercenClient client = new TercenClient(hostName);
 					userName = Utils.getCurrentPortalUser();
 					if (userName == null || userName.equals("")) {
-						JOptionPane.showMessageDialog(null, "You need to be logged in, to be able to use this plugin.",
-								"ImportPlugin error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, "FlowJo username needs to be set.", "ImportPlugin error",
+								JOptionPane.ERROR_MESSAGE);
 						workspaceText = "Selected";
-						logger.error(String.format("FlowJo user %s not logged in, can't upload", userName));
+						logger.error("FlowJo username is not set, can't upload");
 					} else {
 						List<User> users = Utils.getTercenUser(client, userName);
 						if (users.size() == 0) {
@@ -206,14 +246,13 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 								passWord = (String) userResult.get("pwd");
 								token = (String) userResult.get("token");
 								Utils.saveTercenSession(session);
+							} else {
+								pluginState = ImportPluginStateEnum.collectingSamples;
+								return result;
 							}
 						} else {
 							// get and check token for existing user
-							session = Utils.getTercenSession();
-							if (session == null || !client.userService.isTokenValid(session.token.token)) {
-								session = Utils.reconnect(client, gui, userName, passWord);
-								Utils.saveTercenSession(session);
-							}
+							session = Utils.getAndExtendTercenSession(client, gui, passWord);
 							client.httpClient.setAuthorization(session.token.token);
 						}
 
@@ -224,19 +263,18 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						// upload csv file
 						if (selectedSamplePops.size() > 0) {
 							uploadProgressTask = new UploadProgressTask(this);
-							uploadResult = Utils.uploadCsvFile(client, project, selectedSamplePops, channels,
-									uploadProgressTask);
+							uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
+									uploadProgressTask, Utils.getTercenDataTableName(wsp));
 						}
 
 						// open browser
 						if (uploadResult != null) {
-							String url = Utils.getTercenCreateWorkflowURL(hostName, session.user.id, uploadResult, wsp);
+							String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
+									uploadResult, wsp);
 							Desktop desktop = java.awt.Desktop.getDesktop();
 							URI uri = new URI(String.valueOf(url));
 							desktop.browse(uri);
 							projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
-							// add subnode
-							addGatingML(result);
 							workspaceText = String.format("Uploaded to %s.", hostName);
 						} else {
 							JOptionPane.showMessageDialog(null,
@@ -261,7 +299,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				break;
 			case uploaded:
 				nodeList = Utils.getAllSelectedTercenNodes(wsp);
-				setWorkspaceUploadText(nodeList, workspaceText);
+				result = setWorkspaceUploadText(result, nodeList, workspaceText);
 				break;
 			default:
 				break;
@@ -291,40 +329,53 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			logger.error(e.getMessage());
 			setWorkspaceText(nodeList, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
+		} catch (JSONException e) {
+			logger.error(e.getMessage());
+			setWorkspaceText(nodeList, e.getMessage());
+			pluginState = ImportPluginStateEnum.error;
 		}
 		return result;
-	}
-
-	private void addGatingML(ExternalAlgorithmResults result) {
-		System.out.println("Adding gates to " + pluginName);
-		SElement gate = new SElement("gating:Gating-ML");
-		int curPop = 0;
-
-		SElement rectGateElem = new SElement("gating:RectangleGate");
-		rectGateElem.setString("gating:id", pluginName + "_" + curPop);
-		gate.addContent(rectGateElem);
-
-		// SElement dimElem = new SElement("gating:dimension");
-		// dimElem.setDouble("gating:min", x - epsilon / 2);
-		// dimElem.setDouble("gating:max", x + epsilon / 2);
-		// rectGateElem.addContent(dimElem);
-
-		// SElement fcsDimElem = new SElement("data-type:fcs-dimension");
-		// fcsDimElem.setString("data-type:name", pluginName);
-		// dimElem.addContent(fcsDimElem);
-		result.setGatingML(gate.toString());
 	}
 
 	private void readPropertiesFile() {
 		Properties prop = new Properties();
 		File jarfile = new File(Tercen.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-		String propertyFilePath = jarfile.getParent() + File.separator + "tercen.properties";
+		String propertyFilePath = jarfile.getParent() + File.separator + TERCEN_PROPERTIES;
 		try {
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
-			hostName = prop.getProperty("host");
+			hostName = prop.getProperty(HOST);
+			String maxDataPointsStr = prop.getProperty(MAX_UPLOAD_DATAPOINTS);
+			if (Utils.isNumeric(maxDataPointsStr)) {
+				maxDataPoints = Long.valueOf(maxDataPointsStr);
+			}
+			String seedStr = prop.getProperty(SEED);
+			if (Utils.isNumeric(maxDataPointsStr)) {
+				seed = Long.valueOf(seedStr);
+			}
 		} catch (IOException e) {
-			e.printStackTrace();
-			// some error reading properties file, use default settings
+			logger.error(e.getMessage());
+			if (e.getClass().getName().equalsIgnoreCase("java.io.FileNotFoundException")) {
+				// generate file if it can't be found
+				saveTercenProperties(propertyFilePath);
+				hostName = HOSTNAME_URL;
+				maxDataPoints = Long.valueOf(MAX_DATAPOINTS_VALUE);
+				seed = Long.valueOf(SEED_VALUE);
+			}
+		}
+	}
+
+	private void saveTercenProperties(String path) {
+		OrderedProperties props = new OrderedProperties();
+		props.setProperty(HOST, HOSTNAME_URL);
+		props.setProperty(MAX_UPLOAD_DATAPOINTS, MAX_DATAPOINTS_VALUE);
+		props.setProperty(SEED, SEED_VALUE);
+		try {
+			FileOutputStream outputStream = new FileOutputStream(path);
+			props.store(outputStream, "Property file for Tercen. Put it in the FlowJo plugin directory.");
+			outputStream.close();
+			logger.debug(String.format("Tercen property file has been generated at: %s", path));
+		} catch (IOException e) {
+			logger.error(e.getMessage());
 		}
 	}
 
@@ -336,6 +387,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			Sample sample = FJPluginHelper.getSample(arg0);
 			Workspace wsp = sample.getWorkspace();
 			List<AppNode> nodeList = Utils.getAllSelectedTercenNodes(wsp);
+			samplePops.clear();
 			for (AppNode node : nodeList) {
 				samplePops.add(Utils.getCsvFileName(node));
 			}

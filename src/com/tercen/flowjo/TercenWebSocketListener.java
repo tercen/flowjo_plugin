@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.tercen.model.base.TaskEventBase;
 import com.tercen.model.base.Vocabulary;
@@ -25,7 +25,7 @@ import tercen.tson.jtson;
 
 public final class TercenWebSocketListener extends WebSocketListener {
 
-	private static final Logger logger = LogManager.getLogger(TercenWebSocketListener.class);
+	private static final Logger logger = LogManager.getLogger();
 	private CountDownLatch latch;
 	private long baseTime = System.currentTimeMillis();
 	public Throwable throwable = null;

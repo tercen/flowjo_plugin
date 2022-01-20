@@ -14,24 +14,33 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Queue;
+import java.util.Random;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.apache.http.client.ClientProtocolException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.JSONException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.comparator.SampleComparator;
+import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.base.Vocabulary;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
@@ -40,28 +49,30 @@ import com.tercen.model.impl.ProjectDocument;
 import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
+import com.tercen.model.impl.Version;
 import com.tercen.service.ServiceError;
 import com.treestar.flowjo.application.workspace.Workspace;
 import com.treestar.flowjo.core.Sample;
-import com.treestar.flowjo.core.SampleList;
 import com.treestar.flowjo.core.nodes.AppNode;
 import com.treestar.flowjo.core.nodes.SampleNode;
 import com.treestar.flowjo.core.nodes.templating.ExternalPopNode;
+import com.treestar.flowjo.engine.EngineManager;
 import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 
 public class Utils {
 
+	private static final Logger logger = LogManager.getLogger();
 	private static final String SESSION_FILE_NAME = "session.ser";
 	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
-	private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
 
-	public static Schema uploadCsvFile(TercenClient client, Project project, HashSet<String> fileNames,
-			ArrayList<String> channels, UploadProgressTask uploadProgressTask) throws ServiceError, IOException {
+	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project,
+			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
+			String dataTableName) throws ServiceError, IOException {
 
 		FileDocument fileDoc = new FileDocument();
-		String name = getFilename((String) fileNames.toArray()[0]);
+		String name = dataTableName;
 		fileDoc.name = name;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
@@ -72,7 +83,7 @@ public class Utils {
 		metadata.contentEncoding = "iso-8859-1";
 		fileDoc.metadata = metadata;
 
-		File mergedFile = getMergedFile(fileNames);
+		File mergedFile = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -80,7 +91,7 @@ public class Utils {
 		int blockSize = getBlockSize(mergedFile);
 		int iterations = (int) (mergedFile.length() / blockSize);
 		uploadProgressTask.setIterations(iterations);
-		uploadProgressTask.setVisible(true);
+		uploadProgressTask.showDialog();
 		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, blockSize);
 	}
 
@@ -93,15 +104,22 @@ public class Utils {
 		return blockSize;
 	}
 
-	protected static String getTercenProjectURL(String hostName, String teamName, Schema schema)
-			throws UnsupportedEncodingException {
+	protected static String getTercenProjectURL(String hostName, String teamName, Schema schema) {
 		return hostName + teamName + "/p/" + schema.projectId;
 	}
 
-	protected static String getTercenCreateWorkflowURL(String hostName, String teamName, Schema schema, Workspace wsp)
-			throws UnsupportedEncodingException {
-		return hostName + teamName + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId=" + schema.id
-				+ "&client=tercen.flowjo.plugin&workflow.name=" + Utils.getWorkflowName(wsp);
+	protected static String getTercenCreateWorkflowURL(TercenClient client, String hostName, String userId,
+			Schema schema, Workspace wsp) throws UnsupportedEncodingException, ServiceError {
+		String url = hostName + userId + "/p/" + schema.projectId + "?action=new.workflow&tags=flowjo&schemaId="
+				+ schema.id + "&client=tercen.flowjo.plugin&workflow.name="
+				+ Utils.getWorkflowName(wsp).replace(" ", "_");
+		logger.debug("Tercen create workflow URL:" + url);
+		return url + Utils.addToken(client, userId, false);
+	}
+
+	protected static String addToken(TercenClient client, String userId, boolean onlyParam) throws ServiceError {
+		String addParamStr = onlyParam ? "?" : "&";
+		return String.format("%stoken=%s", addParamStr, Utils.createTemporaryToken(client, userId));
 	}
 
 	private static String getWorkflowName(Workspace wsp) {
@@ -131,23 +149,43 @@ public class Utils {
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
-	private static File getMergedFile(HashSet<String> paths) throws IOException {
+	private static File getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
+			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException {
 		List<String> mergedLines = new ArrayList<>();
+		logger.debug(String.format("Create upload file from %d sample files", paths.size()));
 		for (String p : paths) {
 			List<String> lines = Files.readAllLines(Paths.get(p), Charset.forName("UTF-8"));
 			if (!lines.isEmpty()) {
+				// add header only once
 				if (mergedLines.isEmpty()) {
-					mergedLines.add(lines.get(0).concat(", filename")); // add header only once
+					List<String> headerList = Arrays.asList(lines.get(0).split(","));
+					String header = headerList.stream().map(s -> s.replace("\"", ""))
+							.map(s -> setColumnValue(channels, s)).collect(Collectors.joining(","));
+					mergedLines.add(header.concat(", filename"));
 				}
 				List<String> content = lines.subList(1, lines.size());
 				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
 				mergedLines.addAll(content);
 			}
 		}
-		// add column filename
+		mergedLines = Utils.downsample(mergedLines, plugin.maxDataPoints, plugin.seed, plugin.gui, uploadProgressTask,
+				channels.size());
+
 		File mergedFile = File.createTempFile("merged-", ".csv");
 		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
+		logger.debug(String.format("Upload file has %d rows", mergedLines.size()));
 		return mergedFile;
+	}
+
+	// In some cases FlowJo is generated a csv file with shortened column names.
+	// This methods sets the full column name, needed by Tercen.
+	private static String setColumnValue(List<String> channels, String input) {
+		String result = input;
+		List<String> filteredChannels = channels.stream().filter(c -> c.startsWith(input)).collect(Collectors.toList());
+		if (filteredChannels.size() == 1) {
+			result = filteredChannels.get(0);
+		}
+		return result;
 	}
 
 	private static String getFilename(String fullFileName) {
@@ -160,7 +198,7 @@ public class Utils {
 		String result = null;
 		try {
 			CloudAuthInfo cai = CloudAuthInfo.getInstance();
-			if (cai != null && cai.isLoggedIn()) {
+			if (cai != null) {
 				result = cai.getUsername();
 			}
 		} catch (Exception e) {
@@ -190,23 +228,23 @@ public class Utils {
 		return client.projectService.create(new_project);
 	}
 
-	private static void removeProjectFileIfExists(TercenClient client, Project project, String filename)
+	private static void removeProjectFileIfExists(TercenClient client, Project project, String tableName)
 			throws ServiceError {
 		List<Object> startKey = List.of(project.id, "2000");
 		List<Object> endKey = List.of(project.id, "2100");
 
 		List<ProjectDocument> projectDocs = client.projectDocumentService.findProjectObjectsByLastModifiedDate(startKey,
 				endKey, 100, 0, false, false);
-		projectDocs.stream().filter(p -> p.subKind.equals("TableSchema") && p.name.equals(filename)).forEach(p -> {
+		projectDocs.stream().filter(p -> p.subKind.equals("TableSchema") && p.name.equals(tableName)).forEach(p -> {
 			try {
 				client.tableSchemaService.delete(p.id, p.rev);
 			} catch (ServiceError e) {
-				e.printStackTrace();
+				logger.error(e.getMessage());
 			}
 		});
 	}
 
-	protected static String urlEncodeUTF8(String s) {
+	public static String urlEncodeUTF8(String s) {
 		try {
 			return URLEncoder.encode(s, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
@@ -231,6 +269,10 @@ public class Utils {
 		return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss"));
 	}
 
+	public static String getTercenDataTableName(Workspace wsp) {
+		return "Data_" + getWorkspaceName(wsp) + "_" + Utils.getCurrentLocalDateTimeStampShort();
+	}
+
 	public static String toJson(Map map) throws JsonProcessingException {
 		return new ObjectMapper().writeValueAsString(map);
 	}
@@ -247,9 +289,9 @@ public class Utils {
 				q.remove();
 				if (!appNode.isSampleNode() && appNode.getParent() != null) {
 					if (appNode instanceof ExternalPopNode && appNode.getName().contains(Tercen.pluginName)) {
-						if (!selectedOrUploaded
-								|| (selectedOrUploaded && (appNode.getAnnotation().equalsIgnoreCase("Selected")
-										|| appNode.getAnnotation().startsWith("Uploaded")))) {
+						String annotation = appNode.getAnnotation();
+						if (!selectedOrUploaded || (selectedOrUploaded && annotation.equalsIgnoreCase("Selected")
+								|| annotation.startsWith("Uploaded") || annotation.contains("ServiceError"))) {
 							popList.add(appNode);
 						}
 					}
@@ -274,8 +316,9 @@ public class Utils {
 
 	public static List<AppNode> getAllSelectedTercenNodes(Workspace wsp) {
 		List<AppNode> popList = new ArrayList<AppNode>();
-		SampleList sampleList = wsp.getSampleMgr().getSamples();
-		for (Sample sam : sampleList) {
+		TreeSet<Sample> samples = new TreeSet<Sample>(new SampleComparator());
+		wsp.getSampleMgr().getSamples().stream().forEach(samples::add);
+		for (Sample sam : samples) {
 			SampleNode node = sam.getSampleNode();
 			List<AppNode> tempList = Utils.getTercenNodes(node, true);
 			popList.addAll(tempList);
@@ -293,11 +336,21 @@ public class Utils {
 		return fs.getPath(home, SESSION_FOLDER_NAME, SESSION_FILE_NAME);
 	}
 
-	public static void saveTercenSession(UserSession session) throws IOException {
+	public static boolean isWindows() {
+		if (EngineManager.isWindows()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	protected static void saveTercenSession(UserSession session) throws IOException {
 		Path tokenPath = Utils.getSessionFilePath();
 		Path folderPath = tokenPath.getParent();
 		Files.createDirectories(folderPath);
-		Files.setAttribute(folderPath, "dos:hidden", true);
+		if (Utils.isWindows()) {
+			Files.setAttribute(folderPath, "dos:hidden", true);
+		}
 		ObjectOutputStream objStream = new ObjectOutputStream(new FileOutputStream(tokenPath.toString()));
 		objStream.writeObject(session.toJson());
 		objStream.close();
@@ -333,14 +386,100 @@ public class Utils {
 		return client.userService.connect2(Tercen.DOMAIN, userNameOrEmail, passWord);
 	}
 
-//	public static Token extendTercenSession(TercenClient client, UserSession session) throws ServiceError {
-//		String strToken = client.userService.createToken(session.user.id, (int) Duration.ofDays(15).getSeconds());
-//		DecodedJWT jwt = JWT.decode(strToken);
-//		Token token = new Token();
-//		token.expiry = new com.tercen.model.impl.Date();
-//		token.expiry.value = DATE_TIME_FORMAT.format(jwt.getExpiresAt());
-//		token.token = jwt.getToken();
-//		token.userId = session.user.id;
-//		return token;
-//	}
+	private static String createTemporaryToken(TercenClient client, String userId) throws ServiceError {
+		return client.userService.createToken(userId, 5);
+	}
+
+	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui,
+			UploadProgressTask uploadProgressTask, int channelSize) {
+		List<String> result = new ArrayList<>();
+		if (lines != null && lines.size() >= 1) {
+			result.add(lines.get(0).concat(", random_label")); // header
+			int ncols = result.get(0).split(",").length;
+
+			List<String> content = lines.subList(1, lines.size());
+			int nrows = content.size();
+			List<String> contentResult = content;
+			Random random = seed == -1 ? new Random() : new Random(seed);
+			if (maxDataPoints != -1 && (nrows * ncols) > maxDataPoints) {
+				int maxRows = Math.round(maxDataPoints / ncols);
+				logger.debug(String.format("Downsample data from %d to %d rows", nrows, maxRows));
+				uploadProgressTask.setMessage(String.format(
+						"Downsampling from %d to %d events across all files with %d channels, %d datapoints.", nrows,
+						maxRows, channelSize, maxDataPoints));
+				double fraction = (double) 100 * maxRows / (double) nrows;
+				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
+				contentResult = contentResult.stream().filter(s -> {
+					int i = s.lastIndexOf(",");
+					double d = Double.valueOf(s.substring(i + 1));
+					boolean value = (d < fraction) ? true : false;
+					return value;
+				}).collect(Collectors.toList());
+			} else {
+				logger.debug("Add random_label column");
+				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
+			}
+			result.addAll(contentResult);
+		}
+		return result;
+	}
+
+	public static boolean isNumeric(String strNum) {
+		if (strNum == null) {
+			return false;
+		}
+		try {
+			long l = Long.valueOf(strNum);
+		} catch (NumberFormatException nfe) {
+			return false;
+		}
+		return true;
+	}
+
+	protected static String getProjectVersion() {
+		String result = "0.0.0";
+		Properties properties = new Properties();
+		try {
+			properties.load(Utils.class.getResourceAsStream("/pom.properties"));
+			result = properties.getProperty("version");
+		} catch (IOException e) {
+			logger.error("Pom.properties could not be loaded");
+		}
+		logger.debug(String.format("Plugin version: %s", result));
+		return result;
+	}
+
+	public static UserSession getAndExtendTercenSession(TercenClient client, TercenGUI gui, String passWord)
+			throws ClassNotFoundException, IOException, ServiceError {
+		UserSession session = Utils.getTercenSession();
+		if (session == null || !client.userService.isTokenValid(session.token.token)) {
+			session = Utils.reconnect(client, gui, session.user.id, passWord);
+			Utils.saveTercenSession(session);
+		} else {
+			session = Utils.extendTercenSession(client, session);
+			Utils.saveTercenSession(session);
+		}
+		return session;
+	}
+
+	private static UserSession extendTercenSession(TercenClient client, UserSession session) throws ServiceError {
+		return client.userService.connect2(Tercen.DOMAIN, "", session.token.token);
+	}
+
+	protected static boolean isPluginVersionSupported(String pluginVersion, Version version) throws ServiceError {
+		boolean result = true;
+		String serverPluginVersion = String.format("%s.%s.%s", version.major, version.minor, version.patch);
+		logger.debug(String.format("Server supported plugin version: %s", serverPluginVersion));
+		if (serverPluginVersion.compareTo(pluginVersion) > 0) {
+			result = false;
+			logger.warn(String.format("Plugin version (%s) is not compatible with the server (>= %s)", pluginVersion,
+					serverPluginVersion));
+		}
+		return result;
+	}
+
+	protected static boolean isPluginOutdated(String pluginVersion, String gitToken)
+			throws JSONException, ClientProtocolException, IOException {
+		return Updater.newVersionAvailable(pluginVersion, gitToken);
+	}
 }

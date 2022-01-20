@@ -2,19 +2,15 @@ name: Publish package to GitHub Packages
 
 on:
   push:
-    tags:
-      - '*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v2
-      - name: TERCEN_VERSION
-        run: echo "TERCEN_VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
       - uses: actions/setup-java@v1
         with:
           java-version: '9.0.4' # The JDK version to make available on the path.
@@ -26,14 +22,13 @@ jobs:
         run: mvn install:install-file -Dfile="third\fjlib-2.4.0.jar" -DgroupId=com.flowjo -DartifactId=flowlib -Dversion=2.4.0 -Dpackaging=jar -DgeneratePom=true
       - name: Install artifact3
         run: mvn install:install-file -Dfile="third\fjengine-2.5.0.jar" -DgroupId=com.flowjo -DartifactId=fjengine -Dversion=2.5.0 -Dpackaging=jar -DgeneratePom=true
-      - name: Assemble
-        run: mvn clean compile assembly:single
+      - name: Pull tercen
+        run: docker-compose pull
+      - name: Start tercen
+        run: docker-compose up -d
+      - name: Build package
+        run: mvn clean install -DskipTests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get plugin version
-        run: echo "PLUGIN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v2
-        with:
-          name: Tercen_v${{ env.PLUGIN_VERSION }}
-          path: target/tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar
-
+      - name: Stop tercen
+        run: docker-compose down

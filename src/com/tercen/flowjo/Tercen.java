@@ -1,14 +1,11 @@
 package com.tercen.flowjo;
 
-import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,9 +24,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
-import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.Project;
-import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
 import com.tercen.model.impl.Version;
@@ -54,7 +49,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected static final String CSV_FILE_NAME = "csvFileName";
 
 	protected enum ImportPluginStateEnum {
-		empty, collectingSamples, uploading, uploaded, error;
+		init, collectingSamples, uploading, uploaded, error;
 	}
 
 	private static final String TERCEN_PROPERTIES = "tercen.properties";
@@ -86,7 +81,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected long maxDataPoints = -1;
 
 	// properties to gather multiple samples
-	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
+	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.init;
 	protected LinkedHashSet<String> samplePops = new LinkedHashSet<String>();
 	protected LinkedHashSet<String> selectedSamplePops = new LinkedHashSet<String>();
 	protected TercenGUI gui = new TercenGUI(this);
@@ -154,10 +149,15 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		return new ArrayList<String>();
 	}
 
-	public void setWorkspaceText(List<AppNode> nodeList, String text) {
+	public void setWorkspaceText(List<AppNode> nodeList, String sampleFileName, String text) {
 		for (AppNode appNode : nodeList) {
 			if (appNode.isExternalPopNode()) {
 				appNode.setAnnotation(text);
+				String csvFileName = Utils.getCsvFileName(appNode);
+				if (sampleFileName != null) {
+					csvFileName = sampleFileName;
+				}
+				Utils.writeStatusFile(csvFileName, text);
 			}
 		}
 	}
@@ -191,11 +191,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		List<AppNode> nodeList = Utils.getTercenNodes(sample);
 
 		String workspaceText = "";
-		UploadProgressTask uploadProgressTask = null;
-
 		try {
 			if (pluginState == ImportPluginStateEnum.error) {
-				result.setErrorMessage("Previous error prevents uploading");
+				result.setErrorMessage("Previous error prevented uploading");
 				return result;
 			}
 
@@ -203,9 +201,19 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			if (pluginState == ImportPluginStateEnum.uploaded) {
 				pluginState = ImportPluginStateEnum.collectingSamples;
 			}
+			// cleanup
+			if (pluginState == ImportPluginStateEnum.init) {
+				Utils.removeStatusFile(sampleFile);
+			}
+
+			// read status file and change status if needed
+			String newStatus = Utils.getStatusFromFile(sampleFile);
+			if (newStatus != null && newStatus.startsWith("Uploaded")) {
+				pluginState = ImportPluginStateEnum.uploaded;
+			}
 
 			String fileName = sampleFile.getPath();
-			if (pluginState == ImportPluginStateEnum.empty) {
+			if (pluginState == ImportPluginStateEnum.init) {
 				csvFileName = fileName;
 				pluginState = ImportPluginStateEnum.collectingSamples;
 			} else if (pluginState == ImportPluginStateEnum.collectingSamples) {
@@ -228,8 +236,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 							JOptionPane.ERROR_MESSAGE);
 					workspaceText = Tercen.Failed;
 				} else {
-					Schema uploadResult = null;
-
 					userName = Utils.getCurrentPortalUser();
 					if (userName == null || userName.equals("")) {
 						JOptionPane.showMessageDialog(null, "FlowJo username needs to be set.", "ImportPlugin error",
@@ -262,76 +268,53 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 						// upload csv file
 						if (selectedSamplePops.size() > 0) {
-							uploadProgressTask = new UploadProgressTask(this);
-							uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
-									uploadProgressTask, Utils.getTercenDataTableName(wsp));
-						}
-
-						// open browser
-						if (uploadResult != null) {
-							String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
-									uploadResult, wsp);
-							Desktop desktop = java.awt.Desktop.getDesktop();
-							URI uri = new URI(String.valueOf(url));
-							desktop.browse(uri);
-							projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
-							workspaceText = String.format("Uploaded to %s.", hostName);
-						} else {
-							JOptionPane.showMessageDialog(null,
-									"No files have been uploaded, browser window will not open.",
-									"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
-							workspaceText = "Selected";
+							// execute upload in new thread
+							Uploader uploader = new Uploader(this, client, project, selectedSamplePops, channels, wsp,
+									hostName, session);
+							logger.debug("Starting upload thread..");
+							new Thread(uploader).start();
 						}
 					}
 				}
-				pluginState = ImportPluginStateEnum.uploaded;
 			}
-
 			switch (pluginState) {
-			case empty:
-				setWorkspaceText(nodeList, "Empty");
+			case init:
+				setWorkspaceText(nodeList, csvFileName, "Init");
 				break;
 			case collectingSamples:
-				setWorkspaceText(nodeList, "Selected");
+				setWorkspaceText(nodeList, csvFileName, "Selected");
 				break;
 			case uploading:
-				setWorkspaceText(nodeList, "Uploading");
+				nodeList = Utils.getAllSelectedTercenNodes(wsp);
+				setWorkspaceText(nodeList, null, "Uploading");
 				break;
 			case uploaded:
-				nodeList = Utils.getAllSelectedTercenNodes(wsp);
-				result = setWorkspaceUploadText(result, nodeList, workspaceText);
+				nodeList = Utils.getAllUploadingTercenNodes(wsp);
+				result = setWorkspaceUploadText(result, nodeList, "Uploaded");
 				break;
 			default:
 				break;
 			}
-
 		} catch (ServiceError e) {
-			if (uploadProgressTask != null) {
-				uploadProgressTask.setVisible(false);
-			}
 			String errorMsg = e.toString();
 			if (errorMsg.contains("user.token.bad") || errorMsg.contains("user.token.expired")
 					|| errorMsg.contains("token.not.valid")) {
 				Utils.removeTercenSession();
 			}
 			logger.error(errorMsg);
-			setWorkspaceText(nodeList, e.toString());
+			setWorkspaceText(nodeList, csvFileName, e.toString());
 			pluginState = ImportPluginStateEnum.error;
 		} catch (IOException e) {
 			logger.error(e.getMessage());
-			setWorkspaceText(nodeList, e.getMessage());
-			pluginState = ImportPluginStateEnum.error;
-		} catch (URISyntaxException e) {
-			logger.error(e.getMessage());
-			setWorkspaceText(nodeList, e.getMessage());
+			setWorkspaceText(nodeList, csvFileName, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
 		} catch (ClassNotFoundException e) {
 			logger.error(e.getMessage());
-			setWorkspaceText(nodeList, e.getMessage());
+			setWorkspaceText(nodeList, csvFileName, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
 		} catch (JSONException e) {
 			logger.error(e.getMessage());
-			setWorkspaceText(nodeList, e.getMessage());
+			setWorkspaceText(nodeList, csvFileName, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
 		}
 		return result;

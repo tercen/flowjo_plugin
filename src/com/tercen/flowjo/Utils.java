@@ -277,7 +277,7 @@ public class Utils {
 		return new ObjectMapper().writeValueAsString(map);
 	}
 
-	public static List<AppNode> getTercenNodes(AppNode theNode, boolean selectedOrUploaded) {
+	public static List<AppNode> getTercenNodes(AppNode theNode, boolean allNodes, String[] matches) {
 		List<AppNode> popList = new ArrayList<AppNode>();
 		Queue<AppNode> q = new LinkedList<>();
 		q.add(theNode);
@@ -290,8 +290,9 @@ public class Utils {
 				if (!appNode.isSampleNode() && appNode.getParent() != null) {
 					if (appNode instanceof ExternalPopNode && appNode.getName().contains(Tercen.pluginName)) {
 						String annotation = appNode.getAnnotation();
-						if (!selectedOrUploaded || (selectedOrUploaded && annotation.equalsIgnoreCase("Selected")
-								|| annotation.startsWith("Uploaded") || annotation.contains("ServiceError"))) {
+						if (allNodes) {
+							popList.add(appNode);
+						} else if (!allNodes && Arrays.stream(matches).anyMatch(annotation::contains)) {
 							popList.add(appNode);
 						}
 					}
@@ -309,7 +310,7 @@ public class Utils {
 		List<AppNode> popList = new ArrayList<AppNode>();
 		if (sample != null) {
 			SampleNode node = sample.getSampleNode();
-			popList = Utils.getTercenNodes(node, false);
+			popList = Utils.getTercenNodes(node, true, new String[] {});
 		}
 		return popList;
 	}
@@ -320,7 +321,20 @@ public class Utils {
 		wsp.getSampleMgr().getSamples().stream().forEach(samples::add);
 		for (Sample sam : samples) {
 			SampleNode node = sam.getSampleNode();
-			List<AppNode> tempList = Utils.getTercenNodes(node, true);
+			List<AppNode> tempList = Utils.getTercenNodes(node, false,
+					new String[] { "Selected", "Uploaded", "ServiceError" });
+			popList.addAll(tempList);
+		}
+		return popList;
+	}
+
+	public static List<AppNode> getAllUploadingTercenNodes(Workspace wsp) {
+		List<AppNode> popList = new ArrayList<AppNode>();
+		TreeSet<Sample> samples = new TreeSet<Sample>(new SampleComparator());
+		wsp.getSampleMgr().getSamples().stream().forEach(samples::add);
+		for (Sample sam : samples) {
+			SampleNode node = sam.getSampleNode();
+			List<AppNode> tempList = Utils.getTercenNodes(node, false, new String[] { "Uploading" });
 			popList.addAll(tempList);
 		}
 		return popList;
@@ -481,5 +495,44 @@ public class Utils {
 	protected static boolean isPluginOutdated(String pluginVersion, String gitToken)
 			throws JSONException, ClientProtocolException, IOException {
 		return Updater.newVersionAvailable(pluginVersion, gitToken);
+	}
+
+	private static String getStatusFilename(String sampleFileName) {
+		return sampleFileName.replace(".csv", "-status.txt");
+	}
+
+	protected static String getStatusFromFile(File sampleFile) {
+		String result = null;
+		try {
+			Path filePath = Paths.get(getStatusFilename(sampleFile.toString()));
+			if (new File(filePath.toString()).exists()) {
+				result = Files.readAllLines(filePath).get(0);
+			}
+		} catch (IOException e) {
+			logger.error("Could not read status file"); // handle
+		}
+		logger.debug(String.format("getStatusFromFile: %s", result));
+		return result;
+	}
+
+	protected static void writeStatusFile(String sampleFileName, String status) {
+		List<String> content = new ArrayList<String>(Arrays.asList(status));
+		String filename = getStatusFilename(sampleFileName);
+		File statusFile = new File(filename);
+		try {
+			Files.write(statusFile.toPath(), content, Charset.forName("UTF-8"));
+		} catch (IOException e) {
+			logger.error("Could not write status file");
+		}
+		logger.debug(String.format("Status file written %s", filename));
+	}
+
+	protected static void removeStatusFile(File sampleFile) {
+		String filename = getStatusFilename(sampleFile.toString());
+		try {
+			Files.delete(new File(filename).toPath());
+		} catch (IOException e) {
+			logger.error("Could not remove status file:" + sampleFile.toString());
+		}
 	}
 }

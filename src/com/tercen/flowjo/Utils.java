@@ -152,7 +152,8 @@ public class Utils {
 	private static File getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
 			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException {
 		List<String> mergedLines = new ArrayList<>();
-		logger.debug(String.format("Create upload file from %d sample files", paths.size()));
+		int fileCount = paths.size();
+		logger.debug(String.format("Create upload file from %d sample files", fileCount));
 		for (String p : paths) {
 			List<String> lines = Files.readAllLines(Paths.get(p), Charset.forName("UTF-8"));
 			if (!lines.isEmpty()) {
@@ -169,7 +170,7 @@ public class Utils {
 			}
 		}
 		mergedLines = Utils.downsample(mergedLines, plugin.maxDataPoints, plugin.seed, plugin.gui, uploadProgressTask,
-				channels.size());
+				channels.size(), fileCount);
 
 		File mergedFile = File.createTempFile("merged-", ".csv");
 		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
@@ -391,7 +392,7 @@ public class Utils {
 	}
 
 	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui,
-			UploadProgressTask uploadProgressTask, int channelSize) {
+			UploadProgressTask uploadProgressTask, int channelSize, int fileCount) {
 		List<String> result = new ArrayList<>();
 		if (lines != null && lines.size() >= 1) {
 			result.add(lines.get(0).concat(", random_label")); // header
@@ -401,13 +402,16 @@ public class Utils {
 			int nrows = content.size();
 			List<String> contentResult = content;
 			Random random = seed == -1 ? new Random() : new Random(seed);
-			if (maxDataPoints != -1 && (nrows * ncols) > maxDataPoints) {
+			int totalDataPoints = nrows * ncols;
+			if (maxDataPoints != -1 && totalDataPoints > maxDataPoints) {
 				int maxRows = Math.round(maxDataPoints / ncols);
-				logger.debug(String.format("Downsample data from %d to %d rows", nrows, maxRows));
-				uploadProgressTask.setMessage(String.format(
-						"Downsampling from %d to %d events across all files with %d channels, %d datapoints.", nrows,
-						maxRows, channelSize, maxDataPoints));
 				double fraction = (double) 100 * maxRows / (double) nrows;
+				logger.debug(String.format("Downsample data from %d to %d rows", nrows, maxRows));
+				String fileText = fileCount > 1 ? "files" : "file";
+				uploadProgressTask.setMessage(String.format(
+						"Downsampling from %d data points to %d data points across %d %s. Reducing %d events to %d events (%d %%).",
+						totalDataPoints, maxDataPoints, fileCount, fileText, nrows, maxRows, Math.round(fraction)));
+
 				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
 				contentResult = contentResult.stream().filter(s -> {
 					int i = s.lastIndexOf(",");

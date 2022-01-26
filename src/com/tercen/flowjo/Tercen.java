@@ -21,9 +21,17 @@ import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
@@ -48,7 +56,7 @@ import nu.studer.java.util.OrderedProperties;
 
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
-	private static final Logger logger = LogManager.getLogger();
+	private static Logger logger = null;
 	protected static final String pluginName = "Connector";
 	protected static final String version = Utils.getProjectVersion();
 	protected static final String CSV_FILE_NAME = "csvFileName";
@@ -91,10 +99,12 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected LinkedHashSet<String> selectedSamplePops = new LinkedHashSet<String>();
 	protected TercenGUI gui = new TercenGUI(this);
 
+	static {
+		initLogger();
+	}
+
 	public Tercen() {
 		super(pluginName);
-		LoggerContext context = (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
-		context.setConfigLocation(new File("src/main/resources/log4j2.xml").toURI());
 		logger.debug("Read upload properties file");
 		readPropertiesFile();
 	}
@@ -421,4 +431,35 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	public String getPassWord() {
 		return passWord;
 	}
+
+	private static void initLogger() {
+		String filename = "tercen-plugin.log";
+		String pattern = "%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n";
+
+		ConfigurationBuilder<BuiltConfiguration> builder = ConfigurationBuilderFactory.newConfigurationBuilder();
+		builder.setStatusLevel(Level.DEBUG);
+		builder.setConfigurationName("DefaultFileLogger");
+		RootLoggerComponentBuilder rootLogger = builder.newRootLogger(Level.DEBUG);
+
+		// set the pattern layout and pattern
+		LayoutComponentBuilder layoutBuilder = builder.newLayout("PatternLayout").addAttribute("pattern", pattern);
+
+		// create a file appender
+		AppenderComponentBuilder appenderBuilder = builder.newAppender("LogToFile", "File")
+				.addAttribute("fileName", filename).add(layoutBuilder);
+		builder.add(appenderBuilder);
+		rootLogger.add(builder.newAppenderRef("LogToFile"));
+
+		// create a console appender
+		AppenderComponentBuilder consoleAppenderBuilder = builder.newAppender("Console", "CONSOLE")
+				.addAttribute("target", ConsoleAppender.Target.SYSTEM_OUT);
+		consoleAppenderBuilder.add(builder.newLayout("PatternLayout").addAttribute("pattern", pattern));
+		builder.add(consoleAppenderBuilder);
+		rootLogger.add(builder.newAppenderRef("Console"));
+
+		builder.add(rootLogger);
+		Configurator.reconfigure(builder.build());
+		logger = LogManager.getLogger();
+	}
+
 }

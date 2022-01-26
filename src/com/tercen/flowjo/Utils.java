@@ -41,7 +41,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.comparator.SampleComparator;
 import com.tercen.flowjo.tasks.UploadProgressTask;
-import com.tercen.model.base.Vocabulary;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.Project;
@@ -133,17 +132,10 @@ public class Utils {
 
 	protected static UserSession createTercenUser(TercenClient client, String userName, String email, String password)
 			throws ServiceError {
-		LinkedHashMap userProperties = new LinkedHashMap();
-		userProperties.put(Vocabulary.KIND, Vocabulary.User_CLASS);
-		userProperties.put(Vocabulary.isDeleted_DP, false);
-		userProperties.put(Vocabulary.isPublic_DP, false);
-		userProperties.put(Vocabulary.isValidated_DP, false);
-		userProperties.put(Vocabulary.invitationCounts_DP, 0);
-		userProperties.put(Vocabulary.maxInvitation_DP, 0);
-		userProperties.put(Vocabulary.name_DP, userName);
-		userProperties.put(Vocabulary.email_DP, email);
-		User newUser = User.createFromJson(userProperties);
-		User user = client.userService.createUser(newUser, password);
+		User newUser = new User();
+		newUser.name = userName;
+		newUser.email = email;
+		client.userService.createUser(newUser, password);
 		return client.userService.connect2(Tercen.DOMAIN, userName, password);
 	}
 

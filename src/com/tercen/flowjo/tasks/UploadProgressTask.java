@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import javax.swing.ImageIcon;
@@ -32,11 +33,15 @@ import com.tercen.flowjo.Tercen;
 import com.tercen.flowjo.TercenWebSocketListener;
 import com.tercen.flowjo.Utils;
 import com.tercen.model.impl.CSVTask;
+import com.tercen.model.impl.ColumnSchema;
+import com.tercen.model.impl.ColumnSchemaMetaData;
 import com.tercen.model.impl.FailedState;
 import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.InitState;
+import com.tercen.model.impl.Pair;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
+import com.tercen.model.impl.TableSchema;
 import com.tercen.service.ServiceError;
 
 public class UploadProgressTask extends JFrame {
@@ -112,7 +117,7 @@ public class UploadProgressTask extends JFrame {
 	}
 
 	public Schema uploadFile(File file, TercenClient client, Project project, FileDocument fileDoc,
-			ArrayList<String> channels, int blocksize) throws ServiceError, IOException {
+			ArrayList<String> channels, int blocksize, List<String> columnNames) throws ServiceError, IOException {
 		InputStream inputStream = new FileInputStream(file);
 		int i = 1;
 		try {
@@ -132,11 +137,11 @@ public class UploadProgressTask extends JFrame {
 			inputStream.close();
 		}
 
-		return handleCsvTask(client, project, fileDoc, channels, i);
+		return handleCsvTask(client, project, fileDoc, channels, columnNames, i);
 	}
 
 	private Schema handleCsvTask(TercenClient client, Project project, FileDocument fileDoc, ArrayList<String> channels,
-			int i) throws ServiceError, IOException {
+			List<String> columnNames, int i) throws ServiceError, IOException {
 		// create task; this will create a dataset from the file on Tercen
 		CSVTask task = new CSVTask();
 		task.state = new InitState();
@@ -149,6 +154,7 @@ public class UploadProgressTask extends JFrame {
 		task.gatherNames = channels;
 		task.valueName = "value";
 		task.variableName = "channel";
+		task.schema = buildSchema(columnNames, channels);
 		logger.debug("create task");
 		task = (CSVTask) client.taskService.create(task);
 		progressBar.setValue(i++);
@@ -198,6 +204,36 @@ public class UploadProgressTask extends JFrame {
 		Schema schema = client.tableSchemaService.get(task.schemaId);
 		progressBar.setValue(i);
 		logger.debug("return schema");
+		return schema;
+	}
+
+	private Schema buildSchema(List<String> columnNames, ArrayList<String> channels) {
+		Schema schema = new TableSchema();
+		List<String> addedCols = Arrays.asList(new String[] { Utils.FILENAME, Utils.RANDOM_LABEL });
+		for (int i = 0; i < columnNames.size(); i++) {
+			String type;
+			String colName = columnNames.get(i);
+			if (colName.equals("filename")) {
+				type = "string";
+			} else {
+				type = "double";
+			}
+			ColumnSchema colSchema = new ColumnSchema();
+			colSchema.name = colName;
+			colSchema.type = type;
+			// set ignore property if needed
+			if (!channels.contains(colName) && !addedCols.contains(colName)) {
+				ColumnSchemaMetaData colMetaData = new ColumnSchemaMetaData();
+				ArrayList<Pair> properties = new ArrayList<Pair>();
+				Pair p = new Pair();
+				p.key = "ignore";
+				p.value = "true";
+				properties.add(p);
+				colMetaData.properties = properties;
+				colSchema.metaData = colMetaData;
+			}
+			schema.columns.add(colSchema);
+		}
 		return schema;
 	}
 }

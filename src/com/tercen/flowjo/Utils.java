@@ -65,6 +65,8 @@ public class Utils {
 	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
+	public static final String RANDOM_LABEL = "random_label";
+	public static final String FILENAME = "filename";
 
 	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project,
 			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
@@ -82,7 +84,9 @@ public class Utils {
 		metadata.contentEncoding = "iso-8859-1";
 		fileDoc.metadata = metadata;
 
-		File mergedFile = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
+		List<Object> result = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
+		File mergedFile = (File) result.get(0);
+		List<String> columnNames = (List<String>) result.get(1);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -91,7 +95,7 @@ public class Utils {
 		int iterations = (int) (mergedFile.length() / blockSize);
 		uploadProgressTask.setIterations(iterations);
 		uploadProgressTask.showDialog();
-		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, blockSize);
+		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, blockSize, columnNames);
 	}
 
 	private static int getBlockSize(File mergedFile) {
@@ -141,9 +145,11 @@ public class Utils {
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
-	private static File getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
+	private static List<Object> getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
 			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException {
+		List<Object> result = new ArrayList<Object>();
 		List<String> mergedLines = new ArrayList<>();
+		List<String> columnNames = new ArrayList<>();
 		int fileCount = paths.size();
 		logger.debug(String.format("Create upload file from %d sample files", fileCount));
 		for (String p : paths) {
@@ -154,7 +160,9 @@ public class Utils {
 					List<String> headerList = Arrays.asList(lines.get(0).split(","));
 					String header = headerList.stream().map(s -> s.replace("\"", ""))
 							.map(s -> setColumnValue(channels, s)).collect(Collectors.joining(","));
-					mergedLines.add(header.concat(", filename"));
+					header = header.concat(String.format(", %s", FILENAME));
+					mergedLines.add(header);
+					columnNames = Arrays.stream(header.split(",")).map(String::trim).collect(Collectors.toList());
 				}
 				List<String> content = lines.subList(1, lines.size());
 				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
@@ -163,11 +171,15 @@ public class Utils {
 		}
 		mergedLines = Utils.downsample(mergedLines, plugin.maxDataPoints, plugin.seed, plugin.gui, uploadProgressTask,
 				channels.size(), fileCount);
+		columnNames.add(RANDOM_LABEL);
 
 		File mergedFile = File.createTempFile("merged-", ".csv");
 		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
-		logger.debug(String.format("Upload file has %d rows", mergedLines.size()));
-		return mergedFile;
+		logger.debug(String.format("Upload file has %d rows, %d columns, %d channels", mergedLines.size(),
+				columnNames.size(), channels.size()));
+		result.add(mergedFile);
+		result.add(columnNames);
+		return result;
 	}
 
 	// In some cases FlowJo is generated a csv file with shortened column names.
@@ -387,7 +399,7 @@ public class Utils {
 			UploadProgressTask uploadProgressTask, int channelSize, int fileCount) {
 		List<String> result = new ArrayList<>();
 		if (lines != null && lines.size() >= 1) {
-			result.add(lines.get(0).concat(", random_label")); // header
+			result.add(lines.get(0).concat(String.format(", %s", RANDOM_LABEL))); // header
 			int ncols = result.get(0).split(",").length;
 
 			List<String> content = lines.subList(1, lines.size());

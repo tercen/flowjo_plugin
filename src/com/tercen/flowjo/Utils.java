@@ -84,9 +84,7 @@ public class Utils {
 		metadata.contentEncoding = "iso-8859-1";
 		fileDoc.metadata = metadata;
 
-		List<Object> result = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
-		File mergedFile = (File) result.get(0);
-		List<String> columnNames = (List<String>) result.get(1);
+		File mergedFile = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -95,7 +93,7 @@ public class Utils {
 		int iterations = (int) (mergedFile.length() / blockSize);
 		uploadProgressTask.setIterations(iterations);
 		uploadProgressTask.showDialog();
-		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, blockSize, columnNames);
+		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, blockSize);
 	}
 
 	private static int getBlockSize(File mergedFile) {
@@ -145,9 +143,8 @@ public class Utils {
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
-	private static List<Object> getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
+	private static File getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
 			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException {
-		List<Object> result = new ArrayList<Object>();
 		List<String> mergedLines = new ArrayList<>();
 		List<String> columnNames = new ArrayList<>();
 		int fileCount = paths.size();
@@ -177,9 +174,7 @@ public class Utils {
 		Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
 		logger.debug(String.format("Upload file has %d rows, %d columns, %d channels", mergedLines.size(),
 				columnNames.size(), channels.size()));
-		result.add(mergedFile);
-		result.add(columnNames);
-		return result;
+		return mergedFile;
 	}
 
 	// In some cases FlowJo is generated a csv file with shortened column names.

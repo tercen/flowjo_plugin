@@ -72,7 +72,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	// default settings
 	protected static final String HOSTNAME_URL = "https://tercen.com/";
-	protected static final String MAX_DATAPOINTS_VALUE = "300000000";
+	protected static final String MAX_DATAPOINTS_VALUE = "-1";
 	protected static final String SEED_VALUE = "42";
 	protected static final String AUTO_UPDATE_VALUE = "false";
 	protected static final String GIT_TOKEN_VALUE = "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";

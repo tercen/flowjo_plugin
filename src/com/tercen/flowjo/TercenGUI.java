@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.swing.Box;
@@ -117,7 +118,10 @@ public class TercenGUI {
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 			if (option == JOptionPane.OK_OPTION) {
-				plugin.channels = new ArrayList<String>(paramList.getSelectedValuesList());
+				ArrayList<String> fcsChannels = new ArrayList<String>(paramList.getSelectedValuesList());
+				plugin.channels = new ArrayList<String>(
+						fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList()));
+
 				// set selected sample files
 				if (samplePopulationsList != null) {
 					plugin.selectedSamplePops.clear();

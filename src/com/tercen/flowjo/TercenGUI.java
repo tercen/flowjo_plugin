@@ -105,7 +105,7 @@ public class TercenGUI {
 				componentList.add(new FJLabel(""));
 				componentList.add(new FJLabel(SELECT_TEXT));
 
-				samplePopulationsList = createParameterList(new ArrayList<String>(this.plugin.samplePops), arg0, true);
+				samplePopulationsList = createParameterList(new ArrayList<String>(this.plugin.samplePops), arg0, false);
 				componentList.add(new JScrollPane(samplePopulationsList));
 				componentList.add(new JSeparator());
 			}
@@ -130,7 +130,7 @@ public class TercenGUI {
 			advancedPanel.add(box, BorderLayout.NORTH);
 			advancedPanel.add(new FJLabel(SELECT_TEXT), BorderLayout.CENTER);
 
-			FJList paramList = createParameterList(arg1, arg0, false);
+			FJList paramList = createParameterList(arg1, arg0, true);
 			advancedPanel.add(new JScrollPane(paramList), BorderLayout.SOUTH);
 			advancedPanel.setVisible(false);
 			componentList.add(advancedPanel);
@@ -289,23 +289,19 @@ public class TercenGUI {
 		return result;
 	}
 
-	private FJList createParameterList(List<String> parameters, SElement sElement, boolean selectAll) {
+	private FJList createParameterList(List<String> parameters, SElement sElement, boolean filterCompensated) {
 		FJList paramList;
 		DefaultListModel dlm = new DefaultListModel();
+
+		if (filterCompensated) {
+			parameters = FJPluginHelper.getSample(sElement).getParameters(true).getCompensatedParameterNames();
+		}
+		int[] indexes = IntStream.range(0, parameters.size()).toArray();
 		for (int i = 0; i < parameters.size(); i++) {
 			dlm.add(i, parameters.get(i));
 		}
 		paramList = new FJList(dlm);
 		paramList.setSelectionMode(2);
-
-		int[] indexes;
-		if (selectAll) {
-			indexes = IntStream.range(0, parameters.size()).toArray();
-		} else {
-			List<String> compParamNames = FJPluginHelper.getSample(sElement).getParameters(true)
-					.getCompensatedParameterNames();
-			indexes = compParamNames.stream().mapToInt(s -> parameters.indexOf(s)).toArray();
-		}
 		paramList.setSelectedIndices(indexes);
 		return paramList;
 	}

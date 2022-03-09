@@ -117,7 +117,7 @@ public class UploadProgressTask extends JFrame {
 	}
 
 	public Schema uploadFile(File file, TercenClient client, Project project, FileDocument fileDoc,
-			ArrayList<String> channels, int blocksize) throws ServiceError, IOException {
+			ArrayList<String> channels, int blocksize, List<String> columnNames) throws ServiceError, IOException {
 		InputStream inputStream = new FileInputStream(file);
 		int i = 1;
 		try {
@@ -137,11 +137,11 @@ public class UploadProgressTask extends JFrame {
 			inputStream.close();
 		}
 
-		return handleCsvTask(client, project, fileDoc, channels, i);
+		return handleCsvTask(client, project, fileDoc, channels, columnNames, i);
 	}
 
 	private Schema handleCsvTask(TercenClient client, Project project, FileDocument fileDoc, ArrayList<String> channels,
-			int i) throws ServiceError, IOException {
+			List<String> columnNames, int i) throws ServiceError, IOException {
 		// create task; this will create a dataset from the file on Tercen
 		CSVTask task = new CSVTask();
 		task.state = new InitState();
@@ -154,6 +154,7 @@ public class UploadProgressTask extends JFrame {
 		task.gatherNames = channels;
 		task.valueName = "value";
 		task.variableName = "channel";
+		task.schema = buildSchema(columnNames, channels);
 		logger.debug("create task");
 		task = (CSVTask) client.taskService.create(task);
 		progressBar.setValue(i++);

@@ -34,7 +34,7 @@ jobs:
         run: docker-compose down
       - name: Get plugin version
         run: echo "PLUGIN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: Tercen_v${{ env.PLUGIN_VERSION }}
           path: | 

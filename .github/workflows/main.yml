@@ -35,5 +35,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: Tercen_v${{ env.PLUGIN_VERSION }}
-          path: target/tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar
+          path: |
+                target/tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar
+                doc/FlowJo Plugin Installation Instructions - PDF V1.0.4.pdf
 

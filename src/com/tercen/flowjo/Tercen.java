@@ -227,10 +227,24 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				Version pluginServerVersion = client.userService.getServerVersion("flowjoPlugin");
 				if (!Utils.isPluginVersionSupported(version, pluginServerVersion)
 						|| Utils.isPluginOutdated(version, GIT_TOKEN_VALUE)) {
-					Updater.downloadLatestVersion(this, version, GIT_TOKEN_VALUE);
-					JOptionPane.showMessageDialog(null, "Your plugin has been updated, please restart FlowJo now.",
-							"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
-					return result;
+					String pluginDir = Updater.getPluginDirectory();
+					if (Updater.isPluginDirectoryWritable(pluginDir)) {
+						Updater.downloadLatestVersion(this, version, GIT_TOKEN_VALUE);
+						JOptionPane.showMessageDialog(null,
+								"Your plugin has been updated, please remove all connectors and restart FlowJo now.",
+								"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
+						return result;
+					} else {
+						// notify user & log
+						JOptionPane.showMessageDialog(null,
+								"The Tercen plugin could not be updated because the plugin directory (" + pluginDir
+										+ ") is not writable, please make sure you have the right permissions.",
+								"Update plugin error", JOptionPane.ERROR_MESSAGE);
+						logger.error("Plugindir is not writable: " + pluginDir);
+						if (!Utils.isPluginVersionSupported(version, pluginServerVersion)) {
+							return result;
+						}
+					}
 				}
 
 				if (!sampleFile.exists()) {

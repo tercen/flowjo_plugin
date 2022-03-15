@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -51,8 +52,13 @@ public class Updater {
 		String downloadURL = (String) latestArtifact.get("archive_download_url");
 
 		logger.debug("Downloading latest artifact..");
-		String pluginDir = System.getProperty("user.dir");
+		String pluginDir = Updater.getPluginDirectory();
+		logger.debug("pluginDir:" + pluginDir);
+		if (!Files.isWritable(Paths.get(pluginDir))) {
+			logger.debug("pluginDir not writable!");
+		}
 		String outputPath = Paths.get(pluginDir, "out.zip").toString();
+		logger.debug("outputPath:" + outputPath);
 
 		DownloadProgressTask downloadTask = new DownloadProgressTask(plugin);
 		downloadTask.setIterations(2);
@@ -66,6 +72,18 @@ public class Updater {
 		if (removed) {
 			logger.debug("Artifact has been removed");
 		}
+	}
+
+	protected static boolean isPluginDirectoryWritable(String dir) {
+		if (dir == null) {
+			dir = Updater.getPluginDirectory();
+		}
+		return Files.isWritable(Paths.get(dir));
+	}
+
+	protected static String getPluginDirectory() {
+		String jarPath = Updater.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+		return jarPath.substring(0, jarPath.lastIndexOf("/") + 1);
 	}
 
 	protected static boolean newVersionAvailable(String currentPluginVersion, String gitToken) throws JSONException {

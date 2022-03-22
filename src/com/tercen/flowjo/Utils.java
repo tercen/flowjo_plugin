@@ -403,7 +403,7 @@ public class Utils {
 	}
 
 	private static String createTemporaryToken(TercenClient client, String userId) throws ServiceError {
-		return client.userService.createToken(userId, 5);
+		return client.userService.createToken(userId, 2 * 24 * 3600);
 	}
 
 	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui,

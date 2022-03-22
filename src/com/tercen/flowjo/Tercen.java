@@ -237,13 +237,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					} else {
 						// notify user & log
 						JOptionPane.showMessageDialog(null,
-								"The Tercen plugin could not be updated because the plugin directory (" + pluginDir
-										+ ") is not writable, please make sure you have the right permissions.",
+								"Oops, looks like we don't have permission to update the Tercen plugin automatically. Please download the new version from the FlowJo Exchange.",
 								"Update plugin error", JOptionPane.ERROR_MESSAGE);
 						logger.error("Plugindir is not writable: " + pluginDir);
-						if (!Utils.isPluginVersionSupported(version, pluginServerVersion)) {
-							return result;
-						}
 					}
 				}
 

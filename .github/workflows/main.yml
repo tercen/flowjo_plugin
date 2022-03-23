@@ -32,10 +32,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Get plugin version
         run: echo "PLUGIN_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+      - name: move files
+        run: | 
+          mv "target/tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar" "./tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar"
+          mv doc/*.pdf ./
       - uses: actions/upload-artifact@v2
         with:
           name: Tercen_v${{ env.PLUGIN_VERSION }}
           path: |
-                target/tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar
-                doc/FlowJo Plugin Installation Instructions - PDF V1.0.4.pdf
+                tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar
+                *.pdf
 

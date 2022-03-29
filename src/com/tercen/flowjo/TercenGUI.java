@@ -78,6 +78,7 @@ public class TercenGUI {
 
 		// show upload dialog
 		if (this.plugin.pluginState == ImportPluginStateEnum.collectingSamples
+				|| this.plugin.pluginState == ImportPluginStateEnum.uploading
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 

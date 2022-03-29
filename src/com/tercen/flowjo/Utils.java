@@ -270,7 +270,7 @@ public class Utils {
 
 	public static String getWorkspaceName(Workspace wsp) {
 		String pluginFolder = wsp.getPluginFolder();
-		return pluginFolder.substring(pluginFolder.lastIndexOf("\\") + 1);
+		return pluginFolder.substring(pluginFolder.lastIndexOf(File.separator) + 1);
 	}
 
 	public static String getTercenProjectName(Workspace wsp) {

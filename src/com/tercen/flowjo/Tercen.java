@@ -281,30 +281,35 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						Project project = Utils.getProject(client, session.user.id, projectName);
 
 						// upload csv file
-						if (selectedSamplePops.size() > 0) {
+						if (selectedSamplePops.size() > 0 && channels.size() > 0) {
 							uploadProgressTask = new UploadProgressTask(this);
 							uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
 									uploadProgressTask, Utils.getTercenDataTableName(wsp));
-						}
 
-						// open browser
-						if (uploadResult != null) {
-							String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
-									uploadResult, wsp);
-							Desktop desktop = java.awt.Desktop.getDesktop();
-							URI uri = new URI(String.valueOf(url));
-							desktop.browse(uri);
-							projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
-							workspaceText = String.format("Uploaded to %s.", hostName);
+							// open browser
+							if (uploadResult != null) {
+								String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
+										uploadResult, wsp);
+								Desktop desktop = java.awt.Desktop.getDesktop();
+								URI uri = new URI(String.valueOf(url));
+								desktop.browse(uri);
+								projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
+								workspaceText = String.format("Uploaded to %s.", hostName);
+								pluginState = ImportPluginStateEnum.uploaded;
+							} else {
+								JOptionPane.showMessageDialog(null,
+										"No files have been uploaded, browser window will not open.",
+										"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
+								return result;
+							}
 						} else {
 							JOptionPane.showMessageDialog(null,
-									"No files have been uploaded, browser window will not open.",
+									"There is no data to upload, please make sure you have selected at minimum one sample and one FCS channel.",
 									"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
-							workspaceText = "Selected";
+							return result;
 						}
 					}
 				}
-				pluginState = ImportPluginStateEnum.uploaded;
 			}
 
 			switch (pluginState) {

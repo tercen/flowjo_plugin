@@ -29,19 +29,17 @@ import javax.swing.ListModel;
 public class DualListBox extends JPanel {
 
 	private static final Insets EMPTY_INSETS = new Insets(0, 0, 0, 0);
-	private static final String ADD_BUTTON_LABEL = "Add >>";
-	private static final String REMOVE_BUTTON_LABEL = "<< Remove";
+	private static final String ADD_BUTTON_LABEL = "       Add >>";
+	private static final String ADD_ALL_BUTTON_LABEL = "Add all >>   ";
+	private static final String REMOVE_BUTTON_LABEL = "<< Remove    ";
+	private static final String REMOVE_ALL_BUTTON_LABEL = "<< Remove all";
 	private static final String DEFAULT_SOURCE_CHOICE_LABEL = "Available Channels";
 	private static final String DEFAULT_DEST_CHOICE_LABEL = "Selected Channels";
 
-	private JLabel sourceLabel;
-	private JList sourceList;
-	private SortedListModel sourceListModel;
-	private JList destList;
-	private SortedListModel destListModel;
-	private JLabel destLabel;
-	private JButton addButton;
-	private JButton removeButton;
+	private JLabel sourceLabel, destLabel;
+	private JList sourceList, destList;
+	private SortedListModel sourceListModel, destListModel;
+	private JButton addButton, addAllButton, removeButton, removeAllButton;
 
 	public DualListBox(List<String> values, List<String> compensatedParams) {
 		initScreen();
@@ -120,10 +118,18 @@ public class DualListBox extends JPanel {
 		return destListModel.iterator();
 	}
 
-	public List<String> getAllItems() {
+	private List<String> getAllItems(Iterator iterator) {
 		List<Object> result = new ArrayList<Object>();
-		this.destinationIterator().forEachRemaining(result::add);
+		iterator.forEachRemaining(result::add);
 		return result.stream().map(object -> (String) object).collect(Collectors.toList());
+	}
+
+	public List<String> getAllResultItems() {
+		return getAllItems(this.destinationIterator());
+	}
+
+	public List<String> getAllSourceItems() {
+		return getAllItems(this.sourceIterator());
 	}
 
 	public void setSourceCellRenderer(ListCellRenderer newValue) {
@@ -177,10 +183,24 @@ public class DualListBox extends JPanel {
 		sourceList.getSelectionModel().clearSelection();
 	}
 
+	private void clearSource(Object items[]) {
+		for (int i = items.length - 1; i >= 0; --i) {
+			sourceListModel.removeElement(items[i]);
+		}
+		sourceList.getSelectionModel().clearSelection();
+	}
+
 	private void clearDestinationSelected() {
 		Object selected[] = destList.getSelectedValues();
 		for (int i = selected.length - 1; i >= 0; --i) {
 			destListModel.removeElement(selected[i]);
+		}
+		destList.getSelectionModel().clearSelection();
+	}
+
+	private void clearDestination(Object items[]) {
+		for (int i = items.length - 1; i >= 0; --i) {
+			destListModel.removeElement(items[i]);
 		}
 		destList.getSelectionModel().clearSelection();
 	}
@@ -201,13 +221,22 @@ public class DualListBox extends JPanel {
 				GridBagConstraints.BOTH, EMPTY_INSETS, 0, 0));
 
 		addButton = new JButton(ADD_BUTTON_LABEL);
-		add(addButton, new GridBagConstraints(1, 2, 1, 2, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
+		add(addButton, new GridBagConstraints(1, 2, 1, 1, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
 				EMPTY_INSETS, 0, 0));
 		addButton.addActionListener(new AddListener());
+		addAllButton = new JButton(ADD_ALL_BUTTON_LABEL);
+		add(addAllButton, new GridBagConstraints(1, 3, 1, 1, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
+				EMPTY_INSETS, 0, 0));
+		addAllButton.addActionListener(new AddAllListener(this));
+
 		removeButton = new JButton(REMOVE_BUTTON_LABEL);
-		add(removeButton, new GridBagConstraints(1, 4, 1, 2, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
+		add(removeButton, new GridBagConstraints(1, 4, 1, 1, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
 				new Insets(0, 5, 0, 5), 0, 0));
 		removeButton.addActionListener(new RemoveListener());
+		removeAllButton = new JButton(REMOVE_ALL_BUTTON_LABEL);
+		add(removeAllButton, new GridBagConstraints(1, 5, 1, 1, 0, .25, GridBagConstraints.CENTER,
+				GridBagConstraints.NONE, new Insets(0, 5, 0, 5), 0, 0));
+		removeAllButton.addActionListener(new RemoveAllListener(this));
 
 		destLabel = new JLabel(DEFAULT_DEST_CHOICE_LABEL);
 		destListModel = new SortedListModel();
@@ -226,11 +255,39 @@ public class DualListBox extends JPanel {
 		}
 	}
 
+	private class AddAllListener implements ActionListener {
+		DualListBox box;
+
+		AddAllListener(DualListBox box) {
+			this.box = box;
+		}
+
+		public void actionPerformed(ActionEvent e) {
+			Object items[] = this.box.getAllSourceItems().toArray();
+			addDestinationElements(items);
+			clearSource(items);
+		}
+	}
+
 	private class RemoveListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			Object selected[] = destList.getSelectedValues();
 			addSourceElements(selected);
 			clearDestinationSelected();
+		}
+	}
+
+	private class RemoveAllListener implements ActionListener {
+		DualListBox box;
+
+		RemoveAllListener(DualListBox box) {
+			this.box = box;
+		}
+
+		public void actionPerformed(ActionEvent e) {
+			Object items[] = this.box.getAllResultItems().toArray();
+			addSourceElements(items);
+			clearDestination(items);
 		}
 	}
 }

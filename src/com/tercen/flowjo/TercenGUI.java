@@ -124,7 +124,7 @@ public class TercenGUI {
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
 			if (option == JOptionPane.OK_OPTION) {
-				List<String> fcsChannels = dualListBox.getAllItems();
+				List<String> fcsChannels = dualListBox.getAllResultItems();
 				plugin.channels = new ArrayList<String>(
 						fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList()));
 

@@ -1,13 +1,10 @@
 package com.tercen.flowjo;
 
-import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,13 +18,11 @@ import javax.swing.DefaultListModel;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
@@ -40,7 +35,6 @@ import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
 import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
 import com.treestar.lib.FJPluginHelper;
-import com.treestar.lib.gui.FJButton;
 import com.treestar.lib.gui.FJList;
 import com.treestar.lib.gui.FontUtil;
 import com.treestar.lib.gui.GuiFactory;
@@ -53,8 +47,9 @@ public class TercenGUI {
 
 	private static final Logger logger = LogManager.getLogger();
 	private static final String CHOOSE_DATA = "Choose Data";
-	private static final String SELECT_CHANNELS = "Modify selected FCS channels.";
+	private static final String SELECT_CHANNELS = "Select FCS channels.";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
+	private static final String SELECT_BUTTON_TEXT = "Use the buttons to select the channels.";
 	private static final String RETURN_TO_TERCEN = "Return to my project.";
 
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
@@ -111,36 +106,25 @@ public class TercenGUI {
 				componentList.add(new JSeparator());
 			}
 
-			// advanced section
-			JPanel advancedPanel = new JPanel();
-			advancedPanel.setLayout(new BorderLayout());
-			FJButton advancedButton = new FJButton("Advanced");
-			advancedButton.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					advancedPanel.setVisible(!advancedPanel.isShowing());
-					Component component = (Component) e.getSource();
-					JDialog frame = (JDialog) SwingUtilities.getRoot(component);
-					frame.pack();
-				}
-			});
-			componentList.add(advancedButton);
-
+			// channel section
 			FJLabel label = new FJLabel(SELECT_CHANNELS);
 			label.setFont(FontUtil.BoldDialog12);
 			HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
-			advancedPanel.add(box, BorderLayout.NORTH);
-			advancedPanel.add(new FJLabel(SELECT_TEXT), BorderLayout.CENTER);
+			componentList.add(box);
 
-			FJList paramList = createParameterList(arg1, arg0, true);
-			advancedPanel.add(new JScrollPane(paramList), BorderLayout.SOUTH);
-			advancedPanel.setVisible(false);
-			componentList.add(advancedPanel);
+			componentList.add(new FJLabel(""));
+			componentList.add(new FJLabel(SELECT_BUTTON_TEXT));
+			componentList.add(new FJLabel(""));
+
+			List<String> compParams = FJPluginHelper.getSample(arg0).getParameters(true).getCompensatedParameterNames();
+			DualListBox dualListBox = new DualListBox(arg1, compParams);
+			componentList.add(dualListBox);
 
 			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
 			if (option == JOptionPane.OK_OPTION) {
-				ArrayList<String> fcsChannels = new ArrayList<String>(paramList.getSelectedValuesList());
+				List<String> fcsChannels = dualListBox.getAllItems();
 				plugin.channels = new ArrayList<String>(
 						fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList()));
 

@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.http.client.ClientProtocolException;
 import org.apache.logging.log4j.LogManager;
@@ -65,6 +66,7 @@ public class Utils {
 	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
+	private static final String SPLIT_COMMA_NOT_IN_QUOTES = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 	public static final String RANDOM_LABEL = "random_label";
 	public static final String FILENAME = "filename";
 
@@ -157,12 +159,15 @@ public class Utils {
 			if (!lines.isEmpty()) {
 				// add header only once
 				if (mergedLines.isEmpty()) {
-					List<String> headerList = Arrays.asList(lines.get(0).split(","));
-					String header = headerList.stream().map(s -> s.replace("\"", ""))
-							.map(s -> setFullColumnName(channels, s)).collect(Collectors.joining(","));
+					// handle possible commas inside quotes
+					List<String> headerList = Arrays.asList(lines.get(0).split(SPLIT_COMMA_NOT_IN_QUOTES));
+					Stream<String> fullHeaderList = headerList.stream().map(s -> s.replace("\"", ""))
+							.map(s -> setFullColumnName(channels, s));
+					String header = "\"".concat(fullHeaderList.collect(Collectors.joining("\",\""))).concat("\"");
 					header = header.concat(String.format(", %s", FILENAME));
 					mergedLines.add(header);
-					columnNames = Arrays.stream(header.split(",")).map(String::trim).collect(Collectors.toList());
+					columnNames = Arrays.stream(header.split(SPLIT_COMMA_NOT_IN_QUOTES)).map(String::trim)
+							.collect(Collectors.toList());
 				}
 				List<String> content = lines.subList(1, lines.size());
 				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));

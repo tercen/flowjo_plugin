@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -140,8 +141,12 @@ public class UploadProgressTask extends JFrame {
 		return handleCsvTask(client, project, fileDoc, channels, columnNames, i);
 	}
 
-	private Schema handleCsvTask(TercenClient client, Project project, FileDocument fileDoc, ArrayList<String> channels,
-			List<String> columnNames, int i) throws ServiceError, IOException {
+	private Schema handleCsvTask(TercenClient client, Project project, FileDocument fileDoc,
+			ArrayList<String> channelNames, List<String> columnNames, int i) throws ServiceError, IOException {
+		// put quotes around channel names
+		ArrayList<String> channels = new ArrayList<String>(
+				channelNames.stream().map(s -> "\"" + s + "\"").collect(Collectors.toList()));
+
 		// create task; this will create a dataset from the file on Tercen
 		CSVTask task = new CSVTask();
 		task.state = new InitState();

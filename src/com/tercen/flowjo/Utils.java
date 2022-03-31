@@ -43,6 +43,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.comparator.SampleComparator;
+import com.tercen.flowjo.exception.DataFormatException;
 import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
@@ -74,7 +75,7 @@ public class Utils {
 
 	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project,
 			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
-			String dataTableName) throws ServiceError, IOException {
+			String dataTableName) throws ServiceError, IOException, DataFormatException {
 
 		FileDocument fileDoc = new FileDocument();
 		String name = dataTableName;
@@ -152,7 +153,7 @@ public class Utils {
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
 	private static List<Object> getMergedAndDownSampledFile(LinkedHashSet<String> paths, ArrayList<String> channels,
-			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException {
+			Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException, DataFormatException {
 		List<Object> result = new ArrayList<Object>();
 		List<String> mergedLines = new ArrayList<>();
 		List<String> columnNames = new ArrayList<>();
@@ -164,16 +165,18 @@ public class Utils {
 			if (!lines.isEmpty()) {
 				// add header only once
 				if (mergedLines.isEmpty()) {
-					// handle possible commas inside quotes
-					List<String> headerList = Arrays.asList(lines.get(0).split(SPLIT_COMMA_NOT_IN_QUOTES));
-					Stream<String> fullHeaderList = headerList.stream().map(s -> s.replace("\"", ""))
-							.map(s -> setFullColumnName(channels, s));
-					String header = "\"".concat(fullHeaderList.collect(Collectors.joining("\",\""))).concat("\"");
-					header = header.concat(String.format(", %s", FILENAME));
+					String header = getHeader(channels, lines.get(0));
 					mergedLines.add(header);
 					columnNames = Arrays.stream(header.split(SPLIT_COMMA_NOT_IN_QUOTES)).map(String::trim)
 							.collect(Collectors.toList());
 					fullChannels = Utils.setFullChannelNames(channels, columnNames);
+				} else {
+					// check header equals initial file
+					String header = getHeader(channels, lines.get(0));
+					if (!mergedLines.get(0).equals(header)) {
+						throw new DataFormatException(
+								"Can't upload data since sample files have different FCS channels. Please make sure to upload files that have the same channels.");
+					}
 				}
 				List<String> content = lines.subList(1, lines.size());
 				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
@@ -192,6 +195,15 @@ public class Utils {
 		result.add(columnNames);
 		result.add(fullChannels);
 		return (result);
+	}
+
+	private static String getHeader(ArrayList<String> channels, String headerLine) {
+		// handle possible commas inside quotes
+		List<String> headerList = Arrays.asList(headerLine.split(SPLIT_COMMA_NOT_IN_QUOTES));
+		Stream<String> fullHeaderList = headerList.stream().map(s -> s.replace("\"", ""))
+				.map(s -> setFullColumnName(channels, s));
+		String header = "\"".concat(fullHeaderList.collect(Collectors.joining("\",\""))).concat("\"");
+		return header.concat(String.format(", %s", FILENAME));
 	}
 
 	// In some cases FlowJo has generated a csv file with shortened column names.

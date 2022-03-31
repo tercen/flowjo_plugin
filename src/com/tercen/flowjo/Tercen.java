@@ -34,6 +34,7 @@ import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.exception.DataFormatException;
 import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
@@ -359,6 +360,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			logger.error(e.getMessage());
 			setWorkspaceText(nodeList, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
+		} catch (DataFormatException e) {
+			logger.error(e.getMessage());
+			setWorkspaceText(nodeList, e.getMessage());
+			pluginState = ImportPluginStateEnum.error;
+			Utils.showErrorDialog(e.getMessage());
 		}
 		return result;
 	}

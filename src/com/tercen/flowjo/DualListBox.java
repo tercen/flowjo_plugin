@@ -1,6 +1,7 @@
 package com.tercen.flowjo;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -28,10 +29,10 @@ import javax.swing.ListModel;
 
 public class DualListBox extends JPanel {
 
-	private static final Insets EMPTY_INSETS = new Insets(0, 0, 0, 0);
-	private static final String ADD_BUTTON_LABEL = "       Add >>";
-	private static final String ADD_ALL_BUTTON_LABEL = "Add all >>   ";
-	private static final String REMOVE_BUTTON_LABEL = "<< Remove    ";
+	private static final Insets EMPTY_INSETS = new Insets(5, 5, 5, 5);
+	private static final String ADD_BUTTON_LABEL = "Add >>";
+	private static final String ADD_ALL_BUTTON_LABEL = "Add all >>";
+	private static final String REMOVE_BUTTON_LABEL = "<< Remove";
 	private static final String REMOVE_ALL_BUTTON_LABEL = "<< Remove all";
 	private static final String DEFAULT_SOURCE_CHOICE_LABEL = "Available Channels";
 	private static final String DEFAULT_DEST_CHOICE_LABEL = "Selected Channels";
@@ -39,7 +40,6 @@ public class DualListBox extends JPanel {
 	private JLabel sourceLabel, destLabel;
 	private JList sourceList, destList;
 	private SortedListModel sourceListModel, destListModel;
-	private JButton addButton, addAllButton, removeButton, removeAllButton;
 
 	public DualListBox(List<String> values, List<String> compensatedParams) {
 		initScreen();
@@ -220,23 +220,10 @@ public class DualListBox extends JPanel {
 		add(new JScrollPane(sourceList), new GridBagConstraints(0, 1, 1, 5, .5, 1, GridBagConstraints.CENTER,
 				GridBagConstraints.BOTH, EMPTY_INSETS, 0, 0));
 
-		addButton = new JButton(ADD_BUTTON_LABEL);
-		add(addButton, new GridBagConstraints(1, 2, 1, 1, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
-				EMPTY_INSETS, 0, 0));
-		addButton.addActionListener(new AddListener());
-		addAllButton = new JButton(ADD_ALL_BUTTON_LABEL);
-		add(addAllButton, new GridBagConstraints(1, 3, 1, 1, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
-				EMPTY_INSETS, 0, 0));
-		addAllButton.addActionListener(new AddAllListener(this));
-
-		removeButton = new JButton(REMOVE_BUTTON_LABEL);
-		add(removeButton, new GridBagConstraints(1, 4, 1, 1, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
-				new Insets(0, 5, 0, 5), 0, 0));
-		removeButton.addActionListener(new RemoveListener());
-		removeAllButton = new JButton(REMOVE_ALL_BUTTON_LABEL);
-		add(removeAllButton, new GridBagConstraints(1, 5, 1, 1, 0, .25, GridBagConstraints.CENTER,
-				GridBagConstraints.NONE, new Insets(0, 5, 0, 5), 0, 0));
-		removeAllButton.addActionListener(new RemoveAllListener(this));
+		createButton(ADD_BUTTON_LABEL, new AddListener(), 2);
+		createButton(ADD_ALL_BUTTON_LABEL, new AddAllListener(this), 3);
+		createButton(REMOVE_BUTTON_LABEL, new RemoveListener(), 4);
+		createButton(REMOVE_ALL_BUTTON_LABEL, new RemoveAllListener(this), 5);
 
 		destLabel = new JLabel(DEFAULT_DEST_CHOICE_LABEL);
 		destListModel = new SortedListModel();
@@ -245,6 +232,14 @@ public class DualListBox extends JPanel {
 				EMPTY_INSETS, 0, 0));
 		add(new JScrollPane(destList), new GridBagConstraints(2, 1, 1, 5, .5, 1.0, GridBagConstraints.CENTER,
 				GridBagConstraints.BOTH, EMPTY_INSETS, 0, 0));
+	}
+
+	private void createButton(String text, ActionListener listener, int gridy) {
+		JButton btn = new JButton(text);
+		btn.setPreferredSize(new Dimension(100, 28));
+		add(btn, new GridBagConstraints(1, gridy, 1, 1, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
+				EMPTY_INSETS, 0, 0));
+		btn.addActionListener(listener);
 	}
 
 	private class AddListener implements ActionListener {

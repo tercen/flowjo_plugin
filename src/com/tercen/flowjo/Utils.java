@@ -32,6 +32,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.swing.JOptionPane;
+
 import org.apache.http.client.ClientProtocolException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -89,6 +91,7 @@ public class Utils {
 		List<Object> result = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
 		File mergedFile = (File) result.get(0);
 		List<String> columnNames = (List<String>) result.get(1);
+		ArrayList<String> fullChannels = (ArrayList<String>) result.get(2);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -97,7 +100,8 @@ public class Utils {
 		int iterations = (int) (mergedFile.length() / blockSize);
 		uploadProgressTask.setIterations(iterations);
 		uploadProgressTask.showDialog();
-		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, channels, blockSize, columnNames);
+		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, fullChannels, blockSize,
+				columnNames);
 	}
 
 	private static int getBlockSize(File mergedFile) {
@@ -152,6 +156,7 @@ public class Utils {
 		List<Object> result = new ArrayList<Object>();
 		List<String> mergedLines = new ArrayList<>();
 		List<String> columnNames = new ArrayList<>();
+		List<String> fullChannels = new ArrayList<>();
 		int fileCount = paths.size();
 		logger.debug(String.format("Create upload file from %d sample files", fileCount));
 		for (String p : paths) {
@@ -168,6 +173,7 @@ public class Utils {
 					mergedLines.add(header);
 					columnNames = Arrays.stream(header.split(SPLIT_COMMA_NOT_IN_QUOTES)).map(String::trim)
 							.collect(Collectors.toList());
+					fullChannels = Utils.setFullChannelNames(channels, columnNames);
 				}
 				List<String> content = lines.subList(1, lines.size());
 				content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
@@ -184,6 +190,7 @@ public class Utils {
 				columnNames.size(), channels.size()));
 		result.add(mergedFile);
 		result.add(columnNames);
+		result.add(fullChannels);
 		return (result);
 	}
 
@@ -206,6 +213,29 @@ public class Utils {
 		if (result != null && result.equalsIgnoreCase("Event #")) {
 			result = "EventNumberDP";
 		}
+		return result;
+	}
+
+	// In some cases FlowJo has generated a csv file with a column name that is
+	// longer than the channel name displayed in the UI.
+	// This methods sets the full channel name, needed by Tercen.
+	protected static ArrayList<String> setFullChannelNames(ArrayList<String> channels, List<String> columnNames) {
+		ArrayList<String> result = new ArrayList(channels.size());
+		for (int i = 0; i < channels.size(); i++) {
+			String channel = channels.get(i);
+			for (int j = 0; j < columnNames.size(); j++) {
+				String colName = columnNames.get(j).replace("\"", "");
+				if (colName.equals(channel)) {
+					result.add(channel);
+					break;
+				} else if (colName.startsWith(channel) && (colName.length() > channel.length())) {
+					result.add(colName);
+					break;
+				}
+			}
+		}
+		// put quotes around channel names
+		result = new ArrayList<String>(result.stream().map(s -> "\"" + s + "\"").collect(Collectors.toList()));
 		return result;
 	}
 
@@ -506,5 +536,13 @@ public class Utils {
 	protected static boolean isPluginOutdated(String pluginVersion, String gitToken)
 			throws JSONException, ClientProtocolException, IOException {
 		return Updater.newVersionAvailable(pluginVersion, gitToken);
+	}
+
+	protected static void showWarningDialog(String text) {
+		JOptionPane.showMessageDialog(null, text, "ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
+	}
+
+	protected static void showErrorDialog(String text) {
+		JOptionPane.showMessageDialog(null, text, "ImportPlugin error", JOptionPane.ERROR_MESSAGE);
 	}
 }

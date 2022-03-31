@@ -19,7 +19,6 @@ import java.util.Properties;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -230,30 +229,26 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					String pluginDir = Updater.getPluginDirectory();
 					if (Updater.isPluginDirectoryWritable(pluginDir)) {
 						Updater.downloadLatestVersion(this, version, GIT_TOKEN_VALUE);
-						JOptionPane.showMessageDialog(null,
-								"Your plugin has been updated, please remove all connectors and restart FlowJo now.",
-								"Tercen Plugin V" + getVersion(), JOptionPane.WARNING_MESSAGE);
+						Utils.showWarningDialog(
+								"Your plugin has been updated, please remove all connectors and restart FlowJo now.");
 						return result;
 					} else {
 						// notify user & log
-						JOptionPane.showMessageDialog(null,
-								"Oops, looks like we don't have permission to update the Tercen plugin automatically. Please download the new version from the FlowJo Exchange.",
-								"Update plugin error", JOptionPane.ERROR_MESSAGE);
+						Utils.showErrorDialog(
+								"Oops, looks like we don't have permission to update the Tercen plugin automatically. Please download the new version from the FlowJo Exchange.");
 						logger.error("Plugindir is not writable: " + pluginDir);
 					}
 				}
 
 				if (!sampleFile.exists()) {
-					JOptionPane.showMessageDialog(null, "Input file does not exist", "ImportPlugin error",
-							JOptionPane.ERROR_MESSAGE);
+					Utils.showErrorDialog("Input file does not exist");
 					workspaceText = Tercen.Failed;
 				} else {
 					Schema uploadResult = null;
 
 					userName = Utils.getCurrentPortalUser();
 					if (userName == null || userName.equals("")) {
-						JOptionPane.showMessageDialog(null, "FlowJo username needs to be set.", "ImportPlugin error",
-								JOptionPane.ERROR_MESSAGE);
+						Utils.showErrorDialog("FlowJo username needs to be set.");
 						workspaceText = "Selected";
 						logger.error("FlowJo username is not set, can't upload");
 					} else {
@@ -281,31 +276,35 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						Project project = Utils.getProject(client, session.user.id, projectName);
 
 						// upload csv file
-						if (selectedSamplePops.size() > 0 && channels.size() > 0) {
-							uploadProgressTask = new UploadProgressTask(this);
-							uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
-									uploadProgressTask, Utils.getTercenDataTableName(wsp));
+						if (selectedSamplePops.size() > 0) {
+							if (channels.size() > 0) {
+								uploadProgressTask = new UploadProgressTask(this);
+								uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
+										uploadProgressTask, Utils.getTercenDataTableName(wsp));
 
-							// open browser
-							if (uploadResult != null) {
-								String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
-										uploadResult, wsp);
-								Desktop desktop = java.awt.Desktop.getDesktop();
-								URI uri = new URI(String.valueOf(url));
-								desktop.browse(uri);
-								projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
-								workspaceText = String.format("Uploaded to %s.", hostName);
-								pluginState = ImportPluginStateEnum.uploaded;
+								// open browser
+								if (uploadResult != null) {
+									String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
+											uploadResult, wsp);
+									Desktop desktop = java.awt.Desktop.getDesktop();
+									URI uri = new URI(String.valueOf(url));
+									desktop.browse(uri);
+									projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
+									workspaceText = String.format("Uploaded to %s.", hostName);
+									pluginState = ImportPluginStateEnum.uploaded;
+								} else {
+									Utils.showWarningDialog(
+											"No files have been uploaded, browser window will not open.");
+									return result;
+								}
 							} else {
-								JOptionPane.showMessageDialog(null,
-										"No files have been uploaded, browser window will not open.",
-										"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
+								Utils.showWarningDialog(
+										"There is no data to upload, please make sure you have selected at minimum one FCS channel.");
 								return result;
 							}
 						} else {
-							JOptionPane.showMessageDialog(null,
-									"There is no data to upload, please make sure you have selected at minimum one sample and one FCS channel.",
-									"ImportPlugin warning", JOptionPane.WARNING_MESSAGE);
+							Utils.showWarningDialog(
+									"There is no data to upload, please make sure you have selected at minimum one sample.");
 							return result;
 						}
 					}
@@ -330,7 +329,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				break;
 			}
 
-		} catch (ServiceError e) {
+		} catch (
+
+		ServiceError e) {
 			if (uploadProgressTask != null) {
 				uploadProgressTask.setVisible(false);
 			}

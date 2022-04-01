@@ -29,10 +29,10 @@ import javax.swing.ListModel;
 
 public class DualListBox extends JPanel {
 
-	private static final Insets EMPTY_INSETS = new Insets(5, 5, 5, 5);
-	private static final String ADD_BUTTON_LABEL = "Add >>";
+	private static final Insets CUSTOM_INSETS = new Insets(4, 2, 4, 2);
+	private static final String ADD_BUTTON_LABEL = "Add >";
 	private static final String ADD_ALL_BUTTON_LABEL = "Add all >>";
-	private static final String REMOVE_BUTTON_LABEL = "<< Remove";
+	private static final String REMOVE_BUTTON_LABEL = "< Remove";
 	private static final String REMOVE_ALL_BUTTON_LABEL = "<< Remove all";
 	private static final String DEFAULT_SOURCE_CHOICE_LABEL = "Available Channels";
 	private static final String DEFAULT_DEST_CHOICE_LABEL = "Selected Channels";
@@ -216,29 +216,29 @@ public class DualListBox extends JPanel {
 		sourceListModel = new SortedListModel();
 		sourceList = new JList(sourceListModel);
 		add(sourceLabel, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE,
-				EMPTY_INSETS, 0, 0));
+				CUSTOM_INSETS, 0, 0));
 		add(new JScrollPane(sourceList), new GridBagConstraints(0, 1, 1, 5, .5, 1, GridBagConstraints.CENTER,
-				GridBagConstraints.BOTH, EMPTY_INSETS, 0, 0));
+				GridBagConstraints.BOTH, CUSTOM_INSETS, 0, 0));
 
 		createButton(ADD_BUTTON_LABEL, new AddListener(), 2);
-		createButton(ADD_ALL_BUTTON_LABEL, new AddAllListener(this), 3);
-		createButton(REMOVE_BUTTON_LABEL, new RemoveListener(), 4);
+		createButton(REMOVE_BUTTON_LABEL, new RemoveListener(), 3);
+		createButton(ADD_ALL_BUTTON_LABEL, new AddAllListener(this), 4);
 		createButton(REMOVE_ALL_BUTTON_LABEL, new RemoveAllListener(this), 5);
 
 		destLabel = new JLabel(DEFAULT_DEST_CHOICE_LABEL);
 		destListModel = new SortedListModel();
 		destList = new JList(destListModel);
 		add(destLabel, new GridBagConstraints(2, 0, 1, 1, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.NONE,
-				EMPTY_INSETS, 0, 0));
+				CUSTOM_INSETS, 0, 0));
 		add(new JScrollPane(destList), new GridBagConstraints(2, 1, 1, 5, .5, 1.0, GridBagConstraints.CENTER,
-				GridBagConstraints.BOTH, EMPTY_INSETS, 0, 0));
+				GridBagConstraints.BOTH, CUSTOM_INSETS, 0, 0));
 	}
 
 	private void createButton(String text, ActionListener listener, int gridy) {
 		JButton btn = new JButton(text);
-		btn.setPreferredSize(new Dimension(100, 28));
+		btn.setPreferredSize(new Dimension(110, 28));
 		add(btn, new GridBagConstraints(1, gridy, 1, 1, 0, .25, GridBagConstraints.CENTER, GridBagConstraints.NONE,
-				EMPTY_INSETS, 0, 0));
+				CUSTOM_INSETS, 0, 0));
 		btn.addActionListener(listener);
 	}
 

@@ -49,7 +49,6 @@ public class TercenGUI {
 	private static final String CHOOSE_DATA = "Choose Data";
 	private static final String SELECT_CHANNELS = "Select FCS channels.";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
-	private static final String SELECT_BUTTON_TEXT = "Use the buttons to select the channels.";
 	private static final String RETURN_TO_TERCEN = "Return to my project.";
 
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
@@ -113,7 +112,7 @@ public class TercenGUI {
 			componentList.add(box);
 
 			componentList.add(new FJLabel(""));
-			componentList.add(new FJLabel(SELECT_BUTTON_TEXT));
+			componentList.add(new FJLabel(SELECT_TEXT));
 			componentList.add(new FJLabel(""));
 
 			List<String> compParams = FJPluginHelper.getSample(arg0).getParameters(true).getCompensatedParameterNames();

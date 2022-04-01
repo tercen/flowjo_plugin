@@ -300,7 +300,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 								}
 							} else {
 								Utils.showWarningDialog(
-										"There is no data to upload, please make sure you have selected at minimum one FCS channel.");
+										"Oops! there are no FCS channels selected. Make sure to pick at least one.");
 								return result;
 							}
 						} else {

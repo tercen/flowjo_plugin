@@ -169,6 +169,7 @@ public class Utils {
 					mergedLines.add(header);
 					columnNames = Arrays.stream(header.split(SPLIT_COMMA_NOT_IN_QUOTES)).map(String::trim)
 							.collect(Collectors.toList());
+					columnNames.replaceAll(s -> s.replace("\"", ""));
 					fullChannels = Utils.setFullChannelNames(channels, columnNames);
 				} else {
 					// check header equals initial file
@@ -236,7 +237,7 @@ public class Utils {
 		for (int i = 0; i < channels.size(); i++) {
 			String channel = channels.get(i);
 			for (int j = 0; j < columnNames.size(); j++) {
-				String colName = columnNames.get(j).replace("\"", "");
+				String colName = columnNames.get(j);
 				if (colName.equals(channel)) {
 					result.add(channel);
 					break;
@@ -246,8 +247,6 @@ public class Utils {
 				}
 			}
 		}
-		// put quotes around channel names
-		result = new ArrayList<String>(result.stream().map(s -> "\"" + s + "\"").collect(Collectors.toList()));
 		return result;
 	}
 

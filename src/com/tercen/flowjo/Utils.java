@@ -175,7 +175,7 @@ public class Utils {
 					String header = getHeader(channels, lines.get(0));
 					if (!mergedLines.get(0).equals(header)) {
 						throw new DataFormatException(
-								"Can't upload data since sample files have different FCS channels. Please make sure to upload files that have the same channels.");
+								"Can't upload data since sample files have different FCS channels. Please upload files that have the same channels and remove and add the Tercen plugin again.");
 					}
 				}
 				List<String> content = lines.subList(1, lines.size());

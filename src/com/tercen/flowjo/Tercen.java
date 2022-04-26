@@ -47,6 +47,7 @@ import com.treestar.flowjo.core.Sample;
 import com.treestar.flowjo.core.nodes.AppNode;
 import com.treestar.flowjo.engine.utility.ParameterOptionHolder;
 import com.treestar.lib.FJPluginHelper;
+import com.treestar.lib.PluginHelper;
 import com.treestar.lib.core.ExportFileTypes;
 import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
@@ -62,7 +63,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected static final String CSV_FILE_NAME = "csvFileName";
 
 	protected enum ImportPluginStateEnum {
-		empty, collectingSamples, uploading, uploaded, error;
+		empty, collectingSamples, uploading, uploaded, importing, error;
 	}
 
 	private static final String TERCEN_PROPERTIES = "tercen.properties";
@@ -90,6 +91,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected ArrayList<String> channels = new ArrayList<String>();
 	private String csvFileName;
 	protected String projectURL;
+	protected File importFile;
 	protected long seed = -1;
 	protected long maxDataPoints = -1;
 
@@ -136,6 +138,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			}
 			result.addContent(pops);
 		}
+		if (importFile != null) {
+			result.setString("importFilePath", importFile.getAbsolutePath());
+		}
 		return result;
 	}
 
@@ -156,6 +161,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			for (SElement popElem : pops.getChildren("SelectedPopulation")) {
 				this.selectedSamplePops.add(popElem.getString("path"));
 			}
+		}
+		String importFilePath = element.getString("importFilePath");
+		if (importFile == null && importFilePath != null && !importFilePath.equals("")) {
+			importFile = new File(importFilePath);
 		}
 	}
 
@@ -310,6 +319,14 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						}
 					}
 				}
+			} else if (pluginState == ImportPluginStateEnum.importing) {
+				if (importFile != null) {
+					PluginHelper.createClusterParameter(result, pluginName, importFile);
+					workspaceText = String.format("Imported data from %s.", importFile);
+				} else {
+					Utils.showWarningDialog("You did not select a file to import");
+				}
+				pluginState = ImportPluginStateEnum.uploaded;
 			}
 
 			switch (pluginState) {
@@ -329,7 +346,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			default:
 				break;
 			}
-
 		} catch (
 
 		ServiceError e) {
@@ -483,5 +499,4 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		Configurator.reconfigure(builder.build());
 		logger = LogManager.getLogger();
 	}
-
 }

@@ -355,7 +355,8 @@ public class Utils {
 					if (appNode instanceof ExternalPopNode && appNode.getName().contains(Tercen.pluginName)) {
 						String annotation = appNode.getAnnotation();
 						if (!selectedOrUploaded || (selectedOrUploaded && annotation.equalsIgnoreCase("Selected")
-								|| annotation.startsWith("Uploaded") || annotation.contains("ServiceError"))) {
+								|| annotation.startsWith("Uploaded") || annotation.startsWith("Imported")
+								|| annotation.contains("ServiceError"))) {
 							popList.add(appNode);
 						}
 					}

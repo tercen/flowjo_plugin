@@ -5,6 +5,9 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,9 +18,13 @@ import java.util.stream.IntStream;
 
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -50,6 +57,7 @@ public class TercenGUI {
 	private static final String SELECT_CHANNELS = "Select FCS channels.";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
 	private static final String RETURN_TO_TERCEN = "Return to my project.";
+	private static final String IMPORT_FROM_TERCEN = "Import Tercen results.";
 
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
 	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
@@ -76,6 +84,8 @@ public class TercenGUI {
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 
+			JCheckBox importCheckBox = null;
+			File importFile = null;
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
 				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
 				JEditorPane pane = createPaneWithLink(true, true);
@@ -83,6 +93,27 @@ public class TercenGUI {
 						String.format("<html><a href='%s'>%s</a></html>", this.plugin.projectURL, RETURN_TO_TERCEN));
 				pane.setToolTipText("Go to existing project");
 				componentList.add(pane);
+
+				JPanel importPanel = new JPanel();
+
+				importCheckBox = new JCheckBox(IMPORT_FROM_TERCEN, false);
+				JButton importButton = new JButton("Select File");
+				importButton.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						JFileChooser fileChooser = new JFileChooser();
+						int option = fileChooser.showOpenDialog(importPanel);
+						if (option == JFileChooser.APPROVE_OPTION) {
+							plugin.importFile = fileChooser.getSelectedFile();
+						}
+
+					}
+				});
+				importPanel.add(importCheckBox);
+				importPanel.add(importButton);
+				importPanel.setToolTipText("Import Tercen results");
+				componentList.add(importPanel);
+
 				componentList.add(new JSeparator());
 				componentList.add(addHeaderString("Re-Upload Data", FontUtil.dlogBold16));
 			} else {
@@ -123,16 +154,21 @@ public class TercenGUI {
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
 			if (option == JOptionPane.OK_OPTION) {
-				List<String> fcsChannels = dualListBox.getAllResultItems();
-				plugin.channels = new ArrayList<String>(
-						fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList()));
+				if (importCheckBox != null && importCheckBox.isSelected()) {
+					plugin.pluginState = ImportPluginStateEnum.importing;
+				} else {
+					List<String> fcsChannels = dualListBox.getAllResultItems();
+					plugin.channels = new ArrayList<String>(
+							fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList()));
 
-				// set selected sample files
-				if (samplePopulationsList != null) {
-					plugin.selectedSamplePops.clear();
-					plugin.selectedSamplePops.addAll(samplePopulationsList.getSelectedValuesList());
+					// set selected sample files
+					if (samplePopulationsList != null) {
+						plugin.selectedSamplePops.clear();
+						plugin.selectedSamplePops.addAll(samplePopulationsList.getSelectedValuesList());
+					}
+					plugin.pluginState = ImportPluginStateEnum.uploading;
 				}
-				plugin.pluginState = ImportPluginStateEnum.uploading;
+
 				result = true;
 			} else {
 				result = false;

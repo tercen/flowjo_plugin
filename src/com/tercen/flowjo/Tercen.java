@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -35,6 +36,7 @@ import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.exception.DataFormatException;
+import com.tercen.flowjo.parser.SplitData;
 import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
@@ -51,6 +53,7 @@ import com.treestar.lib.PluginHelper;
 import com.treestar.lib.core.ExportFileTypes;
 import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.core.PopulationPluginInterface;
+import com.treestar.lib.parsing.interpreter.CSVReader;
 import com.treestar.lib.xml.SElement;
 
 import nu.studer.java.util.OrderedProperties;
@@ -321,7 +324,17 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				}
 			} else if (pluginState == ImportPluginStateEnum.importing) {
 				if (importFile != null) {
-					PluginHelper.createClusterParameter(result, pluginName, importFile);
+					List<File> importFiles = SplitData.splitCsvFileOnColumn(importFile);
+					File clusterFile = importFiles.get(0);
+					File otherFile = importFiles.get(1);
+
+					// clusters
+					int clusters = extractCountForParameter(clusterFile);
+					addGatingML(result, pluginName, clusters);
+					result.setCSVFile(clusterFile);
+
+					// other results (float values)
+					PluginHelper.createClusterParameter(result, pluginName, otherFile);
 					workspaceText = String.format("Imported data from %s.", importFile);
 				} else {
 					Utils.showWarningDialog("You did not select a file to import");
@@ -499,4 +512,35 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		Configurator.reconfigure(builder.build());
 		logger = LogManager.getLogger();
 	}
+
+	public static void addGatingML(ExternalAlgorithmResults results, String parName, int nClust) {
+		SElement gatingml = new SElement("gating:Gating-ML");
+		for (int i = 1; i <= nClust; i++) {
+			SElement gate = new SElement("gating:RectangleGate");
+			gate.setString("gating:id", parName + "_" + i);
+			gatingml.addContent(gate);
+			SElement dimElem = new SElement("gating:dimension");
+			dimElem.setDouble("gating:min", ((double) i - 0.3));
+			dimElem.setDouble("gating:max", ((double) i + 0.3));
+			gate.addContent(dimElem);
+			SElement fcsDimElem1 = new SElement("data-type:fcs-dimension");
+			fcsDimElem1.setString("data-type:name", parName);
+			dimElem.addContent(fcsDimElem1);
+		}
+		results.setGatingML(gatingml.toString());
+	}
+
+	private int extractCountForParameter(File clusterFile) throws IOException {
+		List<Long> clusters = new ArrayList<Long>();
+		CSVReader reader = new CSVReader(new FileReader(clusterFile));
+		List<String[]> entries = reader.readAll();
+		for (int i = 1; i < entries.size(); i++) {
+			long val = Math.round(Double.parseDouble(entries.get(i)[0]));
+			if (!clusters.contains(val)) {
+				clusters.add(val);
+			}
+		}
+		return clusters.size();
+	}
+
 }

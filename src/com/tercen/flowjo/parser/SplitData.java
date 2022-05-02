@@ -17,34 +17,42 @@ import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 
 public class SplitData {
 
-	public static List<File> splitCsvFileOnColumn(File inputFileO) throws IOException {
+	public static List<File> splitCsvFileOnColumn(File inputFile) throws IOException {
 
 		HeaderColumnNameMappingStrategy msIn = new HeaderColumnNameMappingStrategy();
 		msIn.setType(SplitBean.class);
-
 		List<SplitBean> list;
 
-		// read the data from the input CSV file into our SplitBean list:
-		try (Reader reader = Files.newBufferedReader(Paths.get(inputFileO.getAbsolutePath()))) {
+		// read the data into SplitBean list
+		try (Reader reader = Files.newBufferedReader(Paths.get(inputFile.getAbsolutePath()))) {
 			CsvToBean cb = new CsvToBeanBuilder(reader).withMappingStrategy(msIn).build();
 			list = cb.parse();
-			int i = 1;
 		}
 
-		// set up file writers:
 		File file1 = File.createTempFile("cluster", ".csv", null);
 		File file2 = File.createTempFile("other", ".csv", null);
 		try (CSVWriter writer1 = new CSVWriter(new FileWriter(file1.getAbsolutePath()));
 				CSVWriter writer2 = new CSVWriter(new FileWriter(file2.getAbsolutePath()));) {
 
-			// first write the headers to each file (false = no quotes):
-			writer1.writeNext(SplitBean.getHeadingsOne(), false);
-			writer2.writeNext(SplitBean.getHeadingsTwo(list.get(0)), false);
+			String[] headingsOne = SplitBean.getHeadingsOne();
+			String[] headingsTwo = SplitBean.getHeadingsTwo(list.get(0));
 
-			// then write each row of data (false = no quotes):
-			for (SplitBean item : list) {
-				writer1.writeNext(item.getDataOne(), false);
-				writer2.writeNext(item.getDataTwo(), false);
+			if (headingsOne == null) {
+				file1 = null;
+			} else {
+				writer1.writeNext(headingsOne, false);
+				for (SplitBean item : list) {
+					writer1.writeNext(item.getDataOne(), false);
+				}
+			}
+
+			if (headingsTwo == null) {
+				file2 = null;
+			} else {
+				writer2.writeNext(headingsTwo, false);
+				for (SplitBean item : list) {
+					writer2.writeNext(item.getDataTwo(), false);
+				}
 			}
 		}
 		return new ArrayList<File>(Arrays.asList(file1, file2));

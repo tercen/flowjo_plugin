@@ -19,7 +19,12 @@ public class SplitBean {
 	}
 
 	public static String[] getHeadingsTwo(SplitBean bean) {
-		return bean.theRest.keySet().stream().map(str -> str.substring(0, str.lastIndexOf("."))).toArray(String[]::new);
+		String[] result = null;
+		if (bean != null && bean.theRest != null) {
+			result = bean.theRest.keySet().stream().map(str -> str.substring(0, str.lastIndexOf(".")))
+					.toArray(String[]::new);
+		}
+		return (result);
 	}
 
 	public String[] getDataOne() {

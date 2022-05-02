@@ -19,7 +19,6 @@ import java.util.stream.IntStream;
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
@@ -84,8 +83,8 @@ public class TercenGUI {
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 
-			JCheckBox importCheckBox = null;
 			File importFile = null;
+			JTextField importLocation = new JTextField("", 40);
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
 				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
 				JEditorPane pane = createPaneWithLink(true, true);
@@ -95,9 +94,7 @@ public class TercenGUI {
 				componentList.add(pane);
 
 				JPanel importPanel = new JPanel();
-
-				importCheckBox = new JCheckBox(IMPORT_FROM_TERCEN, false);
-				JButton importButton = new JButton("Select File");
+				JButton importButton = new JButton("Select Tercen Result");
 				importButton.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent e) {
@@ -105,12 +102,13 @@ public class TercenGUI {
 						int option = fileChooser.showOpenDialog(importPanel);
 						if (option == JFileChooser.APPROVE_OPTION) {
 							plugin.importFile = fileChooser.getSelectedFile();
+							importLocation.setText(fileChooser.getSelectedFile().getName());
 						}
 
 					}
 				});
-				importPanel.add(importCheckBox);
 				importPanel.add(importButton);
+				importPanel.add(importLocation);
 				importPanel.setToolTipText("Import Tercen results");
 				componentList.add(importPanel);
 
@@ -154,7 +152,7 @@ public class TercenGUI {
 					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
 			if (option == JOptionPane.OK_OPTION) {
-				if (importCheckBox != null && importCheckBox.isSelected()) {
+				if (importLocation.getText() != null && !importLocation.getText().equals("")) {
 					plugin.pluginState = ImportPluginStateEnum.importing;
 				} else {
 					List<String> fcsChannels = dualListBox.getAllResultItems();

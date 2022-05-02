@@ -36,6 +36,7 @@ import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.exception.DataFormatException;
+import com.tercen.flowjo.parser.ClusterFileMetaData;
 import com.tercen.flowjo.parser.SplitData;
 import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.Project;
@@ -329,12 +330,15 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					File otherFile = importFiles.get(1);
 
 					// clusters
-					int clusters = extractCountForParameter(clusterFile);
-					addGatingML(result, pluginName, clusters);
-					result.setCSVFile(clusterFile);
-
+					if (clusterFile != null) {
+						ClusterFileMetaData metadata = extractNameAndCountForParameter(clusterFile);
+						PluginHelper.createClusterParameter(result, metadata.colname, clusterFile);
+						addGatingML(result, metadata.colname, metadata.nclusters);
+					}
 					// other results (float values)
-					PluginHelper.createClusterParameter(result, pluginName, otherFile);
+					if (otherFile != null) {
+						PluginHelper.createClusterParameter(result, pluginName, otherFile);
+					}
 					workspaceText = String.format("Imported data from %s.", importFile);
 				} else {
 					Utils.showWarningDialog("You did not select a file to import");
@@ -515,9 +519,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	public static void addGatingML(ExternalAlgorithmResults results, String parName, int nClust) {
 		SElement gatingml = new SElement("gating:Gating-ML");
-		for (int i = 1; i <= nClust; i++) {
+		for (int i = 0; i < nClust; i++) {
 			SElement gate = new SElement("gating:RectangleGate");
-			gate.setString("gating:id", parName + "_" + i);
+			gate.setString("gating:id", parName + "." + i);
 			gatingml.addContent(gate);
 			SElement dimElem = new SElement("gating:dimension");
 			dimElem.setDouble("gating:min", ((double) i - 0.3));
@@ -530,7 +534,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		results.setGatingML(gatingml.toString());
 	}
 
-	private int extractCountForParameter(File clusterFile) throws IOException {
+	private ClusterFileMetaData extractNameAndCountForParameter(File clusterFile) throws IOException {
 		List<Long> clusters = new ArrayList<Long>();
 		CSVReader reader = new CSVReader(new FileReader(clusterFile));
 		List<String[]> entries = reader.readAll();
@@ -540,7 +544,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				clusters.add(val);
 			}
 		}
-		return clusters.size();
+		ClusterFileMetaData metadata = new ClusterFileMetaData();
+		metadata.nclusters = clusters.size();
+		metadata.colname = entries.get(0)[0];
+		return metadata;
 	}
 
 }

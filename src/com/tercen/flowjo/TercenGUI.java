@@ -7,7 +7,6 @@ import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,8 +82,8 @@ public class TercenGUI {
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 
-			File importFile = null;
 			JTextField importLocation = new JTextField("", 40);
+			importLocation.setEditable(false);
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
 				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
 				JEditorPane pane = createPaneWithLink(true, true);

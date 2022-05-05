@@ -5,9 +5,9 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,12 +17,10 @@ import java.util.stream.IntStream;
 
 import javax.swing.Box;
 import javax.swing.DefaultListModel;
-import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -54,9 +52,6 @@ public class TercenGUI {
 	private static final String CHOOSE_DATA = "Choose Data";
 	private static final String SELECT_CHANNELS = "Select FCS channels.";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
-	private static final String RETURN_TO_TERCEN = "Return to my project.";
-	private static final String IMPORT_FROM_TERCEN = "Import Tercen results.";
-
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
 	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
 
@@ -73,7 +68,7 @@ public class TercenGUI {
 	}
 
 	public boolean promptForOptions(SElement arg0, List<String> arg1) {
-		boolean result;
+		boolean result = false;
 		List<Object> componentList = new ArrayList<>();
 
 		// show upload dialog
@@ -82,93 +77,47 @@ public class TercenGUI {
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 
-			JTextField importLocation = new JTextField("", 40);
-			importLocation.setEditable(false);
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
-				componentList.add(addHeaderString("Open Tercen", FontUtil.dlogBold16));
-				JEditorPane pane = createPaneWithLink(true, true);
-				pane.setText(
-						String.format("<html><a href='%s'>%s</a></html>", this.plugin.projectURL, RETURN_TO_TERCEN));
-				pane.setToolTipText("Go to existing project");
-				componentList.add(pane);
-
-				JPanel importPanel = new JPanel();
-				JButton importButton = new JButton("Select Tercen Result");
-				importButton.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						JFileChooser fileChooser = new JFileChooser();
-						int option = fileChooser.showOpenDialog(importPanel);
-						if (option == JFileChooser.APPROVE_OPTION) {
-							plugin.importFile = fileChooser.getSelectedFile();
-							importLocation.setText(fileChooser.getSelectedFile().getName());
-						}
-
-					}
-				});
-				importPanel.add(importButton);
-				importPanel.add(importLocation);
-				importPanel.setToolTipText("Import Tercen results");
-				componentList.add(importPanel);
-
+				String[] buttons = { "Return", "Upload Changes", "Import" };
+				componentList.add(addHeaderString("Welcome Back", FontUtil.dlogBold16));
+				componentList.add(new FJLabel("What's next for your data? Choose an option."));
+				componentList
+						.add("<html><ul>" + "<li>Return - Open Tercen to resume working on my analysis project.</li>"
+								+ "<li>Upload Changes - Create a new project with my recent changes.</li>"
+								+ "<li>Import - Load a Tercen export file into this workspace.</li>" + "</ul></html>");
 				componentList.add(new JSeparator());
-				componentList.add(addHeaderString("Re-Upload Data", FontUtil.dlogBold16));
+				int returnValue = JOptionPane.showOptionDialog(null, componentList.toArray(), getDialogTitle(),
+						JOptionPane.DEFAULT_OPTION, -1, null, buttons, buttons[1]);
+
+				if (returnValue == 0) {
+					String url = plugin.projectURL;
+					Desktop desktop = java.awt.Desktop.getDesktop();
+					URI uri;
+					try {
+						uri = new URI(String.valueOf(url));
+						desktop.browse(uri);
+					} catch (URISyntaxException e) {
+						Utils.showWarningDialog("Error while opening projectURL:" + e.getMessage());
+					} catch (IOException e) {
+						Utils.showWarningDialog("Error while opening projectURL:" + e.getMessage());
+					}
+				} else if (returnValue == 1) {
+					componentList.add(addHeaderString("Re-Upload Data", FontUtil.dlogBold16));
+					componentList.add(new JSeparator());
+					result = openUploadDialog(componentList, arg0, arg1);
+				} else if (returnValue == 2) {
+					JFileChooser fileChooser = new JFileChooser();
+					int option = fileChooser.showOpenDialog(null);
+					if (option == JFileChooser.APPROVE_OPTION) {
+						plugin.importFile = fileChooser.getSelectedFile();
+						plugin.pluginState = ImportPluginStateEnum.importing;
+						result = true;
+					}
+				}
 			} else {
 				componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 				componentList.add(new JSeparator());
-			}
-
-			FJList samplePopulationsList = null;
-			if (this.plugin.samplePops.size() > 0) {
-				FJLabel label = new FJLabel(CHOOSE_DATA);
-				label.setFont(FontUtil.BoldDialog12);
-				HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
-				componentList.add(box);
-
-				componentList.add(new FJLabel(""));
-				componentList.add(new FJLabel(SELECT_TEXT));
-
-				samplePopulationsList = createParameterList(new ArrayList<String>(this.plugin.samplePops), arg0, false);
-				componentList.add(new JScrollPane(samplePopulationsList));
-				componentList.add(new JSeparator());
-			}
-
-			// channel section
-			FJLabel label = new FJLabel(SELECT_CHANNELS);
-			label.setFont(FontUtil.BoldDialog12);
-			HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
-			componentList.add(box);
-
-			componentList.add(new FJLabel(""));
-			componentList.add(new FJLabel(SELECT_TEXT));
-			componentList.add(new FJLabel(""));
-
-			List<String> compParams = FJPluginHelper.getSample(arg0).getParameters(true).getCompensatedParameterNames();
-			DualListBox dualListBox = new DualListBox(arg1, compParams);
-			componentList.add(dualListBox);
-
-			int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
-					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-			if (option == JOptionPane.OK_OPTION) {
-				if (importLocation.getText() != null && !importLocation.getText().equals("")) {
-					plugin.pluginState = ImportPluginStateEnum.importing;
-				} else {
-					List<String> fcsChannels = dualListBox.getAllResultItems();
-					plugin.channels = new ArrayList<String>(
-							fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList()));
-
-					// set selected sample files
-					if (samplePopulationsList != null) {
-						plugin.selectedSamplePops.clear();
-						plugin.selectedSamplePops.addAll(samplePopulationsList.getSelectedValuesList());
-					}
-					plugin.pluginState = ImportPluginStateEnum.uploading;
-				}
-
-				result = true;
-			} else {
-				result = false;
+				result = openUploadDialog(componentList, arg0, arg1);
 			}
 		} else {
 			FJLabel headerLabel = addHeaderString("<html><center>Instructions</center><html>", FontUtil.dlogBold16);
@@ -183,6 +132,59 @@ public class TercenGUI {
 			} else {
 				result = false;
 			}
+		}
+		return result;
+	}
+
+	private boolean openUploadDialog(List<Object> componentList, SElement arg0, List<String> arg1) {
+		boolean result = false;
+		FJList samplePopulationsList = null;
+		if (this.plugin.samplePops.size() > 0) {
+			FJLabel label = new FJLabel(CHOOSE_DATA);
+			label.setFont(FontUtil.BoldDialog12);
+			HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
+			componentList.add(box);
+
+			componentList.add(new FJLabel(""));
+			componentList.add(new FJLabel(SELECT_TEXT));
+
+			samplePopulationsList = createParameterList(new ArrayList<String>(this.plugin.samplePops), arg0, false);
+			componentList.add(new JScrollPane(samplePopulationsList));
+			componentList.add(new JSeparator());
+		}
+
+		// channel section
+		FJLabel label = new FJLabel(SELECT_CHANNELS);
+		label.setFont(FontUtil.BoldDialog12);
+		HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
+		componentList.add(box);
+
+		componentList.add(new FJLabel(""));
+		componentList.add(new FJLabel(SELECT_TEXT));
+		componentList.add(new FJLabel(""));
+
+		List<String> compParams = FJPluginHelper.getSample(arg0).getParameters(true).getCompensatedParameterNames();
+		DualListBox dualListBox = new DualListBox(arg1, compParams);
+		componentList.add(dualListBox);
+
+		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+		if (option == JOptionPane.OK_OPTION) {
+			List<String> fcsChannels = dualListBox.getAllResultItems();
+			plugin.channels = new ArrayList<String>(
+					fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList()));
+
+			// set selected sample files
+			if (samplePopulationsList != null) {
+				plugin.selectedSamplePops.clear();
+				plugin.selectedSamplePops.addAll(samplePopulationsList.getSelectedValuesList());
+			}
+			plugin.pluginState = ImportPluginStateEnum.uploading;
+
+			result = true;
+		} else {
+			result = false;
 		}
 		return result;
 	}

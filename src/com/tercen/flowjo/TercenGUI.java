@@ -80,8 +80,12 @@ public class TercenGUI {
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
 				String[] buttons = { "Return", "Upload Changes", "Import" };
 				componentList.clear();
-				componentList.add(addHeaderString("Welcome Back", FontUtil.dlogBold16));
-				componentList.add(new FJLabel("What's next for your data? Choose an option."));
+				FJLabel headerLabel = addHeaderString("Welcome Back", FontUtil.dlogBold16);
+				FJLabel subHeaderLabel = new FJLabel("What's next for your data? Choose an option.");
+				headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+				subHeaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
+				componentList.add(headerLabel);
+				componentList.add(subHeaderLabel);
 				componentList
 						.add("<html><ul>" + "<li>Return - Open Tercen to resume working on my analysis project.</li>"
 								+ "<li>Upload Changes - Create a new project with my recent changes.</li>"

@@ -85,11 +85,13 @@ public class TercenGUI {
 				headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
 				subHeaderLabel.setHorizontalAlignment(SwingConstants.CENTER);
 				componentList.add(headerLabel);
+				componentList.add(new FJLabel(""));
 				componentList.add(subHeaderLabel);
 				componentList
 						.add("<html><ul>" + "<li>Return - Open Tercen to resume working on my analysis project.</li>"
 								+ "<li>Upload Changes - Create a new project with my recent changes.</li>"
 								+ "<li>Import - Load a Tercen export file into this workspace.</li>" + "</ul></html>");
+				componentList.add(new FJLabel(""));
 				componentList.add(new JSeparator());
 				int returnValue = JOptionPane.showOptionDialog(null, componentList.toArray(), getDialogTitle(),
 						JOptionPane.DEFAULT_OPTION, -1, null, buttons, buttons[2]);

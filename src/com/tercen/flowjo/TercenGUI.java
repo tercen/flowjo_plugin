@@ -5,6 +5,7 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Insets;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -115,6 +116,15 @@ public class TercenGUI {
 					result = openUploadDialog(componentList, arg0, arg1);
 				} else if (returnValue == 2) {
 					JFileChooser fileChooser = new JFileChooser();
+					if (Utils.isWindows()) {
+						String homeDir = System.getProperty("user.home");
+						if (homeDir != null && homeDir != "") {
+							File downloadDir = new File(homeDir + "/Downloads/");
+							if (downloadDir.exists()) {
+								fileChooser.setCurrentDirectory(downloadDir);
+							}
+						}
+					}
 					int option = fileChooser.showOpenDialog(null);
 					if (option == JFileChooser.APPROVE_OPTION) {
 						plugin.importFile = fileChooser.getSelectedFile();

@@ -13,9 +13,12 @@ public class SplitBean {
 	@CsvBindAndJoinByName(column = ".*", elementType = Double.class)
 	private MultiValuedMap<String, Double> theRest;
 
-	public static String[] getHeadingsOne() {
-		String[] s = { "FlowSOM.metacluster_id" };
-		return s;
+	public static String[] getHeadingsOne(SplitBean bean) {
+		String[] result = null;
+		if (bean != null && bean.cluster != null) {
+			result = new String[] { "FlowSOM.metacluster_id" };
+		}
+		return result;
 	}
 
 	public static String[] getHeadingsTwo(SplitBean bean) {

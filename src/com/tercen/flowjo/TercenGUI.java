@@ -62,6 +62,7 @@ public class TercenGUI {
 	private static final int fixedFieldHeigth = 25;
 
 	private Tercen plugin;
+	private List<Object> componentList = new ArrayList<>();
 
 	public TercenGUI(Tercen plugin) {
 		this.plugin = plugin;
@@ -69,7 +70,6 @@ public class TercenGUI {
 
 	public boolean promptForOptions(SElement arg0, List<String> arg1) {
 		boolean result = false;
-		List<Object> componentList = new ArrayList<>();
 
 		// show upload dialog
 		if (this.plugin.pluginState == ImportPluginStateEnum.collectingSamples
@@ -79,6 +79,7 @@ public class TercenGUI {
 
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
 				String[] buttons = { "Return", "Upload Changes", "Import" };
+				componentList.clear();
 				componentList.add(addHeaderString("Welcome Back", FontUtil.dlogBold16));
 				componentList.add(new FJLabel("What's next for your data? Choose an option."));
 				componentList
@@ -87,7 +88,7 @@ public class TercenGUI {
 								+ "<li>Import - Load a Tercen export file into this workspace.</li>" + "</ul></html>");
 				componentList.add(new JSeparator());
 				int returnValue = JOptionPane.showOptionDialog(null, componentList.toArray(), getDialogTitle(),
-						JOptionPane.DEFAULT_OPTION, -1, null, buttons, buttons[1]);
+						JOptionPane.DEFAULT_OPTION, -1, null, buttons, buttons[2]);
 
 				if (returnValue == 0) {
 					String url = plugin.projectURL;
@@ -102,6 +103,7 @@ public class TercenGUI {
 						Utils.showWarningDialog("Error while opening projectURL:" + e.getMessage());
 					}
 				} else if (returnValue == 1) {
+					componentList.clear();
 					componentList.add(addHeaderString("Re-Upload Data", FontUtil.dlogBold16));
 					componentList.add(new JSeparator());
 					result = openUploadDialog(componentList, arg0, arg1);
@@ -115,6 +117,7 @@ public class TercenGUI {
 					}
 				}
 			} else {
+				componentList.clear();
 				componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 				componentList.add(new JSeparator());
 				result = openUploadDialog(componentList, arg0, arg1);
@@ -122,6 +125,7 @@ public class TercenGUI {
 		} else {
 			FJLabel headerLabel = addHeaderString("<html><center>Instructions</center><html>", FontUtil.dlogBold16);
 			headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+			componentList.clear();
 			componentList.add(headerLabel);
 			componentList.addAll(addHeaderComponents());
 

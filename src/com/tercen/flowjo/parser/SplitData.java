@@ -34,7 +34,7 @@ public class SplitData {
 		try (CSVWriter writer1 = new CSVWriter(new FileWriter(file1.getAbsolutePath()));
 				CSVWriter writer2 = new CSVWriter(new FileWriter(file2.getAbsolutePath()));) {
 
-			String[] headingsOne = SplitBean.getHeadingsOne();
+			String[] headingsOne = SplitBean.getHeadingsOne(list.get(0));
 			String[] headingsTwo = SplitBean.getHeadingsTwo(list.get(0));
 
 			if (headingsOne == null) {

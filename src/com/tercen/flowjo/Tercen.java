@@ -398,6 +398,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			setWorkspaceText(nodeList, e.getMessage());
 			pluginState = ImportPluginStateEnum.error;
 			Utils.showErrorDialog(e.getMessage());
+		} catch (RuntimeException e) {
+			logger.error(e.getMessage());
+			setWorkspaceText(nodeList, e.getMessage());
+			pluginState = ImportPluginStateEnum.error;
 		}
 		return result;
 	}

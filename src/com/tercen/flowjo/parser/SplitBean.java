@@ -3,47 +3,57 @@ package com.tercen.flowjo.parser;
 import org.apache.commons.collections4.MultiValuedMap;
 
 import com.opencsv.bean.CsvBindAndJoinByName;
-import com.opencsv.bean.CsvBindByName;
 
 public class SplitBean {
 
-	@CsvBindByName(column = "FlowSOM.metacluster_id.int")
-	private String cluster;
+	private static final String CLUSTER = "cluster";
 
 	@CsvBindAndJoinByName(column = ".*", elementType = Double.class)
-	private MultiValuedMap<String, Double> theRest;
+	private MultiValuedMap<String, Double> allColumns;
 
 	public static String[] getHeadingsOne(SplitBean bean) {
 		String[] result = null;
-		if (bean != null && bean.cluster != null) {
-			result = new String[] { "FlowSOM.metacluster_id" };
+		if (bean != null && bean.allColumns != null) {
+			String[] clusterCols = bean.allColumns.keySet().stream().filter(str -> str.contains(CLUSTER))
+					.map(str -> str.substring(0, str.lastIndexOf("."))).toArray(String[]::new);
+			if (clusterCols.length > 0) {
+				result = clusterCols;
+			}
 		}
 		return result;
 	}
 
 	public static String[] getHeadingsTwo(SplitBean bean) {
 		String[] result = null;
-		if (bean != null && bean.theRest != null) {
-			result = bean.theRest.keySet().stream().map(str -> str.substring(0, str.lastIndexOf(".")))
-					.toArray(String[]::new);
+		if (bean != null && bean.allColumns != null) {
+			String[] nonClusterCols = bean.allColumns.keySet().stream().filter(str -> !str.contains(CLUSTER))
+					.map(str -> str.substring(0, str.lastIndexOf("."))).toArray(String[]::new);
+			if (nonClusterCols.length > 0) {
+				result = nonClusterCols;
+			}
 		}
 		return (result);
 	}
 
 	public String[] getDataOne() {
-		String[] i = { String.valueOf(cluster) };
-		return i;
-	}
-
-	public String[] getDataTwo() {
-		String[] columns = theRest.keySet().toArray(new String[theRest.size()]);
+		String[] columns = allColumns.keySet().stream().filter(str -> str.contains(CLUSTER)).toArray(String[]::new);
 		String[] result = new String[columns.length];
 		for (int i = 0; i < columns.length; i++) {
 			String column = columns[i];
-			result[i] = String.valueOf(theRest.get(column).iterator().next());
+			result[i] = String.valueOf(allColumns.get(column).iterator().next());
 
 		}
 		return result;
 	}
 
+	public String[] getDataTwo() {
+		String[] columns = allColumns.keySet().stream().filter(str -> !str.contains(CLUSTER)).toArray(String[]::new);
+		String[] result = new String[columns.length];
+		for (int i = 0; i < columns.length; i++) {
+			String column = columns[i];
+			result[i] = String.valueOf(allColumns.get(column).iterator().next());
+
+		}
+		return result;
+	}
 }

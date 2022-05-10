@@ -557,8 +557,8 @@ public class Utils {
 		return Updater.newVersionAvailable(pluginVersion, gitToken);
 	}
 
-	protected static void showInfoDialog(String text) {
-		JOptionPane.showMessageDialog(null, text, "ImportPlugin info", JOptionPane.INFORMATION_MESSAGE);
+	protected static void showInfoDialog(String text, String title) {
+		JOptionPane.showMessageDialog(null, text, title, -1);
 	}
 
 	protected static void showWarningDialog(String text) {

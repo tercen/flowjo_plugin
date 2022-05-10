@@ -286,7 +286,7 @@ public class TercenGUI {
 	}
 
 	public String getTercenPassword(String userNameOrEmail) {
-		String result = "";
+		String result = null;
 		List<Object> componentList = new ArrayList<>();
 		componentList.add(addHeaderString("Tercen Authentication", FontUtil.dlogBold16));
 		Component[] emailLabelField = createLabelLabelCombo("Email", userNameOrEmail);
@@ -387,8 +387,10 @@ public class TercenGUI {
 						if (addToken) {
 							TercenClient client = new TercenClient(plugin.hostName);
 							UserSession session = Utils.getAndExtendTercenSession(client, plugin.gui, plugin.passWord);
-							client.httpClient.setAuthorization(session.token.token);
-							uri = new URI(hle.getURL().toString() + Utils.addToken(client, session.user.id, true));
+							if (session != null) {
+								client.httpClient.setAuthorization(session.token.token);
+								uri = new URI(hle.getURL().toString() + Utils.addToken(client, session.user.id, true));
+							}
 						}
 						desktop.browse(uri);
 						if (hideParentOnClick) {

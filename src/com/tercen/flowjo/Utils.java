@@ -410,15 +410,17 @@ public class Utils {
 	}
 
 	protected static void saveTercenSession(UserSession session) throws IOException {
-		Path tokenPath = Utils.getSessionFilePath();
-		Path folderPath = tokenPath.getParent();
-		Files.createDirectories(folderPath);
-		if (Utils.isWindows()) {
-			Files.setAttribute(folderPath, "dos:hidden", true);
+		if (session != null) {
+			Path tokenPath = Utils.getSessionFilePath();
+			Path folderPath = tokenPath.getParent();
+			Files.createDirectories(folderPath);
+			if (Utils.isWindows()) {
+				Files.setAttribute(folderPath, "dos:hidden", true);
+			}
+			ObjectOutputStream objStream = new ObjectOutputStream(new FileOutputStream(tokenPath.toString()));
+			objStream.writeObject(session.toJson());
+			objStream.close();
 		}
-		ObjectOutputStream objStream = new ObjectOutputStream(new FileOutputStream(tokenPath.toString()));
-		objStream.writeObject(session.toJson());
-		objStream.close();
 	}
 
 	public static UserSession getTercenSession() throws IOException, ClassNotFoundException {
@@ -447,6 +449,9 @@ public class Utils {
 			throws ServiceError {
 		if (passWord == null) {
 			passWord = gui.getTercenPassword(userNameOrEmail);
+		}
+		if (passWord == null) {
+			return (null);
 		}
 		return client.userService.connect2(Tercen.DOMAIN, userNameOrEmail, passWord);
 	}

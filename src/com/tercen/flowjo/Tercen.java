@@ -282,6 +282,9 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						} else {
 							// get and check token for existing user
 							session = Utils.getAndExtendTercenSession(client, gui, passWord);
+							if (session == null) {
+								return result;
+							}
 							client.httpClient.setAuthorization(session.token.token);
 						}
 

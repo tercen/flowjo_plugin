@@ -448,9 +448,6 @@ public class Utils {
 		if (passWord == null) {
 			passWord = gui.getTercenPassword(userNameOrEmail);
 		}
-		if (passWord == null) {
-			passWord = "";
-		}
 		return client.userService.connect2(Tercen.DOMAIN, userNameOrEmail, passWord);
 	}
 

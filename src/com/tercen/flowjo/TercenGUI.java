@@ -286,12 +286,10 @@ public class TercenGUI {
 	}
 
 	public String getTercenPassword(String userNameOrEmail) {
-		String result = null;
+		String result = "";
 		List<Object> componentList = new ArrayList<>();
-
 		componentList.add(addHeaderString("Tercen Authentication", FontUtil.dlogBold16));
-
-		Component[] emailLabelField = createLabelTextFieldCombo("Email", userNameOrEmail, userNameOrEmail, false);
+		Component[] emailLabelField = createLabelLabelCombo("Email", userNameOrEmail);
 		Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true);
 		componentList.add(new HBox(emailLabelField));
 		componentList.add(new HBox(passwordLabelField));
@@ -319,6 +317,14 @@ public class TercenGUI {
 		GuiFactory.setSizes(field, new Dimension(fixedFieldWidth, fixedFieldHeigth));
 		GuiFactory.setSizes(label, new Dimension(fixedLabelWidth, fixedLabelHeigth));
 		return new Component[] { label, field };
+	}
+
+	private Component[] createLabelLabelCombo(String labelText, String labelValueText) {
+		FJLabel label = new FJLabel(labelText);
+		FJLabel labelValue = new FJLabel(labelValueText);
+		GuiFactory.setSizes(label, new Dimension(fixedLabelWidth, fixedLabelHeigth));
+		GuiFactory.setSizes(labelValue, new Dimension(fixedFieldWidth, fixedFieldHeigth));
+		return new Component[] { label, labelValue };
 	}
 
 	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,

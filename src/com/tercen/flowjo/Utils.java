@@ -524,7 +524,7 @@ public class Utils {
 			throws ClassNotFoundException, IOException, ServiceError {
 		UserSession session = Utils.getTercenSession();
 		if (session == null || !client.userService.isTokenValid(session.token.token)) {
-			String userName = (session == null) ? Utils.getCurrentPortalUser() : session.user.id;
+			String userName = (session == null) ? Utils.getCurrentPortalUser() : session.user.email;
 			session = Utils.reconnect(client, gui, userName, passWord);
 			Utils.saveTercenSession(session);
 		} else {

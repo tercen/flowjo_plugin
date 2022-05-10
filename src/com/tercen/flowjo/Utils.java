@@ -448,7 +448,7 @@ public class Utils {
 	public static UserSession reconnect(TercenClient client, TercenGUI gui, String userNameOrEmail, String passWord)
 			throws ServiceError {
 		if (passWord == null) {
-			passWord = gui.getTercenPassword(userNameOrEmail);
+			passWord = gui.getTercenPassword(client, userNameOrEmail);
 		}
 		if (passWord == null) {
 			return (null);
@@ -555,6 +555,10 @@ public class Utils {
 	protected static boolean isPluginOutdated(String pluginVersion, String gitToken)
 			throws JSONException, ClientProtocolException, IOException {
 		return Updater.newVersionAvailable(pluginVersion, gitToken);
+	}
+
+	protected static void showInfoDialog(String text) {
+		JOptionPane.showMessageDialog(null, text, "ImportPlugin info", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	protected static void showWarningDialog(String text) {

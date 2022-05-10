@@ -285,19 +285,27 @@ public class TercenGUI {
 		return result;
 	}
 
-	public String getTercenPassword(String userNameOrEmail) {
+	public String getTercenPassword(TercenClient client, String email) {
 		String result = null;
 		List<Object> componentList = new ArrayList<>();
 		componentList.add(addHeaderString("Tercen Authentication", FontUtil.dlogBold16));
-		Component[] emailLabelField = createLabelLabelCombo("Email", userNameOrEmail);
+		Component[] emailLabelField = createLabelLabelCombo("Email", email);
 		Component[] passwordLabelField = createLabelTextFieldCombo("Password", "", "", true);
 		componentList.add(new HBox(emailLabelField));
 		componentList.add(new HBox(passwordLabelField));
-
-		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
-				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		String[] buttons = { "OK", "Cancel", "Reset password" };
+		int option = JOptionPane.showOptionDialog(null, componentList.toArray(), getDialogTitle(),
+				JOptionPane.DEFAULT_OPTION, -1, null, buttons, buttons[0]);
 		if (option == JOptionPane.OK_OPTION) {
 			result = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
+		} else if (option == 2) {
+			try {
+				logger.info("Requesting new password for:" + email);
+				client.userService.sendResetPasswordEmail(email);
+				Utils.showInfoDialog("Your password reset email has been sent.");
+			} catch (ServiceError e) {
+				Utils.showErrorDialog("Error while requesting new password, please try again.");
+			}
 		}
 		return result;
 	}

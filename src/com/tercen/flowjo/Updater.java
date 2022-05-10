@@ -110,14 +110,17 @@ public class Updater {
 
 	private static void writeJarFile(String pluginDir, String outputPath, DownloadProgressTask downloadTask)
 			throws FileNotFoundException, IOException {
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(outputPath));
-		ZipEntry zipEntry = zis.getNextEntry();
-		if (zipEntry != null) {
-			File newFile = newFile(new File(pluginDir), zipEntry);
-			FileOutputStream fos = new FileOutputStream(newFile);
-			logger.debug(String.format("Write JAR file to: %s", newFile.toString()));
-			writeToFileOutputStream(zis, fos);
-			downloadTask.setValue(2);
+		try (FileInputStream fis = new FileInputStream(outputPath); ZipInputStream zis = new ZipInputStream(fis)) {
+			ZipEntry entry;
+			while ((entry = zis.getNextEntry()) != null) {
+				if (entry.getName().contains(".jar")) {
+					File newFile = newFile(new File(pluginDir), entry);
+					FileOutputStream fos = new FileOutputStream(newFile);
+					logger.debug(String.format("Write JAR file to: %s", newFile.toString()));
+					writeToFileOutputStream(zis, fos, false);
+					downloadTask.setValue(2);
+				}
+			}
 		}
 	}
 
@@ -128,7 +131,7 @@ public class Updater {
 		connection.setRequestProperty("Authorization", "token " + gitToken);
 		connection.connect();
 
-		writeToFileOutputStream(connection.getInputStream(), new FileOutputStream(new File(outputPath)));
+		writeToFileOutputStream(connection.getInputStream(), new FileOutputStream(new File(outputPath)), true);
 		downloadTask.setValue(1);
 
 		logger.debug(String.format("Artifact available at: %s", outputPath));
@@ -159,13 +162,16 @@ public class Updater {
 		}
 	}
 
-	private static void writeToFileOutputStream(InputStream is, FileOutputStream fos) throws IOException {
+	private static void writeToFileOutputStream(InputStream is, FileOutputStream fos, boolean closeInput)
+			throws IOException {
 		byte[] buffer = new byte[4096];
 		int n = 0;
 		while (-1 != (n = is.read(buffer))) {
 			fos.write(buffer, 0, n);
 		}
-		is.close();
+		if (closeInput) {
+			is.close();
+		}
 		fos.close();
 	}
 }

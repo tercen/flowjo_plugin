@@ -133,6 +133,7 @@ public class UploadProgressTask extends JFrame {
 		} catch (Exception e) {
 			// any error -> remove fileDoc
 			client.fileService.delete(fileDoc.id, fileDoc.rev);
+			throw new ServiceError(e.getMessage());
 		} finally {
 			inputStream.close();
 		}

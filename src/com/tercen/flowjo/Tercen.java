@@ -378,7 +378,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				Utils.removeTercenSession();
 			}
 			logger.error(errorMsg);
-			setWorkspaceText(nodeList, e.toString());
+			errorMsg = Utils.setUserFriendlyErrorMessage(errorMsg, this.hostName);
+			setWorkspaceText(nodeList, errorMsg);
 			pluginState = ImportPluginStateEnum.error;
 		} catch (IOException e) {
 			logger.error(e.getMessage());

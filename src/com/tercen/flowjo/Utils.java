@@ -72,6 +72,7 @@ public class Utils {
 	private static final String SPLIT_COMMA_NOT_IN_QUOTES = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 	public static final String RANDOM_LABEL = "random_label";
 	public static final String FILENAME = "filename";
+	private static final String SERVICE_ERROR = "ServiceError: ";
 
 	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project,
 			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
@@ -567,5 +568,20 @@ public class Utils {
 
 	protected static void showErrorDialog(String text) {
 		JOptionPane.showMessageDialog(null, text, "ImportPlugin error", JOptionPane.ERROR_MESSAGE);
+	}
+
+	protected static String setUserFriendlyErrorMessage(String errorMsg, String hostName) {
+		String result = errorMsg;
+		if (result.contains("password") && result.contains("error")) {
+			result = SERVICE_ERROR + "Invalid Password";
+		} else if (result.contains("ConnectException") || result.contains("Service Unavailable")
+				|| result.contains("SocketException") || result.contains("Socket closed")) {
+			result = SERVICE_ERROR + "Could not connect to " + hostName;
+		} else if (result.contains("IOException")) {
+			result = SERVICE_ERROR + "Upload failed.";
+		} else if (result.contains("Project.unknown")) {
+			result = SERVICE_ERROR + "Failed to create project.";
+		}
+		return (result);
 	}
 }

@@ -334,9 +334,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 					// clusters
 					if (clusterFile != null) {
-						ClusterFileMetaData metadata = extractNameAndCountForParameter(clusterFile);
-						PluginHelper.createClusterParameter(result, metadata.colname, clusterFile);
-						addGatingML(result, metadata.colname, metadata.nclusters);
+						List<ClusterFileMetaData> clusterMetadata = extractNameAndCountForParameter(clusterFile);
+						for (ClusterFileMetaData metadata : clusterMetadata) {
+							PluginHelper.createClusterParameter(result, metadata.colname, clusterFile);
+							addGatingML(result, metadata.colname, metadata.nclusters);
+						}
 					}
 					// other results (float values)
 					if (otherFile != null) {
@@ -542,20 +544,26 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		results.setGatingML(gatingml.toString());
 	}
 
-	private ClusterFileMetaData extractNameAndCountForParameter(File clusterFile) throws IOException {
-		List<Long> clusters = new ArrayList<Long>();
+	private List<ClusterFileMetaData> extractNameAndCountForParameter(File clusterFile) throws IOException {
+		List<ClusterFileMetaData> result = new ArrayList<ClusterFileMetaData>();
 		CSVReader reader = new CSVReader(new FileReader(clusterFile));
 		List<String[]> entries = reader.readAll();
-		for (int i = 1; i < entries.size(); i++) {
-			long val = Math.round(Double.parseDouble(entries.get(i)[0]));
-			if (!clusters.contains(val)) {
-				clusters.add(val);
+		String[] header = entries.get(0);
+
+		for (int i = 0; i < header.length; i++) {
+			List<Long> clusters = new ArrayList<Long>();
+			for (int j = 1; j < entries.size(); j++) {
+				long val = Math.round(Double.parseDouble(entries.get(j)[i]));
+				if (!clusters.contains(val)) {
+					clusters.add(val);
+				}
 			}
+			ClusterFileMetaData metadata = new ClusterFileMetaData();
+			metadata.nclusters = clusters.size();
+			metadata.colname = header[i];
+			result.add(metadata);
 		}
-		ClusterFileMetaData metadata = new ClusterFileMetaData();
-		metadata.nclusters = clusters.size();
-		metadata.colname = entries.get(0)[0];
-		return metadata;
+		return result;
 	}
 
 }

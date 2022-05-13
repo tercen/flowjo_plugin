@@ -337,8 +337,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						List<ClusterFileMetaData> clusterMetadata = extractNameAndCountForParameter(clusterFile);
 						for (ClusterFileMetaData metadata : clusterMetadata) {
 							PluginHelper.createClusterParameter(result, metadata.colname, clusterFile);
-							addGatingML(result, metadata.colname, metadata.nclusters);
 						}
+						addGatingML(result, clusterMetadata);
 					}
 					// other results (float values)
 					if (otherFile != null) {
@@ -527,19 +527,21 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		logger = LogManager.getLogger();
 	}
 
-	public static void addGatingML(ExternalAlgorithmResults results, String parName, int nClust) {
+	public static void addGatingML(ExternalAlgorithmResults results, List<ClusterFileMetaData> clusterMetadata) {
 		SElement gatingml = new SElement("gating:Gating-ML");
-		for (int i = 0; i < nClust; i++) {
-			SElement gate = new SElement("gating:RectangleGate");
-			gate.setString("gating:id", parName + "." + i);
-			gatingml.addContent(gate);
-			SElement dimElem = new SElement("gating:dimension");
-			dimElem.setDouble("gating:min", ((double) i - 0.3));
-			dimElem.setDouble("gating:max", ((double) i + 0.3));
-			gate.addContent(dimElem);
-			SElement fcsDimElem1 = new SElement("data-type:fcs-dimension");
-			fcsDimElem1.setString("data-type:name", parName);
-			dimElem.addContent(fcsDimElem1);
+		for (ClusterFileMetaData metadata : clusterMetadata) {
+			for (int i = 0; i < metadata.nclusters; i++) {
+				SElement gate = new SElement("gating:RectangleGate");
+				gate.setString("gating:id", metadata.colname + "." + i);
+				gatingml.addContent(gate);
+				SElement dimElem = new SElement("gating:dimension");
+				dimElem.setDouble("gating:min", ((double) i - 0.3));
+				dimElem.setDouble("gating:max", ((double) i + 0.3));
+				gate.addContent(dimElem);
+				SElement fcsDimElem1 = new SElement("data-type:fcs-dimension");
+				fcsDimElem1.setString("data-type:name", metadata.colname);
+				dimElem.addContent(fcsDimElem1);
+			}
 		}
 		results.setGatingML(gatingml.toString());
 	}

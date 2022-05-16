@@ -80,6 +80,9 @@ public class TercenGUI {
 
 			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
 				String[] buttons = { "Return", "Upload Changes", "Import" };
+				if (!Utils.isWindows()) {
+					buttons = Utils.reverseStringArray(buttons);
+				}
 				componentList.clear();
 				FJLabel headerLabel = addHeaderString("Welcome Back", FontUtil.dlogBold16);
 				FJLabel subHeaderLabel = new FJLabel("What's next for your data? Choose an option.");

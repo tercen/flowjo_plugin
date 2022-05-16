@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -583,5 +584,11 @@ public class Utils {
 			result = SERVICE_ERROR + "Failed to create project.";
 		}
 		return (result);
+	}
+
+	protected static String[] reverseStringArray(String[] array) {
+		List<String> arrayList = Arrays.asList(array);
+		Collections.reverse(arrayList);
+		return arrayList.toArray(new String[0]);
 	}
 }

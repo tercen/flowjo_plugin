@@ -126,6 +126,7 @@ public class Updater {
 
 	private static void downloadZipFile(String downloadURL, String outputPath, String gitToken,
 			DownloadProgressTask downloadTask) throws IOException {
+		logger.debug(String.format("Connecting to: %s", downloadURL));
 		URL artifact = new URL(downloadURL);
 		URLConnection connection = (URLConnection) artifact.openConnection();
 		connection.setRequestProperty("Authorization", "token " + gitToken);

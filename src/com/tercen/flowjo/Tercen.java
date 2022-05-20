@@ -241,8 +241,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				// Check plugin supported version
 				Version pluginServerVersion = client.userService.getServerVersion("flowjoPlugin");
 				if (!Utils.isPluginVersionSupported(version, pluginServerVersion)) {
-					Utils.showErrorDialog(
-							"Oops, your Tercen plugin version is not supported anymore. Please download the new version from the FlowJo Exchange.");
+					Utils.showErrorDialog(String.format(
+							"Oops! Your Plugin version (%s) is no longer compatible with the Tercen server. We cannot upload your data right now.\n"
+									+ "Install the new version from FlowJo Exchange and re-start FlowJo to take advantage of new features.",
+							version));
 					return result;
 				}
 

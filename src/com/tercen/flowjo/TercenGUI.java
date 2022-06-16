@@ -55,6 +55,8 @@ public class TercenGUI {
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
 	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
+	private static final String GET_TOKEN_TITLE_TEXT = "We're getting your Tercen token.";
+	private static final String GET_TOKEN_SUBTITLE_TEXT = "Please open the link and authenticate with Tercen.";
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -270,6 +272,35 @@ public class TercenGUI {
 					createUser(client, emailAddress);
 				}
 			}
+		}
+		return result;
+	}
+
+	public String getSAMLToken(TercenClient client) {
+		String result = null;
+		List<Object> componentList = new ArrayList<>();
+
+		componentList.add(addHeaderString(GET_TOKEN_TITLE_TEXT, FontUtil.dlogBold16));
+		FJLabel subTitleLabel = new FJLabel(GET_TOKEN_SUBTITLE_TEXT);
+		subTitleLabel.setFont(FontUtil.BoldDialog12);
+		componentList.add(subTitleLabel);
+		componentList.add(new FJLabel("<html><br/></html>"));
+
+		JEditorPane pane = createPaneWithLink(false, false);
+		pane.setText(
+				"<html><div style='font-size: 12; font-family: Dialog'>Click on the link for SAML authentication.<br/>"
+						+ "<a href='https://www.tercen.com/authenticate'>Authenticate</a>" + "</div></html>");
+		componentList.add(pane);
+
+		Component[] tokenLabelField = createLabelTextFieldCombo("Token", "", "Token", true, FontUtil.dlog12);
+
+		componentList.add(new HBox(tokenLabelField));
+		componentList.add(new FJLabel("<html><p/></html>"));
+
+		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
+				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		if (option == JOptionPane.OK_OPTION) {
+			result = ((FJTextField) tokenLabelField[1]).getText();
 		}
 		return result;
 	}

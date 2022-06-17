@@ -55,7 +55,7 @@ public class TercenGUI {
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
 	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
-	private static final String GET_TOKEN_TITLE_TEXT = "We're getting your Tercen token.";
+	private static final String GET_TOKEN_TITLE_TEXT = "We're setting your plugin credentials.";
 	private static final String GET_TOKEN_SUBTITLE_TEXT = "Please open the link and authenticate with Tercen.";
 
 	private static final int fixedToolTipWidth = 300;

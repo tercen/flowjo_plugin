@@ -281,7 +281,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					} else {
 						// Get authentication method
 						Version authMethods = client.userService.getServerVersion("auth.method");
-						if (!authMethods.features.contains("saml")) {
+						if (authMethods.features.contains("saml")) {
 							// check if there is a local session
 							session = Utils.getTercenSession();
 							if (session != null) {

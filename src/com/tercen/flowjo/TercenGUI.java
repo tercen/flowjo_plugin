@@ -100,6 +100,9 @@ public class TercenGUI {
 				int returnValue = JOptionPane.showOptionDialog(null, componentList.toArray(), getDialogTitle(),
 						JOptionPane.DEFAULT_OPTION, -1, null, buttons, buttons[2]);
 
+				if (!Utils.isWindows()) {
+					returnValue = 2 - returnValue;
+				}
 				if (returnValue == 0) {
 					String url = plugin.projectURL;
 					Desktop desktop = java.awt.Desktop.getDesktop();

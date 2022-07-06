@@ -254,8 +254,13 @@ public class Utils {
 		return result;
 	}
 
-	private static String getFilename(String fullFileName) {
-		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.SEPARATOR), "\\\\").split("\\\\");
+	protected static String getFilename(String fullFileName) {
+		String[] filenameParts = null;
+		if (Utils.isWindows()) {
+			filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.SEPARATOR), "\\\\").split("\\\\");
+		} else {
+			filenameParts = fullFileName.split("/");
+		}
 		String filename = filenameParts[filenameParts.length - 1];
 		return filename.replace("..ExtNode.csv", "");
 	}

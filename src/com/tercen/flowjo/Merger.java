@@ -12,6 +12,7 @@ import java.util.StringTokenizer;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.tercen.service.ServiceError;
 import com.treestar.lib.PluginHelper;
 import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.fjml.types.FileTypes;
@@ -25,18 +26,11 @@ public class Merger {
 	 * uploaded in FlowJo. The exported file in Tercen might have limited results
 	 * (e.g. downsampled), so empty rows need to be added.
 	 * 
+	 * @throws ServiceError
+	 * 
 	 */
 	public static File getCompleteUploadFile(SElement fcmlElem, ExternalAlgorithmResults algorithmResults,
-			File pluginCSVFile, String outputFolder, double noVal) throws IOException {
-		if (!pluginCSVFile.exists()) {
-			return null;
-		}
-
-		SElement externalPopNodeElement = PluginHelper.getExternalPopNodeElement(fcmlElem);
-		if (externalPopNodeElement == null) // if no <ExternalPopNode> element, something's wrong
-		{
-			return null;
-		}
+			File pluginCSVFile, String outputFolder, double noVal) throws IOException, ServiceError {
 		int numEvents = PluginHelper.getNumTotalEvents(fcmlElem);
 
 		BufferedReader pluginCSVFileReader = new BufferedReader(new FileReader(pluginCSVFile));
@@ -56,11 +50,12 @@ public class Merger {
 			colCt++;
 		}
 		if (rowIdColumnIndex == -1) {
-			return null;
+			pluginCSVFileReader.close();
+			throw new ServiceError("Importer: there is not column containing the rowId");
 		}
 
-		if (noEventLine.endsWith(",")) // get rid of trailing comma of no parameter value line
-		{
+		// get rid of trailing comma of no parameter value line
+		if (noEventLine.endsWith(",")) {
 			noEventLine = noEventLine.substring(0, noEventLine.length() - 1);
 		}
 		noEventLine += "\n";
@@ -76,16 +71,14 @@ public class Merger {
 		File outFile = new File(outputFolder, outFileName);
 		Writer output = new BufferedWriter(new FileWriter(outFile));
 		String[] headerLineParts = pluginCSVLine.split(",");
-		// headerLineParts[rowIdColumnIndex] = "EventNumberDP";
 		headerLineParts = Arrays.copyOfRange(headerLineParts, 1, headerLineParts.length);
 		pluginCSVLine = String.join(",", headerLineParts);
 		output.write(pluginCSVLine + "\n");
 
 		int outputLineNum = 0;
 		int eventNum = 0;
-		// read plugin file
+		int previousEventNum = 0;
 		while ((pluginCSVLine = pluginCSVFileReader.readLine()) != null) {
-			// check rowId, possibly add rows before adding the plugin line
 			tokenizer = new StringTokenizer(pluginCSVLine, ",");
 			colCt = 0;
 			String line = "";
@@ -99,9 +92,16 @@ public class Merger {
 				colCt++;
 			}
 
-			if (eventNum < 0) {
+			// eventNum should be > 0 and increasing
+			if (eventNum <= 0) {
 				break;
 			}
+			if (eventNum < previousEventNum) {
+				output.close();
+				pluginCSVFileReader.close();
+				throw new ServiceError("Importer: please make sure the data is ordered by rowId (increasing)");
+			}
+
 			while (outputLineNum < eventNum - 1 && outputLineNum < numEvents) {
 				outputLineNum++;
 				output.write(noEventLine);
@@ -110,7 +110,9 @@ public class Merger {
 			output.write(line);
 			output.write("\n");
 			outputLineNum++;
+			previousEventNum = eventNum;
 		}
+
 		while (outputLineNum < numEvents) {
 			outputLineNum++;
 			output.write(noEventLine);
@@ -119,5 +121,4 @@ public class Merger {
 		output.close();
 		return outFile;
 	}
-
 }

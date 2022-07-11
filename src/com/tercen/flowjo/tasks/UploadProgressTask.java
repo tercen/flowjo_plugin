@@ -152,7 +152,9 @@ public class UploadProgressTask extends JFrame {
 		task.params.separator = ",";
 		task.params.encoding = "iso-8859-1";
 		task.params.quote = "\"";
-		task.gatherNames = channels;
+		ArrayList<String> gatherNames = new ArrayList<>(channels);
+		gatherNames.remove(Utils.FLOWJO_ROW_ID);
+		task.gatherNames = gatherNames;
 		task.valueName = "value";
 		task.variableName = "channel";
 		task.schema = buildSchema(columnNames, channels);

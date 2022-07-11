@@ -51,7 +51,7 @@ public class Merger {
 		}
 		if (rowIdColumnIndex == -1) {
 			pluginCSVFileReader.close();
-			throw new ServiceError("Importer: there is not column containing the rowId");
+			throw new ServiceError("Importer: there is no column containing the rowId");
 		}
 
 		// get rid of trailing comma of no parameter value line

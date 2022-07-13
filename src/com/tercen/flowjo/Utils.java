@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -141,8 +142,15 @@ public class Utils {
 	}
 
 	protected static List<User> getTercenUser(TercenClient client, String user) throws ServiceError {
+		List<User> result = null;
 		List<String> usernames = Arrays.asList(user);
-		return client.userService.findUserByEmail(usernames, false);
+		if (user.contains("@")) {
+			result = client.userService.findUserByEmail(usernames, false);
+		} else {
+			result = new ArrayList<User>();
+			result.add(client.userService.get(user));
+		}
+		return (result);
 	}
 
 	protected static UserSession createTercenUser(TercenClient client, String userName, String email, String password)
@@ -606,5 +614,9 @@ public class Utils {
 		List<String> arrayList = Arrays.asList(array);
 		Collections.reverse(arrayList);
 		return arrayList.toArray(new String[0]);
+	}
+
+	protected static String decode(String encodedString) {
+		return new String(Base64.getUrlDecoder().decode(encodedString));
 	}
 }

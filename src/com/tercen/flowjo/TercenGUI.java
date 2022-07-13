@@ -292,7 +292,7 @@ public class TercenGUI {
 		JEditorPane pane = createPaneWithLink(false, false);
 		pane.setText(
 				"<html><div style='font-size: 12; font-family: Dialog'>Click on the link for SAML authentication.<br/>"
-						+ "<a href='https://www.tercen.com/authenticate'>Authenticate</a>" + "</div></html>");
+						+ "<a href='https://dev.tercen.com/_api-token'>Authenticate</a>" + "</div></html>");
 		componentList.add(pane);
 
 		Component[] tokenLabelField = createLabelTextFieldCombo("Token", "", "Token", true, FontUtil.dlog12);

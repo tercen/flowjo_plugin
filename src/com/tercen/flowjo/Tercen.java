@@ -13,7 +13,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -281,20 +280,20 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					} else {
 						// Get authentication method
 						Version authMethods = client.userService.getServerVersion("auth.method");
-						if (authMethods.features.contains("saml")) {
+						if (!authMethods.features.contains("saml")) {
 							// check if there is a local session
 							session = Utils.getTercenSession();
 							if (session != null) {
 								// authenticate via the web, get Token and save it
 								String token = gui.getSAMLToken(client);
 								String[] parts = token.split("\\.");
-								JSONObject payload = new JSONObject(Base64.getUrlDecoder().decode(parts[1]));
-								payload.get("data");
+								JSONObject payload = new JSONObject(Utils.decode(parts[1]));
+								JSONObject data = (JSONObject) payload.get("data");
 								session = new UserSession();
 								session.token = new Token();
 								session.token.token = token;
 								session.user = new User();
-								session.user.id = (String) ((JSONObject) payload.get("data")).get("u");
+								session.user.id = (String) data.get("u");
 							}
 							userName = session.user.id;
 						}

@@ -362,23 +362,27 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 			{
 				if (importFile != null) {
-					List<File> importFiles = SplitData.splitCsvFileOnColumn(importFile);
-					File clusterFile = importFiles.get(0);
-					File otherFile = importFiles.get(1);
+					File fullImportFile = Merger.getCompleteUploadFile(fcmlQueryElement, result, importFile,
+							outputFolder.getAbsolutePath(), 0);
+					if (fullImportFile != null) {
+						List<File> importFiles = SplitData.splitCsvFileOnColumn(fullImportFile);
+						File clusterFile = importFiles.get(0);
+						File otherFile = importFiles.get(1);
 
-					// clusters
-					if (clusterFile != null) {
-						List<ClusterFileMetaData> clusterMetadata = extractNameAndCountForParameter(clusterFile);
-						for (ClusterFileMetaData metadata : clusterMetadata) {
-							PluginHelper.createClusterParameter(result, metadata.colname, clusterFile);
+						// clusters
+						if (clusterFile != null) {
+							List<ClusterFileMetaData> clusterMetadata = extractNameAndCountForParameter(clusterFile);
+							for (ClusterFileMetaData metadata : clusterMetadata) {
+								PluginHelper.createClusterParameter(result, metadata.colname, clusterFile);
+							}
+							addGatingML(result, clusterMetadata);
 						}
-						addGatingML(result, clusterMetadata);
+						// other results (float values)
+						if (otherFile != null) {
+							PluginHelper.createClusterParameter(result, pluginName, otherFile);
+						}
+						workspaceText = String.format("Imported data from %s.", importFile);
 					}
-					// other results (float values)
-					if (otherFile != null) {
-						PluginHelper.createClusterParameter(result, pluginName, otherFile);
-					}
-					workspaceText = String.format("Imported data from %s.", importFile);
 				} else {
 					Utils.showWarningDialog("You did not select a file to import");
 				}
@@ -604,5 +608,4 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		}
 		return result;
 	}
-
 }

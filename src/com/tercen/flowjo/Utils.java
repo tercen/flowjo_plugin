@@ -62,6 +62,7 @@ import com.treestar.flowjo.core.nodes.SampleNode;
 import com.treestar.flowjo.core.nodes.templating.ExternalPopNode;
 import com.treestar.flowjo.engine.EngineManager;
 import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
+import com.treestar.lib.fjml.FJML;
 
 public class Utils {
 
@@ -74,6 +75,7 @@ public class Utils {
 	public static final String RANDOM_LABEL = "random_label";
 	public static final String FILENAME = "filename";
 	private static final String SERVICE_ERROR = "ServiceError: ";
+	public static final String FLOWJO_ROW_ID = "F_rowId";
 
 	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project,
 			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
@@ -167,6 +169,9 @@ public class Utils {
 			if (!lines.isEmpty()) {
 				// add header only once
 				if (mergedLines.isEmpty()) {
+					// replace FJML.EventNumberDP by FlowJo Row Id
+					channels.remove(FJML.EventNumberDP);
+					channels.add(FLOWJO_ROW_ID);
 					String header = getHeader(channels, lines.get(0));
 					mergedLines.add(header);
 					columnNames = Arrays.stream(header.split(SPLIT_COMMA_NOT_IN_QUOTES)).map(String::trim)
@@ -215,9 +220,14 @@ public class Utils {
 	// This methods sets the full column name, needed by Tercen.
 	private static String setFullColumnName(List<String> channels, String input) {
 		String result = input;
-		List<String> filteredChannels = channels.stream().filter(c -> c.startsWith(input)).collect(Collectors.toList());
-		if (filteredChannels.size() == 1) {
-			result = filteredChannels.get(0);
+		if (result.equalsIgnoreCase(FJML.EventNumberDP)) {
+			result = FLOWJO_ROW_ID;
+		} else {
+			List<String> filteredChannels = channels.stream().filter(c -> c.startsWith(input))
+					.collect(Collectors.toList());
+			if (filteredChannels.size() == 1) {
+				result = filteredChannels.get(0);
+			}
 		}
 		return result;
 	}
@@ -228,7 +238,8 @@ public class Utils {
 	protected static String setColumnName(String input) {
 		String result = input;
 		if (result != null && result.equalsIgnoreCase("Event #")) {
-			result = "EventNumberDP";
+			result = FJML.EventNumberDP;
+
 		}
 		return result;
 	}
@@ -254,8 +265,13 @@ public class Utils {
 		return result;
 	}
 
-	private static String getFilename(String fullFileName) {
-		String[] filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.SEPARATOR), "\\\\").split("\\\\");
+	protected static String getFilename(String fullFileName) {
+		String[] filenameParts = null;
+		if (Utils.isWindows()) {
+			filenameParts = fullFileName.replaceAll(Pattern.quote(Utils.SEPARATOR), "\\\\").split("\\\\");
+		} else {
+			filenameParts = fullFileName.split("/");
+		}
 		String filename = filenameParts[filenameParts.length - 1];
 		return filename.replace("..ExtNode.csv", "");
 	}

@@ -55,8 +55,8 @@ public class TercenGUI {
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
 	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
-	private static final String GET_TOKEN_TITLE_TEXT = "We're setting your plugin credentials.";
-	private static final String GET_TOKEN_SUBTITLE_TEXT = "Please open the link and authenticate with Tercen.";
+	private static final String GET_TOKEN_TITLE_TEXT = "We are setting up your plugin network credentials.";
+	private static final String GET_TOKEN_SUBTITLE_TEXT = "Please follow these steps.";
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -284,19 +284,21 @@ public class TercenGUI {
 		List<Object> componentList = new ArrayList<>();
 
 		componentList.add(addHeaderString(GET_TOKEN_TITLE_TEXT, FontUtil.dlogBold16));
+		componentList.add(new FJLabel("<html><br/></html>"));
 		FJLabel subTitleLabel = new FJLabel(GET_TOKEN_SUBTITLE_TEXT);
 		subTitleLabel.setFont(FontUtil.BoldDialog12);
 		componentList.add(subTitleLabel);
-		componentList.add(new FJLabel("<html><br/></html>"));
-
 		JEditorPane pane = createPaneWithLink(false, false);
-		pane.setText(String.format(
-				"<html><div style='font-size: 12; font-family: Dialog'>Click on the link for SAML authentication.<br/>"
-						+ "<a href='%s_api-token'>Authenticate</a>" + "</div></html>",
-				client.tercenURI));
+		pane.setText(
+				String.format(
+						"<html><ul><li>Click this <a href='%s_api-token'>authenticate</a> link to get a token.</li>"
+								+ "<li>Copy the code displayed on the popup screen.</li>"
+								+ "<li>Paste it into the box below.</li><li>Press Ok.</li></ul></html>",
+						client.tercenURI));
 		componentList.add(pane);
 
-		Component[] tokenLabelField = createLabelTextFieldCombo("Token", "", "Token", true, FontUtil.dlog12);
+		Component[] tokenLabelField = createLabelTextFieldCombo("Token", "", "Token", true, FontUtil.dlog12,
+				(int) (fixedLabelWidth * 0.5), fixedLabelHeigth, (int) (fixedFieldWidth * 1.5), fixedFieldHeigth);
 
 		componentList.add(new HBox(tokenLabelField));
 		componentList.add(new FJLabel("<html><p/></html>"));
@@ -379,6 +381,14 @@ public class TercenGUI {
 			boolean editable, Font font) {
 		Component[] result = createLabelTextFieldCombo(labelText, fieldValue, fieldTooltip, editable);
 		result[0].setFont(font);
+		return result;
+	}
+
+	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
+			boolean editable, Font font, int labelWidth, int labelHeight, int fieldWith, int fieldHeight) {
+		Component[] result = createLabelTextFieldCombo(labelText, fieldValue, fieldTooltip, editable, font);
+		GuiFactory.setSizes(result[0], new Dimension(labelWidth, labelHeight));
+		GuiFactory.setSizes(result[1], new Dimension(fieldWith, fieldHeight));
 		return result;
 	}
 

@@ -270,82 +270,87 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				} else {
 					Schema uploadResult = null;
 
-					userName = Utils.getCurrentPortalUser();
-					if (userName == null || userName.equals("")) {
-						Utils.showErrorDialog("FlowJo username needs to be set.");
-						workspaceText = "Selected";
-						logger.error("FlowJo username is not set, can't upload");
+					// Check if SAML authentication is enabled
+					Version authMethods = client.userService.getServerVersion("auth.method");
+					if (authMethods.features.contains("saml")) {
+						session = Utils.getTercenSession();
+						if (session == null) {
+							session = Utils.getSamlSession(gui.getSAMLToken(client));
+							if (session == null) {
+								return result;
+							}
+						}
+						userName = session.user.id;
 					} else {
-						// Check if SAML authentication is enabled
-						Version authMethods = client.userService.getServerVersion("auth.method");
-						if (authMethods.features.contains("saml")) {
-							session = Utils.getTercenSession();
-							if (session == null) {
-								session = Utils.getSamlSession(gui.getSAMLToken(client));
-								if (session == null) {
-									return result;
-								}
-							}
-							userName = session.user.id;
-						}
-						List<User> users = Utils.getTercenUser(client, userName);
-						if (users.size() == 0) {
-							logger.debug(String.format("User %s not found in Tercen, create user\".", userName));
-							// create popup to ask user for credentials
-							Map<String, Object> userResult = gui.createUser(client, userName);
-							if (session != null) {
-								passWord = (String) userResult.get("pwd");
-								token = (String) userResult.get("token");
-								Utils.saveTercenSession(session);
-							} else {
-								pluginState = ImportPluginStateEnum.collectingSamples;
+						userName = Utils.getCurrentPortalUser();
+						userName = null;
+						if (userName == null || userName.equals("")) {
+							logger.info("FlowJo email address is not set, asking user for it.");
+							userName = gui.getEmailAddress();
+							if (userName == null || userName.equals("") || !userName.contains("@")) {
+								Utils.showErrorDialog("FlowJo email address needs to be set.");
+								logger.error("FlowJo email address is not set, can't upload");
 								return result;
 							}
+						}
+					}
+
+					List<User> users = Utils.getTercenUser(client, userName);
+					if (users.size() == 0) {
+						logger.debug(String.format("User %s not found in Tercen, create user\".", userName));
+						// create popup to ask user for credentials
+						Map<String, Object> userResult = gui.createUser(client, userName);
+						if (session != null) {
+							passWord = (String) userResult.get("pwd");
+							token = (String) userResult.get("token");
+							Utils.saveTercenSession(session);
 						} else {
-							// get and check token for existing user
-							session = Utils.getAndExtendTercenSession(client, gui, passWord, session);
-							if (session == null) {
-								return result;
-							}
-							client.httpClient.setAuthorization(session.token.token);
+							pluginState = ImportPluginStateEnum.collectingSamples;
+							return result;
 						}
+					} else {
+						// get and check token for existing user
+						session = Utils.getAndExtendTercenSession(client, gui, passWord, session);
+						if (session == null) {
+							return result;
+						}
+						client.httpClient.setAuthorization(session.token.token);
+					}
 
-						// Get or create project if it doesn't exist
-						projectName = Utils.getTercenProjectName(wsp);
-						Project project = Utils.getProject(client, session.user.id, projectName);
+					// Get or create project if it doesn't exist
+					projectName = Utils.getTercenProjectName(wsp);
+					Project project = Utils.getProject(client, session.user.id, projectName);
 
-						// upload csv file
-						if (selectedSamplePops.size() > 0) {
-							if (channels.size() > 0) {
-								uploadProgressTask = new UploadProgressTask(this);
-								uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
-										uploadProgressTask, Utils.getTercenDataTableName(wsp));
+					// upload csv file
+					if (selectedSamplePops.size() > 0) {
+						if (channels.size() > 0) {
+							uploadProgressTask = new UploadProgressTask(this);
+							uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
+									uploadProgressTask, Utils.getTercenDataTableName(wsp));
 
-								// open browser
-								if (uploadResult != null) {
-									String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
-											uploadResult, wsp);
-									Desktop desktop = java.awt.Desktop.getDesktop();
-									URI uri = new URI(String.valueOf(url));
-									desktop.browse(uri);
-									projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
-									workspaceText = String.format("Uploaded to %s.", hostName);
-									pluginState = ImportPluginStateEnum.uploaded;
-								} else {
-									Utils.showWarningDialog(
-											"No files have been uploaded, browser window will not open.");
-									return result;
-								}
+							// open browser
+							if (uploadResult != null) {
+								String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
+										uploadResult, wsp);
+								Desktop desktop = java.awt.Desktop.getDesktop();
+								URI uri = new URI(String.valueOf(url));
+								desktop.browse(uri);
+								projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
+								workspaceText = String.format("Uploaded to %s.", hostName);
+								pluginState = ImportPluginStateEnum.uploaded;
 							} else {
-								Utils.showWarningDialog(
-										"Oops! there are no FCS channels selected. Make sure to pick at least one.");
+								Utils.showWarningDialog("No files have been uploaded, browser window will not open.");
 								return result;
 							}
 						} else {
 							Utils.showWarningDialog(
-									"There is no data to upload, please make sure you have selected at minimum one sample.");
+									"Oops! there are no FCS channels selected. Make sure to pick at least one.");
 							return result;
 						}
+					} else {
+						Utils.showWarningDialog(
+								"There is no data to upload, please make sure you have selected at minimum one sample.");
+						return result;
 					}
 				}
 			} else if (pluginState == ImportPluginStateEnum.importing)

@@ -57,8 +57,8 @@ public class TercenGUI {
 	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
 	private static final String GET_TOKEN_TITLE_TEXT = "We are setting up your plugin network credentials.";
 	private static final String GET_TOKEN_SUBTITLE_TEXT = "Please follow these steps.";
-	private static final String GET_EMAIL_TITLE_TEXT = "We're not able to get your email address.";
-	private static final String GET_EMAIL_SUBTITLE_TEXT = "Please set your email address.";
+	private static final String GET_EMAIL_TITLE_TEXT = "We are not able to retrieve your email address.";
+	private static final String GET_EMAIL_SUBTITLE_TEXT = "Please set your email address below.";
 
 	private static final int fixedToolTipWidth = 300;
 	private static final int fixedLabelWidth = 130;
@@ -291,7 +291,8 @@ public class TercenGUI {
 		componentList.add(subTitleLabel);
 		componentList.add(new FJLabel("<html><br/></html>"));
 
-		Component[] emailLabelField = createLabelTextFieldCombo("Email", "", "", true, FontUtil.dlog12);
+		Component[] emailLabelField = createLabelTextFieldCombo("Email", "", "", true, FontUtil.dlog12,
+				(int) (fixedLabelWidth * 0.5), fixedLabelHeigth, (int) (fixedFieldWidth * 1.5), fixedFieldHeigth);
 		componentList.add(new HBox(emailLabelField));
 		componentList.add(new FJLabel("<html><p/></html>"));
 

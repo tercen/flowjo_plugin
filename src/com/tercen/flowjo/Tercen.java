@@ -283,7 +283,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						userName = session.user.id;
 					} else {
 						userName = Utils.getCurrentPortalUser();
-						userName = null;
 						if (userName == null || userName.equals("")) {
 							logger.info("FlowJo email address is not set, asking user for it.");
 							userName = gui.getEmailAddress();

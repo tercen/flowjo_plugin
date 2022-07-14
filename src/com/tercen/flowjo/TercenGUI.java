@@ -290,9 +290,10 @@ public class TercenGUI {
 		componentList.add(new FJLabel("<html><br/></html>"));
 
 		JEditorPane pane = createPaneWithLink(false, false);
-		pane.setText(
+		pane.setText(String.format(
 				"<html><div style='font-size: 12; font-family: Dialog'>Click on the link for SAML authentication.<br/>"
-						+ "<a href='https://dev.tercen.com/_api-token'>Authenticate</a>" + "</div></html>");
+						+ "<a href='%s_api-token'>Authenticate</a>" + "</div></html>",
+				client.tercenURI));
 		componentList.add(pane);
 
 		Component[] tokenLabelField = createLabelTextFieldCombo("Token", "", "Token", true, FontUtil.dlog12);
@@ -433,7 +434,8 @@ public class TercenGUI {
 						URI uri = hle.getURL().toURI();
 						if (addToken) {
 							TercenClient client = new TercenClient(plugin.hostName);
-							UserSession session = Utils.getAndExtendTercenSession(client, plugin.gui, plugin.passWord);
+							UserSession session = Utils.getAndExtendTercenSession(client, plugin.gui, plugin.passWord,
+									plugin.session);
 							if (session != null) {
 								client.httpClient.setAuthorization(session.token.token);
 								uri = new URI(hle.getURL().toString() + Utils.addToken(client, session.user.id, true));

@@ -40,6 +40,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,6 +53,7 @@ import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.ProjectDocument;
 import com.tercen.model.impl.Schema;
+import com.tercen.model.impl.Token;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
 import com.tercen.model.impl.Version;
@@ -486,6 +488,21 @@ public class Utils {
 		return client.userService.createToken(userId, 2 * 24 * 3600);
 	}
 
+	protected static UserSession getSamlSession(String token) {
+		UserSession session = null;
+		if (token != null && token != "") {
+			String[] parts = token.split("\\.");
+			JSONObject payload = new JSONObject(Utils.decode(parts[1]));
+			JSONObject data = (JSONObject) payload.get("data");
+			session = new UserSession();
+			session.token = new Token();
+			session.token.token = token;
+			session.user = new User();
+			session.user.id = (String) data.get("u");
+		}
+		return session;
+	}
+
 	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui,
 			UploadProgressTask uploadProgressTask, int channelSize, int fileCount) {
 		List<String> result = new ArrayList<>();
@@ -548,9 +565,11 @@ public class Utils {
 		return result;
 	}
 
-	public static UserSession getAndExtendTercenSession(TercenClient client, TercenGUI gui, String passWord)
-			throws ClassNotFoundException, IOException, ServiceError {
-		UserSession session = Utils.getTercenSession();
+	public static UserSession getAndExtendTercenSession(TercenClient client, TercenGUI gui, String passWord,
+			UserSession session) throws ClassNotFoundException, IOException, ServiceError {
+		if (session == null) {
+			session = Utils.getTercenSession();
+		}
 		if (session == null || !client.userService.isTokenValid(session.token.token)) {
 			String userName = (session == null) ? Utils.getCurrentPortalUser() : session.user.email;
 			session = Utils.reconnect(client, gui, userName, passWord);

@@ -33,7 +33,6 @@ import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.api.RootLoggerComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.exception.DataFormatException;
@@ -42,7 +41,6 @@ import com.tercen.flowjo.parser.SplitData;
 import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.Schema;
-import com.tercen.model.impl.Token;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
 import com.tercen.model.impl.Version;
@@ -278,22 +276,15 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						workspaceText = "Selected";
 						logger.error("FlowJo username is not set, can't upload");
 					} else {
-						// Get authentication method
+						// Check if SAML authentication is enabled
 						Version authMethods = client.userService.getServerVersion("auth.method");
-						if (!authMethods.features.contains("saml")) {
-							// check if there is a local session
+						if (authMethods.features.contains("saml")) {
 							session = Utils.getTercenSession();
-							if (session != null) {
-								// authenticate via the web, get Token and save it
-								String token = gui.getSAMLToken(client);
-								String[] parts = token.split("\\.");
-								JSONObject payload = new JSONObject(Utils.decode(parts[1]));
-								JSONObject data = (JSONObject) payload.get("data");
-								session = new UserSession();
-								session.token = new Token();
-								session.token.token = token;
-								session.user = new User();
-								session.user.id = (String) data.get("u");
+							if (session == null) {
+								session = Utils.getSamlSession(gui.getSAMLToken(client));
+								if (session == null) {
+									return result;
+								}
 							}
 							userName = session.user.id;
 						}
@@ -312,7 +303,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 							}
 						} else {
 							// get and check token for existing user
-							session = Utils.getAndExtendTercenSession(client, gui, passWord);
+							session = Utils.getAndExtendTercenSession(client, gui, passWord, session);
 							if (session == null) {
 								return result;
 							}

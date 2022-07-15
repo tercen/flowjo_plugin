@@ -490,7 +490,7 @@ public class Utils {
 
 	protected static UserSession getSamlSession(String token) {
 		UserSession session = null;
-		if (token != null && token != "") {
+		if (token != null && !token.equals("")) {
 			String[] parts = token.split("\\.");
 			JSONObject payload = new JSONObject(Utils.decode(parts[1]));
 			JSONObject data = (JSONObject) payload.get("data");

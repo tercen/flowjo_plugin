@@ -277,6 +277,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 						if (session == null) {
 							session = Utils.getSamlSession(gui.getSAMLToken(client));
 							if (session == null) {
+								Utils.showErrorDialog("Token is invalid.");
 								return result;
 							}
 						}

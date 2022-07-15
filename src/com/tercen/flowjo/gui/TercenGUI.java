@@ -1,4 +1,4 @@
-package com.tercen.flowjo;
+package com.tercen.flowjo.gui;
 
 import java.awt.Component;
 import java.awt.Desktop;
@@ -35,7 +35,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.tercen.client.impl.TercenClient;
+import com.tercen.flowjo.Tercen;
 import com.tercen.flowjo.Tercen.ImportPluginStateEnum;
+import com.tercen.flowjo.Utils;
 import com.tercen.model.impl.UserSession;
 import com.tercen.service.ServiceError;
 import com.treestar.lib.FJPluginHelper;
@@ -82,7 +84,7 @@ public class TercenGUI {
 				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
 				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
 
-			if (this.plugin.projectURL != null && !this.plugin.projectURL.equals("")) {
+			if (this.plugin.getProjectURL() != null && !this.plugin.getProjectURL().equals("")) {
 				String[] buttons = { "Return", "Upload Changes", "Import" };
 				if (!Utils.isWindows()) {
 					buttons = Utils.reverseStringArray(buttons);
@@ -108,7 +110,7 @@ public class TercenGUI {
 					returnValue = 2 - returnValue;
 				}
 				if (returnValue == 0) {
-					String url = plugin.projectURL;
+					String url = plugin.getProjectURL();
 					Desktop desktop = java.awt.Desktop.getDesktop();
 					URI uri;
 					try {
@@ -137,7 +139,7 @@ public class TercenGUI {
 					}
 					int option = fileChooser.showOpenDialog(null);
 					if (option == JFileChooser.APPROVE_OPTION) {
-						plugin.importFile = fileChooser.getSelectedFile();
+						plugin.setImportFile(fileChooser.getSelectedFile());
 						plugin.pluginState = ImportPluginStateEnum.importing;
 						result = true;
 					}
@@ -202,8 +204,8 @@ public class TercenGUI {
 
 		if (option == JOptionPane.OK_OPTION) {
 			List<String> fcsChannels = dualListBox.getAllResultItems();
-			plugin.channels = new ArrayList<String>(
-					fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList()));
+			plugin.setChannels(new ArrayList<String>(
+					fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList())));
 
 			// set selected sample files
 			if (samplePopulationsList != null) {
@@ -265,9 +267,9 @@ public class TercenGUI {
 				emailAddress = ((FJTextField) emailLabelField[1]).getText();
 				String passWord = String.valueOf(((JPasswordField) passwordLabelField[1]).getPassword());
 				try {
-					plugin.session = Utils.createTercenUser(client, userName, emailAddress, passWord);
+					plugin.setSession(Utils.createTercenUser(client, userName, emailAddress, passWord));
 					result.put("pwd", passWord);
-					result.put("token", plugin.session.token.token);
+					result.put("token", plugin.getSession().token.token);
 				} catch (ServiceError e) {
 					String userMessage = getFailedUserMessage(userName, e);
 					JOptionPane optionPane = new JOptionPane(userMessage, JOptionPane.ERROR_MESSAGE);
@@ -468,9 +470,9 @@ public class TercenGUI {
 					try {
 						URI uri = hle.getURL().toURI();
 						if (addToken) {
-							TercenClient client = new TercenClient(plugin.hostName);
-							UserSession session = Utils.getAndExtendTercenSession(client, plugin.gui, plugin.passWord,
-									plugin.session);
+							TercenClient client = new TercenClient(plugin.getHostName());
+							UserSession session = Utils.getAndExtendTercenSession(client, plugin.gui,
+									plugin.getPassWord(), plugin.getSession());
 							if (session != null) {
 								client.httpClient.setAuthorization(session.token.token);
 								uri = new URI(hle.getURL().toString() + Utils.addToken(client, session.user.id, true));

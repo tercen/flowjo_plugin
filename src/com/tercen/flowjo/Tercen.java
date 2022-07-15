@@ -36,6 +36,8 @@ import org.json.JSONException;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.exception.DataFormatException;
+import com.tercen.flowjo.gui.TercenGUI;
+import com.tercen.flowjo.importer.ImportHelper;
 import com.tercen.flowjo.parser.ClusterFileMetaData;
 import com.tercen.flowjo.parser.SplitData;
 import com.tercen.flowjo.tasks.UploadProgressTask;
@@ -66,7 +68,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected static final String version = Utils.getProjectVersion();
 	protected static final String CSV_FILE_NAME = "csvFileName";
 
-	protected enum ImportPluginStateEnum {
+	public enum ImportPluginStateEnum {
 		empty, collectingSamples, uploading, uploaded, importing, error;
 	}
 
@@ -102,10 +104,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected boolean autoUpdate = false;
 
 	// properties to gather multiple samples
-	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
-	protected LinkedHashSet<String> samplePops = new LinkedHashSet<String>();
-	protected LinkedHashSet<String> selectedSamplePops = new LinkedHashSet<String>();
-	protected TercenGUI gui = new TercenGUI(this);
+	public ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
+	public LinkedHashSet<String> samplePops = new LinkedHashSet<String>();
+	public LinkedHashSet<String> selectedSamplePops = new LinkedHashSet<String>();
+	public TercenGUI gui = new TercenGUI(this);
 
 	static {
 		initLogger();
@@ -357,7 +359,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 			{
 				if (importFile != null) {
-					File fullImportFile = Merger.getCompleteUploadFile(fcmlQueryElement, result, importFile,
+					File fullImportFile = ImportHelper.getCompleteUploadFile(fcmlQueryElement, result, importFile,
 							outputFolder.getAbsolutePath(), 0);
 					if (fullImportFile != null) {
 						List<File> importFiles = SplitData.splitCsvFileOnColumn(fullImportFile);
@@ -521,18 +523,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		return tercenIcon;
 	}
 
-	public String getHostName() {
-		return hostName;
-	}
-
-	public String getUserName() {
-		return userName;
-	}
-
-	public String getPassWord() {
-		return passWord;
-	}
-
 	private static void initLogger() {
 		String filename = "tercen-plugin.log";
 		String pattern = "%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n";
@@ -602,5 +592,37 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			result.add(metadata);
 		}
 		return result;
+	}
+
+	public String getHostName() {
+		return hostName;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public String getPassWord() {
+		return passWord;
+	}
+
+	public UserSession getSession() {
+		return session;
+	}
+
+	public String getProjectURL() {
+		return projectURL;
+	}
+
+	public void setSession(UserSession session) {
+		this.session = session;
+	}
+
+	public void setImportFile(File importFile) {
+		this.importFile = importFile;
+	}
+
+	public void setChannels(ArrayList<String> channels) {
+		this.channels = channels;
 	}
 }

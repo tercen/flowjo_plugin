@@ -1,4 +1,4 @@
-package com.tercen.flowjo;
+package com.tercen.flowjo.gui;
 
 import java.awt.Color;
 import java.awt.Dimension;

@@ -17,7 +17,7 @@ public class UploadFileTest {
 
 	private static final String PROJECT = "flowjo";
 	private static final String HOST_NAME = "http://localhost:5400/";
-	private static final String FILE = "SI5_eukaryotic_lineages.csv";
+	private static final String FILE = "LD1_PI+NS_B01_exp..ExtNode.csv";
 	private static final String USER_NAME = "admin";
 	private static final String PASSWORD = "admin";
 
@@ -38,13 +38,23 @@ public class UploadFileTest {
 			LinkedHashSet<String> filenames = new LinkedHashSet<String>();
 			filenames.add(fileLocation);
 			ArrayList<String> channels = new ArrayList<String>();
-			System.out.println("Uploading file: " + FILE);
+			System.out.println("Uploading file: " + FILE + ", no channels");
 			Schema uploadResult = Utils.uploadCsvFile(plugin, client, project, filenames, channels,
 					new UploadProgressTask(plugin), dataTableName);
 
 			// check result
-			Assert.assertEquals(uploadResult.name, FILE);
-			Assert.assertEquals(uploadResult.columns.size(), 7); // input + population, random_label
+			Assert.assertEquals(FILE, uploadResult.name);
+			Assert.assertEquals(3, uploadResult.columns.size()); // filename, random_label, F_rowId
+
+			// add channels
+			channels.add("FSC-A");
+			channels.add("FSC-H");
+			System.out.println("Uploading file: " + FILE + ", 2 channels");
+			uploadResult = Utils.uploadCsvFile(plugin, client, project, filenames, channels,
+					new UploadProgressTask(plugin), dataTableName);
+
+			// check result
+			Assert.assertEquals(FILE, uploadResult.name);
 
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());

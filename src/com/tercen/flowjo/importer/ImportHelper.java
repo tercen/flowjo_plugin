@@ -1,4 +1,4 @@
-package com.tercen.flowjo;
+package com.tercen.flowjo.importer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -19,7 +19,7 @@ import com.treestar.lib.fjml.types.FileTypes;
 import com.treestar.lib.parsing.interpreter.ParseUtil;
 import com.treestar.lib.xml.SElement;
 
-public class Merger {
+public class ImportHelper {
 
 	/**
 	 * Generate an output file that has a row for all events, so that it can be

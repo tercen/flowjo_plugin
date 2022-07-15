@@ -494,13 +494,15 @@ public class Utils {
 		UserSession session = null;
 		if (token != null && !token.equals("")) {
 			String[] parts = token.split("\\.");
-			JSONObject payload = new JSONObject(Utils.decode(parts[1]));
-			JSONObject data = (JSONObject) payload.get("data");
-			session = new UserSession();
-			session.token = new Token();
-			session.token.token = token;
-			session.user = new User();
-			session.user.id = (String) data.get("u");
+			if (parts.length == 3) {
+				JSONObject payload = new JSONObject(Utils.decode(parts[1]));
+				JSONObject data = (JSONObject) payload.get("data");
+				session = new UserSession();
+				session.token = new Token();
+				session.token.token = token;
+				session.user = new User();
+				session.user.id = (String) data.get("u");
+			}
 		}
 		return session;
 	}

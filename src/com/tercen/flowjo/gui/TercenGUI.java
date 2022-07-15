@@ -301,7 +301,7 @@ public class TercenGUI {
 		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
 				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 		if (option == JOptionPane.OK_OPTION) {
-			result = ((FJTextField) emailLabelField[1]).getText();
+			result = ((FJTextField) emailLabelField[1]).getText().trim();
 		}
 		return result;
 	}
@@ -333,7 +333,7 @@ public class TercenGUI {
 		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
 				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 		if (option == JOptionPane.OK_OPTION) {
-			result = ((FJTextField) tokenLabelField[1]).getText();
+			result = ((FJTextField) tokenLabelField[1]).getText().trim();
 		}
 		return result;
 	}

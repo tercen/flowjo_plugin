@@ -17,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -64,30 +65,35 @@ import nu.studer.java.util.OrderedProperties;
 public class Tercen extends ParameterOptionHolder implements PopulationPluginInterface {
 
 	private static Logger logger = null;
-	protected static final String pluginName = "Connector";
-	protected static final String version = Utils.getProjectVersion();
-	protected static final String CSV_FILE_NAME = "csvFileName";
-
-	public enum ImportPluginStateEnum {
-		empty, collectingSamples, uploading, uploaded, importing, error;
-	}
-
 	private static final String TERCEN_PROPERTIES = "tercen.properties";
 	private static final String HOST = "host";
 	private static final String MAX_UPLOAD_DATAPOINTS = "max.upload.datapoints";
 	private static final String SEED = "seed";
 	private static final String AUTO_UPDATE = "autoupdate";
+	private static final String FAILED = "Failed";
+	private static final String ICON_NAME = "logo.png";
+	private static final String PROJECT_URL = "projectURL";
+	private static final String PLUGIN_STATE = "pluginState";
+	private static final String CHANNELS = "channels";
+	private static final String IMPORT_FILE_PATH = "importFilePath";
+	private static final String SELECTED_POPULATION = "SelectedPopulation";
+	private static final String SELECTED_POPULATIONS = "SelectedPopulations";
+	private static final String PATH = "path";
 
-	// default settings
+	protected static final String pluginName = "Connector";
+	protected static final String version = Utils.getProjectVersion();
+	protected static final String CSV_FILE_NAME = "csvFileName";
 	protected static final String HOSTNAME_URL = "https://tercen.com/";
 	protected static final String MAX_DATAPOINTS_VALUE = "-1";
 	protected static final String SEED_VALUE = "42";
 	protected static final String AUTO_UPDATE_VALUE = "false";
 	protected static final String GIT_TOKEN_VALUE = "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";
 	protected static final String DOMAIN = "tercen";
-	protected static final String ICON_NAME = "logo.png";
 
-	private static final String Failed = "Failed";
+	public enum ImportPluginStateEnum {
+		empty, collectingSamples, uploading, uploaded, importing, error;
+	}
+
 	protected String hostName = HOSTNAME_URL;
 	protected String projectName;
 	protected String userName;
@@ -133,44 +139,49 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	public SElement getElement() {
 		SElement result = super.getElement();
 		result.setName(pluginName);
-		result.setString("channels", String.join(",", channels));
-		result.setString("pluginState", pluginState.toString());
+		result.setString(CHANNELS, String.join(",", channels));
+		result.setString(PLUGIN_STATE, pluginState.toString());
 		result.setString(CSV_FILE_NAME, csvFileName);
-		result.setString("projectURL", projectURL);
+		result.setString(PROJECT_URL, projectURL);
 		if (!this.selectedSamplePops.isEmpty()) {
-			SElement pops = new SElement("SelectedPopulations");
+			SElement pops = new SElement(SELECTED_POPULATIONS);
 			for (String pop : this.selectedSamplePops) {
-				SElement popElem = new SElement("SelectedPopulation");
-				popElem.setString("path", pop);
+				SElement popElem = new SElement(SELECTED_POPULATION);
+				popElem.setString(PATH, pop);
 				pops.addContent(popElem);
 			}
 			result.addContent(pops);
 		}
 		if (importFile != null) {
-			result.setString("importFilePath", importFile.getAbsolutePath());
+			result.setString(IMPORT_FILE_PATH, importFile.getAbsolutePath());
 		}
 		return result;
 	}
 
+	private LinkedHashSet<String> getSelectedSamplePops(SElement element) {
+		LinkedHashSet<String> result = new LinkedHashSet<String>();
+		SElement pops = element.getChild(SELECTED_POPULATIONS);
+		if (pops != null) {
+			for (SElement popElem : pops.getChildren(SELECTED_POPULATION)) {
+				result.add(popElem.getString(PATH));
+			}
+		}
+		return (result);
+	}
+
 	@Override
 	public void setElement(SElement element) {
-		String channelString = element.getString("channels");
+		String channelString = element.getString(CHANNELS);
 		if (channelString.equals("")) {
 			channels = new ArrayList<String>();
 		} else {
 			channels = new ArrayList<String>(Arrays.asList(channelString.split(",")));
 		}
-		this.pluginState = ImportPluginStateEnum.valueOf(element.getString("pluginState"));
+		this.pluginState = ImportPluginStateEnum.valueOf(element.getString(PLUGIN_STATE));
 		this.csvFileName = element.getString(CSV_FILE_NAME);
-		this.projectURL = element.getString("projectURL");
-		SElement pops = element.getChild("SelectedPopulations");
-		if (pops != null) {
-			this.selectedSamplePops.clear();
-			for (SElement popElem : pops.getChildren("SelectedPopulation")) {
-				this.selectedSamplePops.add(popElem.getString("path"));
-			}
-		}
-		String importFilePath = element.getString("importFilePath");
+		this.projectURL = element.getString(PROJECT_URL);
+		this.selectedSamplePops = getSelectedSamplePops(element);
+		String importFilePath = element.getString(IMPORT_FILE_PATH);
 		if (importFile == null && importFilePath != null && !importFilePath.equals("")) {
 			importFile = new File(importFilePath);
 		}
@@ -268,7 +279,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 				if (!sampleFile.exists()) {
 					Utils.showErrorDialog("Input file does not exist");
-					workspaceText = Tercen.Failed;
+					workspaceText = Tercen.FAILED;
 				} else {
 					Schema uploadResult = null;
 
@@ -500,9 +511,24 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			Sample sample = FJPluginHelper.getSample(arg0);
 			Workspace wsp = sample.getWorkspace();
 			List<AppNode> nodeList = Utils.getAllSelectedTercenNodes(wsp);
-			samplePops.clear();
+			this.samplePops.clear();
+			String sampleFileName = Utils.getSampleFileName(sample);
 			for (AppNode node : nodeList) {
-				samplePops.add(Utils.getCsvFileName(node));
+				SElement nodeElement = node.getElement();
+				String nodeCSVFilename = Utils.getCsvFileName(node);
+				this.samplePops.add(nodeCSVFilename);
+				// update fields if current sample has been uploaded for a different node
+				if (!nodeCSVFilename.contains(sampleFileName)) {
+					SElement connEl = nodeElement.getChild(pluginName);
+					ImportPluginStateEnum nodeState = ImportPluginStateEnum.valueOf(connEl.getString(PLUGIN_STATE));
+					LinkedHashSet<String> nodeSamplePops = getSelectedSamplePops(connEl);
+					List<String> filteredPops = nodeSamplePops.stream().filter(c -> c.contains(sampleFileName))
+							.collect(Collectors.toList());
+					if (filteredPops.size() >= 1 && nodeState == ImportPluginStateEnum.uploaded) {
+						this.pluginState = nodeState;
+						this.projectURL = connEl.getString(PROJECT_URL);
+					}
+				}
 			}
 		}
 		return gui.promptForOptions(arg0, arg1);

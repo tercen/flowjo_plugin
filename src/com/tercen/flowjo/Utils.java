@@ -425,6 +425,10 @@ public class Utils {
 		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.CSV_FILE_NAME);
 	}
 
+	public static String getSampleFileName(Sample sample) {
+		return (sample.getShortFilename().replace(".fcs", ""));
+	}
+
 	private static Path getSessionFilePath() {
 		FileSystem fs = FileSystems.getDefault();
 		String home = System.getProperty("user.home");

@@ -517,14 +517,15 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				SElement nodeElement = node.getElement();
 				String nodeCSVFilename = Utils.getCsvFileName(node);
 				this.samplePops.add(nodeCSVFilename);
-				// update fields if current sample has been uploaded for a different node
+				// update fields if current sample has been uploaded from a different sample
 				if (!nodeCSVFilename.contains(sampleFileName)) {
 					SElement connEl = nodeElement.getChild(pluginName);
 					ImportPluginStateEnum nodeState = ImportPluginStateEnum.valueOf(connEl.getString(PLUGIN_STATE));
 					LinkedHashSet<String> nodeSamplePops = getSelectedSamplePops(connEl);
 					List<String> filteredPops = nodeSamplePops.stream().filter(c -> c.contains(sampleFileName))
 							.collect(Collectors.toList());
-					if (filteredPops.size() >= 1 && nodeState == ImportPluginStateEnum.uploaded) {
+					if (filteredPops.size() >= 1 && (nodeState == ImportPluginStateEnum.uploaded
+							|| nodeState == ImportPluginStateEnum.error)) {
 						this.pluginState = nodeState;
 						this.projectURL = connEl.getString(PROJECT_URL);
 					}

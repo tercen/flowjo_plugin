@@ -12,7 +12,10 @@ import java.util.StringTokenizer;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.tercen.flowjo.Utils;
 import com.tercen.service.ServiceError;
+import com.treestar.flowjo.core.Sample;
+import com.treestar.lib.FJPluginHelper;
 import com.treestar.lib.PluginHelper;
 import com.treestar.lib.core.ExternalAlgorithmResults;
 import com.treestar.lib.fjml.types.FileTypes;
@@ -32,6 +35,13 @@ public class ImportHelper {
 	public static File getCompleteUploadFile(SElement fcmlElem, ExternalAlgorithmResults algorithmResults,
 			File pluginCSVFile, String outputFolder, double noVal) throws IOException, ServiceError {
 		int numEvents = PluginHelper.getNumTotalEvents(fcmlElem);
+
+		Sample sample = FJPluginHelper.getSample(fcmlElem);
+		String sampleFileName = Utils.getSampleFileName(sample);
+		if (!pluginCSVFile.getAbsolutePath().contains(sampleFileName)) {
+			throw new ServiceError(
+					String.format("Imported file name should contain the sample name %s", sampleFileName));
+		}
 
 		BufferedReader pluginCSVFileReader = new BufferedReader(new FileReader(pluginCSVFile));
 		String pluginCSVLine = pluginCSVFileReader.readLine();

@@ -35,11 +35,9 @@ jobs:
       - name: move files
         run: | 
           mv "target/tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar" "./tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar"
-          mv doc/*.pdf ./
       - uses: actions/upload-artifact@v2
         with:
           name: Tercen_v${{ env.PLUGIN_VERSION }}
           path: |
                 tercen-flowjo-plugin_v${{ env.PLUGIN_VERSION }}.jar
-                *.pdf
 

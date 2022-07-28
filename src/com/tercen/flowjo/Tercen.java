@@ -236,18 +236,19 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				result.setErrorMessage("Previous error prevents uploading");
 				return result;
 			}
-
-			// reset state
-			if (pluginState == ImportPluginStateEnum.uploaded) {
-				pluginState = ImportPluginStateEnum.collectingSamples;
-			}
-
 			String fileName = sampleFile.getPath();
+			csvFileName = fileName;
+
+			// syn state
+			pluginState = StateHandler.getState(pluginState, csvFileName, outputFolder);
+//			if (pluginState == ImportPluginStateEnum.uploaded) {
+//				pluginState = ImportPluginStateEnum.collectingSamples;
+//			}
+
 			if (pluginState == ImportPluginStateEnum.empty) {
-				csvFileName = fileName;
 				pluginState = ImportPluginStateEnum.collectingSamples;
 			} else if (pluginState == ImportPluginStateEnum.collectingSamples) {
-				csvFileName = fileName;
+				projectURL = "";
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
 				TercenClient client = new TercenClient(hostName);
 
@@ -414,6 +415,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			default:
 				break;
 			}
+			StateHandler.writeStateFile(nodeList, pluginState, csvFileName);
 		} catch (
 
 		ServiceError e) {

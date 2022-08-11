@@ -79,10 +79,10 @@ public class TercenGUI {
 		boolean result = false;
 
 		// show upload dialog
-		if (this.plugin.pluginState == ImportPluginStateEnum.collectingSamples
-				|| this.plugin.pluginState == ImportPluginStateEnum.uploading
-				|| this.plugin.pluginState == ImportPluginStateEnum.uploaded
-				|| this.plugin.pluginState == ImportPluginStateEnum.error) {
+		if (this.plugin.getPluginState() == ImportPluginStateEnum.collectingSamples
+				|| this.plugin.getPluginState() == ImportPluginStateEnum.uploading
+				|| this.plugin.getPluginState() == ImportPluginStateEnum.uploaded
+				|| this.plugin.getPluginState() == ImportPluginStateEnum.error) {
 
 			if (this.plugin.getProjectURL() != null && !this.plugin.getProjectURL().equals("")) {
 				String[] buttons = { "Return", "Upload Changes", "Import" };
@@ -140,7 +140,7 @@ public class TercenGUI {
 					int option = fileChooser.showOpenDialog(null);
 					if (option == JFileChooser.APPROVE_OPTION) {
 						plugin.setImportFile(fileChooser.getSelectedFile());
-						plugin.pluginState = ImportPluginStateEnum.importing;
+						plugin.setPluginState(ImportPluginStateEnum.importing);
 						result = true;
 					}
 				}
@@ -212,7 +212,7 @@ public class TercenGUI {
 				plugin.selectedSamplePops.clear();
 				plugin.selectedSamplePops.addAll(samplePopulationsList.getSelectedValuesList());
 			}
-			plugin.pluginState = ImportPluginStateEnum.uploading;
+			plugin.setPluginState(ImportPluginStateEnum.uploading);
 
 			result = true;
 		} else {

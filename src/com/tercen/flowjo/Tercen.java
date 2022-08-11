@@ -108,9 +108,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected long seed = -1;
 	protected long maxDataPoints = -1;
 	protected boolean autoUpdate = false;
+	protected ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
 
-	// properties to gather multiple samples
-	public ImportPluginStateEnum pluginState = ImportPluginStateEnum.empty;
 	public LinkedHashSet<String> samplePops = new LinkedHashSet<String>();
 	public LinkedHashSet<String> selectedSamplePops = new LinkedHashSet<String>();
 	public TercenGUI gui = new TercenGUI(this);
@@ -653,5 +652,13 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	public void setChannels(ArrayList<String> channels) {
 		this.channels = channels;
+	}
+
+	public void setPluginState(ImportPluginStateEnum state) {
+		this.pluginState = state;
+	}
+
+	public ImportPluginStateEnum getPluginState() {
+		return this.pluginState;
 	}
 }

@@ -57,15 +57,4 @@ public class StateHandler {
 		}
 		return result;
 	}
-
-//	public static String getSampleName(AppNode appNode) {
-//		String result = appNode.getName();
-//		ParentNode parent = appNode.getParent();
-//		while (parent != null) {
-//			result = parent.getName();
-//			parent = parent.getParent();
-//		}
-//		result = result.replace(".fcs", "_" + Tercen.pluginName);
-//		return (result);
-//	}
 }

@@ -573,13 +573,19 @@ public class Utils {
 		return result;
 	}
 
-	public static UserSession getAndExtendTercenSession(TercenClient client, TercenGUI gui, String passWord,
-			UserSession session) throws ClassNotFoundException, IOException, ServiceError {
+	public static UserSession getAndExtendTercenSession(TercenClient client, TercenGUI gui, String userName,
+			String passWord, UserSession session) throws ClassNotFoundException, IOException, ServiceError {
 		if (session == null) {
 			session = Utils.getTercenSession();
 		}
 		if (session == null || !client.userService.isTokenValid(session.token.token)) {
-			String userName = (session == null) ? Utils.getCurrentPortalUser() : session.user.email;
+			// if username not set, try to get it from license or otherwise from session
+			if (userName == null || userName == "") {
+				userName = Utils.getCurrentPortalUser();
+			}
+			if ((userName == null || userName == "") && session != null) {
+				userName = session.user.email;
+			}
 			session = Utils.reconnect(client, gui, userName, passWord);
 			Utils.saveTercenSession(session);
 		} else {

@@ -472,7 +472,7 @@ public class TercenGUI {
 						if (addToken) {
 							TercenClient client = new TercenClient(plugin.getHostName());
 							UserSession session = Utils.getAndExtendTercenSession(client, plugin.gui,
-									plugin.getPassWord(), plugin.getSession());
+									plugin.getUserName(), plugin.getPassWord(), plugin.getSession());
 							if (session != null) {
 								client.httpClient.setAuthorization(session.token.token);
 								uri = new URI(hle.getURL().toString() + Utils.addToken(client, session.user.id, true));

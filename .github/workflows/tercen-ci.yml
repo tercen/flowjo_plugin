@@ -27,7 +27,7 @@ jobs:
       - name: Start tercen
         run: docker-compose up -d
       - name: Build package
-        run: mvn clean install -DskipTests
+        run: mvn clean install
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Stop tercen

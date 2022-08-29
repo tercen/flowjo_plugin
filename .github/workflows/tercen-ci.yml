@@ -26,9 +26,14 @@ jobs:
         run: docker-compose pull
       - name: Start tercen
         run: docker-compose up -d
+      - name: Setup xvfb for screen 0
+        run: Xvfb :1 -screen 0 1600x1200x24 &
       - name: Build package
-        run: mvn clean install
+        run: mvn clean install -e -X
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISPLAY: :1
+      - name: Tear down xvfb
+        run: killall Xvfb
       - name: Stop tercen
         run: docker-compose down

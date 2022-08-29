@@ -16,7 +16,7 @@ import com.tercen.model.impl.UserSession;
 public class UploadFileTest {
 
 	private static final String PROJECT = "flowjo";
-	private static final String HOST_NAME = "http://tercen:5400/";
+	private static final String HOST_NAME = "http://localhost:5410/";
 	private static final String FILE = "LD1_PI+NS_B01_exp..ExtNode.csv";
 	private static final String USER_NAME = "admin";
 	private static final String PASSWORD = "admin";
@@ -24,7 +24,8 @@ public class UploadFileTest {
 	@Test
 	public void upload() {
 
-		String fileLocation = new File("").getAbsolutePath() + "\\test\\resources\\" + FILE;
+		String sep = System.getProperty("file.separator");
+		String fileLocation = new File("").getAbsolutePath() + sep + "test" + sep + "resources" + sep + FILE;
 		System.out.println(fileLocation);
 		System.out.println(new File(fileLocation).exists());
 

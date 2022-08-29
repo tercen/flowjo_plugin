@@ -64,7 +64,6 @@ import com.treestar.flowjo.core.Sample;
 import com.treestar.flowjo.core.nodes.AppNode;
 import com.treestar.flowjo.core.nodes.SampleNode;
 import com.treestar.flowjo.core.nodes.templating.ExternalPopNode;
-import com.treestar.flowjo.engine.EngineManager;
 import com.treestar.flowjo.engine.auth.fjcloud.CloudAuthInfo;
 import com.treestar.lib.fjml.FJML;
 
@@ -193,7 +192,8 @@ public class Utils {
 				} else {
 					// check header equals initial file
 					String header = getHeader(channels, lines.get(0));
-					if (!mergedLines.get(0).equals(header)) {
+					String currentHeader = mergedLines.get(0);
+					if (!Utils.headersEqual(currentHeader, header)) {
 						throw new DataFormatException(
 								"Cannot upload selection. The files selected have different FCS channels.\n"
 										+ "Try uploading files individually or concatenating them together.\n"
@@ -436,7 +436,8 @@ public class Utils {
 	}
 
 	public static boolean isWindows() {
-		if (EngineManager.isWindows()) {
+		String os = System.getProperty("os.name").toLowerCase();
+		if (os.contains("win")) {
 			return true;
 		} else {
 			return false;
@@ -651,5 +652,29 @@ public class Utils {
 
 	protected static String decode(String encodedString) {
 		return new String(Base64.getUrlDecoder().decode(encodedString));
+	}
+
+	private static boolean headersEqual(String currentHeader, String newHeader) {
+		boolean result = true;
+		if (!currentHeader.equals(newHeader)) {
+			String[] h1Cols = currentHeader.split(",");
+			String[] h2Cols = newHeader.split(",");
+			if (h1Cols.length == h2Cols.length) {
+				for (int i = 0; i < h1Cols.length; i++) {
+					String col1 = h1Cols[i];
+					String col2 = h2Cols[i];
+					if (!col1.equals(col2)) {
+						String name1 = col1.substring(0, col1.indexOf("::"));
+						String name2 = col2.substring(0, col2.indexOf("::"));
+						if (!name1.equals(name2)) {
+							result = false;
+						}
+					}
+				}
+			} else {
+				result = false;
+			}
+		}
+		return result;
 	}
 }

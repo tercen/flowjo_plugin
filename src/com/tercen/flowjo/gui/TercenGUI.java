@@ -221,7 +221,7 @@ public class TercenGUI {
 		return result;
 	}
 
-	private String getDialogTitle() {
+	protected String getDialogTitle() {
 		return "Tercen Plugin V" + plugin.getVersion();
 	}
 
@@ -338,7 +338,7 @@ public class TercenGUI {
 		return result;
 	}
 
-	private String getFailedUserMessage(String userName, ServiceError e) {
+	protected String getFailedUserMessage(String userName, ServiceError e) {
 		String result = e.getMessage();
 		if (result.contains("user.create.password.required")) {
 			result = "Oops, you forgot to make a password. Can you try again?";
@@ -379,7 +379,7 @@ public class TercenGUI {
 		return result;
 	}
 
-	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
+	protected Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
 			boolean editable) {
 		FJLabel label = new FJLabel(labelText);
 		JTextField field;
@@ -396,7 +396,7 @@ public class TercenGUI {
 		return new Component[] { label, field };
 	}
 
-	private Component[] createLabelLabelCombo(String labelText, String labelValueText) {
+	protected Component[] createLabelLabelCombo(String labelText, String labelValueText) {
 		FJLabel label = new FJLabel(labelText);
 		FJLabel labelValue = new FJLabel(labelValueText);
 		GuiFactory.setSizes(label, new Dimension(fixedLabelWidth, fixedLabelHeigth));
@@ -404,14 +404,14 @@ public class TercenGUI {
 		return new Component[] { label, labelValue };
 	}
 
-	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
+	protected Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
 			boolean editable, Font font) {
 		Component[] result = createLabelTextFieldCombo(labelText, fieldValue, fieldTooltip, editable);
 		result[0].setFont(font);
 		return result;
 	}
 
-	private Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
+	protected Component[] createLabelTextFieldCombo(String labelText, String fieldValue, String fieldTooltip,
 			boolean editable, Font font, int labelWidth, int labelHeight, int fieldWith, int fieldHeight) {
 		Component[] result = createLabelTextFieldCombo(labelText, fieldValue, fieldTooltip, editable, font);
 		GuiFactory.setSizes(result[0], new Dimension(labelWidth, labelHeight));
@@ -419,7 +419,7 @@ public class TercenGUI {
 		return result;
 	}
 
-	private FJList createParameterList(List<String> parameters, SElement sElement, boolean filterCompensated) {
+	protected FJList createParameterList(List<String> parameters, SElement sElement, boolean filterCompensated) {
 		FJList paramList;
 		DefaultListModel dlm = new DefaultListModel();
 
@@ -436,7 +436,7 @@ public class TercenGUI {
 		return paramList;
 	}
 
-	private FJLabel addHeaderString(String s, Font font) {
+	protected FJLabel addHeaderString(String s, Font font) {
 		FJLabel label = new FJLabel(s);
 		label.setFont(font);
 		return label;
@@ -455,7 +455,7 @@ public class TercenGUI {
 		return result;
 	}
 
-	private JEditorPane createPaneWithLink(boolean hideParentOnClick, boolean addToken) {
+	protected JEditorPane createPaneWithLink(boolean hideParentOnClick, boolean addToken) {
 		JEditorPane pane = new JEditorPane();
 		pane.setEditorKit(JEditorPane.createEditorKitForContentType("text/html"));
 		pane.setEditable(false);

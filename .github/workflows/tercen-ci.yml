@@ -16,6 +16,12 @@ jobs:
           java-version: '9.0.4' # The JDK version to make available on the path.
           java-package: jdk # (jre, jdk, or jdk+fx) - defaults to jdk
           architecture: x64 # (x64 or x86) - defaults to x64
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
       - name: Install artifact1
         run: mvn install:install-file -Dfile="third\FlowJo.jar" -DgroupId=com.flowjo -DartifactId=flowjo -Dversion=10.8.0 -Dpackaging=jar -DgeneratePom=true
       - name: Install artifact2
@@ -37,3 +43,6 @@ jobs:
         run: killall Xvfb
       - name: Stop tercen
         run: docker-compose down
+      - name: Publish Test Report
+        if: ${{ always() }}
+        uses: scacap/action-surefire-report@v1

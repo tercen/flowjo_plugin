@@ -561,7 +561,7 @@ public class Utils {
 		return true;
 	}
 
-	protected static String getProjectVersion() {
+	public static String getProjectVersion() {
 		String result = "0.0.0";
 		Properties properties = new Properties();
 		try {

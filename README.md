@@ -1,5 +1,8 @@
 ### FlowJo Tercen Plugin 
 
+[![release workflow](https://github.com/tercen/flowjo_plugin/workflows/release-workflow/badge.svg)](https://github.com/tercen/flowjo_plugin/actions/workflows/main.yml)
+[![build workflow](https://github.com/tercen/flowjo_plugin/workflows/build-test-workflow/badge.svg)](https://github.com/tercen/flowjo_plugin/actions/workflows/tercen-ci.yml)
+
 #### Run Plugin by using a released version
 
 - Download the latest release from [github](https://github.com/tercen/flowjo_plugin/actions/workflows/main.yml). Click on the latest success workflow (colored green). Then click on "tercen_flowjo_plugin" below Artifacts at the bottom. The downloaded file is a zip file that contains the JAR file.

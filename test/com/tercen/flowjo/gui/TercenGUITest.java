@@ -1,5 +1,6 @@
 package com.tercen.flowjo.gui;
 
+import java.awt.Component;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,6 +15,7 @@ import com.tercen.service.ServiceError;
 import com.treestar.lib.gui.FJList;
 import com.treestar.lib.gui.FontUtil;
 import com.treestar.lib.gui.panels.FJLabel;
+import com.treestar.lib.gui.text.FJTextField;
 
 public class TercenGUITest {
 
@@ -53,17 +55,26 @@ public class TercenGUITest {
 
 	@Test
 	public void createLabelTextFieldComboTest() {
-		// TODO
-	}
+		int fixedLabelWidth = 130;
+		int fixedFieldWidth = 250;
+		int fixedLabelHeigth = 25;
+		int fixedFieldHeigth = 25;
 
-	@Test
-	public void createLabelTextFieldComboComboTest() {
-		// TODO
+		Component[] result = gui.createLabelTextFieldCombo("labelText", "fieldValue", "fieldTooltip", false,
+				FontUtil.dlog12, (int) (fixedLabelWidth * 0.5), fixedLabelHeigth, (int) (fixedFieldWidth * 1.5),
+				fixedFieldHeigth);
+		Assert.assertEquals("[Ljava.awt.Component;", result.getClass().getName());
+		Assert.assertEquals("labelText", ((FJLabel) result[0]).getText());
+		Assert.assertEquals("fieldValue", ((FJTextField) result[1]).getText());
+		Assert.assertTrue(((FJTextField) result[1]).getToolTipText().contains("fieldTooltip"));
 	}
 
 	@Test
 	public void createLabelLabelComboTest() {
-		// TODO
+		Component[] result = gui.createLabelLabelCombo("label1Text", "label2Text");
+		Assert.assertEquals("[Ljava.awt.Component;", result.getClass().getName());
+		Assert.assertEquals("label1Text", ((FJLabel) result[0]).getText());
+		Assert.assertEquals("label2Text", ((FJLabel) result[1]).getText());
 	}
 
 }

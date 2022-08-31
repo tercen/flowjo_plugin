@@ -3,6 +3,7 @@ package com.tercen.flowjo.importer;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,7 +30,13 @@ public class ImportHelper {
 	 * uploaded in FlowJo. The exported file in Tercen might have limited results
 	 * (e.g. downsampled), so empty rows need to be added.
 	 * 
-	 * @throws ServiceError
+	 * @param fcmlElem         SElement from the sample
+	 * @param algorithmResults results from the plugin
+	 * @param pluginCSVFile    the imported file
+	 * @param outputFolder     output folder
+	 * @param noVal,           value in case of no result
+	 * 
+	 * @throws ServiceError, IOException
 	 * 
 	 */
 	public static File getCompleteUploadFile(SElement fcmlElem, ExternalAlgorithmResults algorithmResults,
@@ -43,12 +50,81 @@ public class ImportHelper {
 					String.format("Imported file name should contain the sample name %s", sampleFileName));
 		}
 
+		// get import file properties
+		ImportProperties importProps = getImportFileProperties(pluginCSVFile, noVal);
+
+		// write output
+		return writeOutput(pluginCSVFile, outputFolder, numEvents, importProps);
+	}
+
+	protected static File writeOutput(File pluginCSVFile, String outputFolder, int numEvents, ImportProperties props)
+			throws IOException, FileNotFoundException, ServiceError {
+		String outFileName = props.sampleName + ".complete" + FileTypes.CSV_SUFFIX;
+		File outFile = new File(outputFolder, outFileName);
+		Writer output = new BufferedWriter(new FileWriter(outFile));
+		String[] headerLineParts = props.headerLine.split(",");
+		headerLineParts = Arrays.copyOfRange(headerLineParts, 1, headerLineParts.length);
+		props.headerLine = String.join(",", headerLineParts);
+		output.write(props.headerLine + "\n");
+
+		int outputLineNum = 0;
+		int eventNum = 0;
+		int previousEventNum = 0;
+		StringTokenizer tokenizer;
+		String pluginCSVLine;
+		int colCt;
 		BufferedReader pluginCSVFileReader = new BufferedReader(new FileReader(pluginCSVFile));
-		String pluginCSVLine = pluginCSVFileReader.readLine();
-		// determine which column is the rowId column
+		pluginCSVFileReader.readLine(); // skip headerline
+		while ((pluginCSVLine = pluginCSVFileReader.readLine()) != null) {
+			tokenizer = new StringTokenizer(pluginCSVLine, ",");
+			colCt = 0;
+			String line = "";
+			// get the event number
+			while (tokenizer.hasMoreTokens()) {
+				String token = tokenizer.nextToken();
+				if (colCt == props.rowIdColumnIndex) {
+					eventNum = (int) ParseUtil.getDouble(token);
+					break;
+				}
+				colCt++;
+			}
+			// eventNum should be > 0 and increasing
+			if (eventNum <= 0) {
+				break;
+			}
+			if (eventNum < previousEventNum) {
+				output.close();
+				pluginCSVFileReader.close();
+				throw new ServiceError("Importer: please make sure the data is ordered by rowId (increasing)");
+			}
+			while (outputLineNum < eventNum - 1 && outputLineNum < numEvents) {
+				outputLineNum++;
+				output.write(props.noEventLine);
+			}
+			line += pluginCSVLine.substring(pluginCSVLine.indexOf(",") + 1).trim();
+			output.write(line);
+			output.write("\n");
+			outputLineNum++;
+			previousEventNum = eventNum;
+		}
+		while (outputLineNum < numEvents) {
+			outputLineNum++;
+			output.write(props.noEventLine);
+		}
+		pluginCSVFileReader.close();
+		output.close();
+		return outFile;
+	}
+
+	protected static ImportProperties getImportFileProperties(File pluginCSVFile, double noVal)
+			throws ServiceError, IOException {
+		BufferedReader pluginCSVFileReader = new BufferedReader(new FileReader(pluginCSVFile));
+		String headerLine = pluginCSVFileReader.readLine();
+		pluginCSVFileReader.close();
+		ImportProperties result = new ImportProperties();
 		int rowIdColumnIndex = -1;
 		int colCt = 0;
-		StringTokenizer tokenizer = new StringTokenizer(pluginCSVLine, ",");
+		StringTokenizer tokenizer = new StringTokenizer(headerLine, ",");
 		String noEventLine = ""; // the line to write when there is no output
 		while (tokenizer.hasMoreTokens()) {
 			String token = tokenizer.nextToken();
@@ -60,16 +136,22 @@ public class ImportHelper {
 			colCt++;
 		}
 		if (rowIdColumnIndex == -1) {
-			pluginCSVFileReader.close();
 			throw new ServiceError("Importer: there is no column containing the rowId");
 		}
-
 		// get rid of trailing comma of no parameter value line
 		if (noEventLine.endsWith(",")) {
 			noEventLine = noEventLine.substring(0, noEventLine.length() - 1);
 		}
 		noEventLine += "\n";
 
+		result.noEventLine = noEventLine;
+		result.rowIdColumnIndex = rowIdColumnIndex;
+		result.headerLine = headerLine;
+		result.sampleName = getFormattedSampleName(pluginCSVFile);
+		return result;
+	}
+
+	private static String getFormattedSampleName(File pluginCSVFile) {
 		String sampleName = pluginCSVFile.getName();
 		if (sampleName.endsWith(FileTypes.FCS_SUFFIX)) {
 			sampleName = sampleName.substring(0, sampleName.length() - FileTypes.FCS_SUFFIX.length());
@@ -77,58 +159,6 @@ public class ImportHelper {
 		if (sampleName.endsWith(FileTypes.CSV_SUFFIX) || sampleName.endsWith(FileTypes.TXT_SUFFIX)) {
 			sampleName = sampleName.substring(0, sampleName.length() - FileTypes.CSV_SUFFIX.length());
 		}
-		String outFileName = sampleName + ".complete" + FileTypes.CSV_SUFFIX;
-		File outFile = new File(outputFolder, outFileName);
-		Writer output = new BufferedWriter(new FileWriter(outFile));
-		String[] headerLineParts = pluginCSVLine.split(",");
-		headerLineParts = Arrays.copyOfRange(headerLineParts, 1, headerLineParts.length);
-		pluginCSVLine = String.join(",", headerLineParts);
-		output.write(pluginCSVLine + "\n");
-
-		int outputLineNum = 0;
-		int eventNum = 0;
-		int previousEventNum = 0;
-		while ((pluginCSVLine = pluginCSVFileReader.readLine()) != null) {
-			tokenizer = new StringTokenizer(pluginCSVLine, ",");
-			colCt = 0;
-			String line = "";
-			while (tokenizer.hasMoreTokens()) {
-				String token = tokenizer.nextToken();
-				if (colCt == rowIdColumnIndex) // get the event number as integer
-				{
-					eventNum = (int) ParseUtil.getDouble(token);
-					break;
-				}
-				colCt++;
-			}
-
-			// eventNum should be > 0 and increasing
-			if (eventNum <= 0) {
-				break;
-			}
-			if (eventNum < previousEventNum) {
-				output.close();
-				pluginCSVFileReader.close();
-				throw new ServiceError("Importer: please make sure the data is ordered by rowId (increasing)");
-			}
-
-			while (outputLineNum < eventNum - 1 && outputLineNum < numEvents) {
-				outputLineNum++;
-				output.write(noEventLine);
-			}
-			line += pluginCSVLine.substring(pluginCSVLine.indexOf(",") + 1).trim();
-			output.write(line);
-			output.write("\n");
-			outputLineNum++;
-			previousEventNum = eventNum;
-		}
-
-		while (outputLineNum < numEvents) {
-			outputLineNum++;
-			output.write(noEventLine);
-		}
-		pluginCSVFileReader.close();
-		output.close();
-		return outFile;
+		return sampleName;
 	}
 }

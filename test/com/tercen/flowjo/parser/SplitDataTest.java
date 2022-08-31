@@ -11,7 +11,7 @@ import org.junit.Test;
 
 public class SplitDataTest {
 
-	private static final String FILE_NAME = "Export-LD1_PI+NS_B01_exp_metacluster_umap.csv";
+	private static final String FILE_NAME = "Export-LD1_PI+PI_D01_exp_metacluster_umap.csv";
 
 	@Test
 	public void splitDataTest() {
@@ -30,7 +30,7 @@ public class SplitDataTest {
 			Assert.assertTrue(file1.getName().contains("cluster"));
 			Assert.assertTrue(file2.getName().contains("other"));
 			Assert.assertEquals("FlowSOM.metacluster_number", header1);
-			Assert.assertEquals("res..rowId,res.umap.1,res.umap.2", header2);
+			Assert.assertEquals("res.umap.1,res.umap.2,res..F_rowId", header2);
 
 		} catch (IOException e) {
 			Assert.fail(e.getMessage());

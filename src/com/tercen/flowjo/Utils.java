@@ -303,8 +303,8 @@ public class Utils {
 
 	public static Project getProject(TercenClient client, String teamOrUser, String projectName) throws ServiceError {
 
-		List<Object> startKey = List.of(teamOrUser, false, "2000");
-		List<Object> endKey = List.of(teamOrUser, false, "2100");
+		List<Object> startKey = Stream.of(teamOrUser, false, "2000").collect(Collectors.toList());
+		List<Object> endKey = Stream.of(teamOrUser, false, "2100").collect(Collectors.toList());
 
 		List<Project> projects = client.projectService.findByTeamAndIsPublicAndLastModifiedDate(startKey, endKey, 1000,
 				0, false, true);
@@ -324,8 +324,8 @@ public class Utils {
 
 	private static void removeProjectFileIfExists(TercenClient client, Project project, String tableName)
 			throws ServiceError {
-		List<Object> startKey = List.of(project.id, "2000");
-		List<Object> endKey = List.of(project.id, "2100");
+		List<Object> startKey = Stream.of(project.id, "2000").collect(Collectors.toList());
+		List<Object> endKey = Stream.of(project.id, "2100").collect(Collectors.toList());
 
 		List<ProjectDocument> projectDocs = client.projectDocumentService.findProjectObjectsByLastModifiedDate(startKey,
 				endKey, 100, 0, false, false);

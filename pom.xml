@@ -21,17 +21,17 @@
 		<dependency>
 			<groupId>com.flowjo</groupId>
 			<artifactId>flowjo</artifactId>
-			<version>10.8.0</version>
+			<version>10.9.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.flowjo</groupId>
 			<artifactId>flowlib</artifactId>
-			<version>2.4.0</version>
+			<version>2.1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.flowjo</groupId>
 			<artifactId>fjengine</artifactId>
-			<version>2.5.0</version>
+			<version>10.9.0</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
@@ -88,7 +88,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
-					<release>9</release>
+					<release>8</release>
 				</configuration>
 			</plugin>
 			<plugin>

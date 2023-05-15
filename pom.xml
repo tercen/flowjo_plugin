@@ -16,7 +16,7 @@
 		<dependency>
 			<groupId>com.tercen</groupId>
 			<artifactId>tercen_java_client</artifactId>
-			<version>0.0.13</version>
+			<version>0.0.14</version>
 		</dependency>
 		<dependency>
 			<groupId>com.flowjo</groupId>

@@ -460,8 +460,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	private void readPropertiesFile() {
 		Properties prop = new Properties();
-		File jarfile = new File(Tercen.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-		String propertyFilePath = jarfile.getParent() + File.separator + TERCEN_PROPERTIES;
+		String propertyFilePath = "./" + TERCEN_PROPERTIES;
+		logger.debug("propertyFilePath: " + propertyFilePath);
 		try {
 			prop.load(new BufferedReader(new InputStreamReader(new FileInputStream(propertyFilePath))));
 			hostName = prop.getProperty(HOST);

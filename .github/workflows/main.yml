@@ -1,4 +1,4 @@
-name: release-workflow
+name: release-workflow-flowjo_10_9
 
 on:
   workflow_dispatch:

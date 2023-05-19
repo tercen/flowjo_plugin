@@ -3,10 +3,8 @@ name: release-workflow-flowjo_10_8
 on:
   workflow_dispatch:
   push:
-    branches-ignore:
-      - 'flowjo_10_9' 
     tags:
-      - '*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - '*1.1.4*' # Push events to matching version. Releases from main branch = 1.1.4
 
 jobs:
   publish:

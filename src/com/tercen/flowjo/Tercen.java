@@ -338,7 +338,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					if (selectedSamplePops.size() > 0) {
 						if (channels.size() > 0) {
 							uploadProgressTask = new UploadProgressTask(this);
-							uploadResult = Utils.uploadCsvFile(this, client, project, selectedSamplePops, channels,
+							uploadResult = Utils.uploadFcsFile(this, client, project, selectedSamplePops, channels,
 									uploadProgressTask, Utils.getTercenDataTableName(wsp));
 
 							// open browser

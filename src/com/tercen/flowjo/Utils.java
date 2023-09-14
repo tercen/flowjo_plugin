@@ -80,6 +80,39 @@ public class Utils {
 	private static final String SERVICE_ERROR = "ServiceError: ";
 	public static final String FLOWJO_ROW_ID = "F_rowId";
 
+	
+	public static Schema uploadFcsFile(Tercen plugin, TercenClient client, Project project,
+			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
+			String dataTableName) throws ServiceError, IOException, DataFormatException {
+
+		FileDocument fileDoc = new FileDocument();
+		String name = dataTableName;
+		fileDoc.name = name;
+		fileDoc.projectId = project.id;
+		fileDoc.acl.owner = project.acl.owner;
+		CSVFileMetadata metadata = new CSVFileMetadata();
+		metadata.contentType = "text/csv";
+		metadata.separator = ",";
+		metadata.quote = "\"";
+		metadata.contentEncoding = "iso-8859-1";
+		fileDoc.metadata = metadata;
+
+		List<Object> result = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
+		File mergedFile = (File) result.get(0);
+		List<String> columnNames = (List<String>) result.get(1);
+		ArrayList<String> fullChannels = (ArrayList<String>) result.get(2);
+
+		// remove existing file and upload new file
+		removeProjectFileIfExists(client, project, name);
+
+		int blockSize = getBlockSize(mergedFile);
+		int iterations = (int) (mergedFile.length() / blockSize);
+		uploadProgressTask.setIterations(iterations);
+		uploadProgressTask.showDialog();
+		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, fullChannels, blockSize,
+				columnNames);
+	}
+	
 	public static Schema uploadCsvFile(Tercen plugin, TercenClient client, Project project,
 			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
 			String dataTableName) throws ServiceError, IOException, DataFormatException {

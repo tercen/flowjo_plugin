@@ -28,7 +28,7 @@ public class UploadFileTest {
 	private static final String PASSWORD = "admin";
 
 	@Test
-	public void uploadWithoutChannels() {
+	public void uploadCsvWithoutChannels() {
 		String sep = System.getProperty("file.separator");
 		String fileLocation = new File("").getAbsolutePath() + sep + "test" + sep + "resources" + sep + FILE;
 		System.out.println(fileLocation);
@@ -59,7 +59,7 @@ public class UploadFileTest {
 	}
 
 	@Test
-	public void uploadWithChannels() {
+	public void uploadCsvWithChannels() {
 		String sep = System.getProperty("file.separator");
 		String fileLocation = new File("").getAbsolutePath() + sep + "test" + sep + "resources" + sep + FILE;
 		System.out.println(fileLocation);

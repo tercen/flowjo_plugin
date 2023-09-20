@@ -138,26 +138,23 @@ public class UploadProgressTask extends JFrame {
 			inputStream.close();
 		}
 
-		return handleCsvTask(client, project, fileDoc, channels, columnNames, i);
+		return handleUploadTask(client, project, fileDoc, channels, columnNames, i);
 	}
 
-	private Schema handleCsvTask(TercenClient client, Project project, FileDocument fileDoc, ArrayList<String> channels,
-			List<String> columnNames, int i) throws ServiceError, IOException {
+	private Schema handleUploadTask(TercenClient client, Project project, FileDocument fileDoc,
+			ArrayList<String> channels, List<String> columnNames, int i) throws ServiceError, IOException {
 		// create task; this will create a dataset from the file on Tercen
 		CSVTask task = new CSVTask();
 		task.state = new InitState();
 		task.fileDocumentId = fileDoc.id;
 		task.owner = project.acl.owner;
 		task.projectId = project.id;
-		task.params.separator = ",";
-		task.params.encoding = "iso-8859-1";
-		task.params.quote = "\"";
-		ArrayList<String> gatherNames = new ArrayList<>(channels);
-		gatherNames.remove(Utils.FLOWJO_ROW_ID);
-		task.gatherNames = gatherNames;
-		task.valueName = "value";
-		task.variableName = "channel";
-		task.schema = buildSchema(columnNames, channels);
+//		ArrayList<String> gatherNames = new ArrayList<>(channels);
+//		gatherNames.remove(Utils.FLOWJO_ROW_ID);
+//		task.gatherNames = gatherNames;
+//		task.valueName = "value";
+//		task.variableName = "channel";
+//		task.schema = buildSchema(columnNames, channels);
 		logger.debug("create task");
 		task = (CSVTask) client.taskService.create(task);
 		progressBar.setValue(i++);

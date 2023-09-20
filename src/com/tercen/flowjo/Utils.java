@@ -33,6 +33,8 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.swing.JOptionPane;
 
@@ -51,6 +53,7 @@ import com.tercen.flowjo.gui.TercenGUI;
 import com.tercen.flowjo.tasks.UploadProgressTask;
 import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
+import com.tercen.model.impl.FileMetadata;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.ProjectDocument;
 import com.tercen.model.impl.Schema;
@@ -90,14 +93,13 @@ public class Utils {
 		fileDoc.name = name;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
-		CSVFileMetadata metadata = new CSVFileMetadata();
-		metadata.contentType = "text/csv";
-		metadata.separator = ",";
-		metadata.quote = "\"";
-		metadata.contentEncoding = "iso-8859-1";
+		FileMetadata metadata = new FileMetadata();
+		metadata.contentType = "application/octet-stream";
+		metadata.contentEncoding = "gzip";
 		fileDoc.metadata = metadata;
-
-		List<Object> result = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
+	
+		//List<Object> result = getMergedAndDownSampledFile(fileNames, channels, plugin, uploadProgressTask);
+		List<Object> result = getMergedFCSFile(fileNames, channels, plugin, uploadProgressTask);
 		File mergedFile = (File) result.get(0);
 		List<String> columnNames = (List<String>) result.get(1);
 		ArrayList<String> fullChannels = (ArrayList<String>) result.get(2);
@@ -196,6 +198,73 @@ public class Utils {
 		client.userService.createUser(newUser, password);
 		return client.userService.connect2(Tercen.DOMAIN, userName, password);
 	}
+	
+	// merge csv files into one. The filename column is added after reading the
+	// data. This might need to be optimized.
+	private static List<Object> getMergedFCSFile(LinkedHashSet<String> paths, ArrayList<String> channels,
+				Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException, DataFormatException {
+			List<Object> result = new ArrayList<Object>();
+			List<String> mergedLines = new ArrayList<>();
+			List<String> columnNames = new ArrayList<>();
+			List<String> fullChannels = new ArrayList<>();
+			int fileCount = paths.size();
+			logger.debug(String.format("Create upload file from %d sample files", fileCount));
+//			for (String p : paths) {
+//				List<String> lines = Files.readAllLines(Paths.get(p), Charset.forName("UTF-8"));
+//				if (!lines.isEmpty()) {
+//					// add header only once
+//					if (mergedLines.isEmpty()) {
+//						// replace FJML.EventNumberDP by FlowJo Row Id
+//						ArrayList<String> customChannels = (ArrayList<String>) channels.clone();
+//						customChannels.remove(FJML.EventNumberDP);
+//						customChannels.add(FLOWJO_ROW_ID);
+//						String header = getHeader(customChannels, lines.get(0));
+//						mergedLines.add(header);
+//						columnNames = Arrays.stream(header.split(SPLIT_COMMA_NOT_IN_QUOTES)).map(String::trim)
+//								.collect(Collectors.toList());
+//						columnNames.replaceAll(s -> s.replace("\"", ""));
+//						fullChannels = Utils.setFullChannelNames(customChannels, columnNames);
+//					} else {
+//						// check header equals initial file
+//						String header = getHeader(channels, lines.get(0));
+//						String currentHeader = mergedLines.get(0);
+//						if (!Utils.headersEqual(currentHeader, header)) {
+//							throw new DataFormatException(
+//									"Cannot upload selection. The files selected have different FCS channels.\n"
+//											+ "Try uploading files individually or concatenating them together.\n"
+//											+ "You may need to delete your Tercen connector and re-apply it.");
+//						}
+//					}
+//					List<String> content = lines.subList(1, lines.size());
+//					content.replaceAll(s -> s + String.format(", %s", getFilename(p)));
+//					mergedLines.addAll(content);
+//				}
+//			}
+//			mergedLines = Utils.downsample(mergedLines, plugin.maxDataPoints, plugin.seed, plugin.gui, uploadProgressTask,
+//					channels.size(), fileCount);
+//			columnNames.add(RANDOM_LABEL);
+//
+//			File mergedFile = File.createTempFile("merged-", ".csv");
+//			Files.write(mergedFile.toPath(), mergedLines, Charset.forName("UTF-8"));
+			
+			// Create zip file
+			File mergedFile = File.createTempFile("merged-", ".zip");
+			String mergedFilePath = mergedFile.getPath();
+			try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(mergedFilePath))) {
+			    for (String filePath : paths) {
+			    	File file = new File(filePath);
+			        zipOut.putNextEntry(new ZipEntry(file.getName()));
+			        Files.copy(file.toPath(), zipOut);
+			    }
+			}
+			
+			logger.debug(String.format("Upload file has %d rows, %d columns, %d channels", mergedLines.size(),
+						columnNames.size(), channels.size()));
+			result.add(mergedFile);
+			result.add(columnNames);
+			result.add(fullChannels);
+			return (result);
+		}
 
 	// merge csv files into one. The filename column is added after reading the
 	// data. This might need to be optimized.
@@ -455,6 +524,10 @@ public class Utils {
 	}
 
 	public static String getCsvFileName(AppNode appNode) {
+		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.CSV_FILE_NAME);
+	}
+	
+	public static String getFcsFileName(AppNode appNode) {
 		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.CSV_FILE_NAME);
 	}
 

@@ -537,7 +537,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	@Override
 	public ExportFileTypes useExportFileType() {
-		return ExportFileTypes.CSV_CHANNEL;
+		return ExportFileTypes.FCS;
 	}
 
 	@Override

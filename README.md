@@ -15,7 +15,7 @@
 
 General note:
 
-- Use JDK9 for developing plugins and debugging.
+- Use JDK8 for developing plugins and debugging.
 
 Run plugin:
 * Import project from github in IDE
@@ -44,7 +44,7 @@ Debug plugin:
 * VM arguments:
 
 	```
-	-Djava.library.path="C:\Program Files\FlowJo 10.8.0"
+	-Djava.library.path="C:\Program Files\FlowJo 10.9.0"
 	-Xms2048M
 	-Xmx4096M
 	```

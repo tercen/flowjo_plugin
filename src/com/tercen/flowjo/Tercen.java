@@ -42,8 +42,8 @@ import com.tercen.flowjo.importer.ImportHelper;
 import com.tercen.flowjo.parser.ClusterFileMetaData;
 import com.tercen.flowjo.parser.SplitData;
 import com.tercen.flowjo.tasks.UploadProgressTask;
+import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.Project;
-import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
 import com.tercen.model.impl.Version;
@@ -281,7 +281,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					Utils.showErrorDialog("Input file does not exist");
 					workspaceText = Tercen.FAILED;
 				} else {
-					Schema uploadResult = null;
+					FileDocument uploadResult = null;
 
 					// Check if SAML authentication is enabled
 					Version authMethods = client.userService.getServerVersion("auth.method");

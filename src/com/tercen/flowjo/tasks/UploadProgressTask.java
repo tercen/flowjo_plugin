@@ -88,8 +88,10 @@ public class UploadProgressTask extends JFrame {
 	}
 
 	public void setIterations(int maxItems) {
-		// add to maxItems for the 2nd phase: CSVTask
-		progressBar.setMaximum(maxItems + CSV_TASK_COUNT);
+		if (maxItems == 0) {
+			maxItems = 1;
+		}
+		progressBar.setMaximum(maxItems);
 	}
 
 	public void setMessage(String message) {
@@ -116,7 +118,7 @@ public class UploadProgressTask extends JFrame {
 		}
 	}
 
-	public Schema uploadFile(File file, TercenClient client, Project project, FileDocument fileDoc,
+	public FileDocument uploadFile(File file, TercenClient client, Project project, FileDocument fileDoc,
 			ArrayList<String> channels, int blocksize, List<String> columnNames) throws ServiceError, IOException {
 		InputStream inputStream = new FileInputStream(file);
 		int i = 1;
@@ -138,73 +140,7 @@ public class UploadProgressTask extends JFrame {
 			inputStream.close();
 		}
 
-		return handleUploadTask(client, project, fileDoc, channels, columnNames, i);
-	}
-
-	private Schema handleUploadTask(TercenClient client, Project project, FileDocument fileDoc,
-			ArrayList<String> channels, List<String> columnNames, int i) throws ServiceError, IOException {
-		// create task; this will create a dataset from the file on Tercen
-		CSVTask task = new CSVTask();
-		task.state = new InitState();
-		task.fileDocumentId = fileDoc.id;
-		task.owner = project.acl.owner;
-		task.projectId = project.id;
-//		ArrayList<String> gatherNames = new ArrayList<>(channels);
-//		gatherNames.remove(Utils.FLOWJO_ROW_ID);
-//		task.gatherNames = gatherNames;
-//		task.valueName = "value";
-//		task.variableName = "channel";
-//		task.schema = buildSchema(columnNames, channels);
-		logger.debug("create task");
-		task = (CSVTask) client.taskService.create(task);
-		progressBar.setValue(i++);
-
-		URI baseUri = URI.create("api/v1/evt" + "/" + "listenTaskChannel");
-		LinkedHashMap<String, Object> params = new LinkedHashMap<String, Object>();
-		params.put("taskId", task.id);
-		params.put("start", true);
-		URI clientUrl = client.tercenURI.resolve(baseUri);
-		String wsScheme = clientUrl.getScheme().equals("https") ? "wss" : "ws";
-		String url = clientUrl.toString().replace(clientUrl.getScheme(), wsScheme) + "?params="
-				+ Utils.urlEncodeUTF8(Utils.toJson(params));
-
-		// Start task handler in websocket thread
-		TercenWebSocketListener listener = new TercenWebSocketListener();
-		int connectionRetries = 3;
-		for (int j = 1; j <= connectionRetries; j++) {
-			if (j == 1 || listener.hasError()) {
-				if (listener.hasError()) {
-					logger.error(listener.getThrowable().getMessage());
-				}
-				logger.debug("Connecting to (" + j + "): " + url);
-				CountDownLatch latch = new CountDownLatch(1);
-				listener.setCountDownLatch(latch);
-				client.httpClient.createWebsocket(url, listener);
-				try {
-					latch.await();
-				} catch (InterruptedException e) {
-					logger.error(e.getMessage());
-				}
-			}
-		}
-
-		if (listener.hasError()) {
-			throw new ServiceError(listener.getThrowable().getMessage());
-		}
-
-		logger.debug("get task");
-		task = (CSVTask) client.taskService.get(task.id);
-		progressBar.setValue(i++);
-
-		if (task.state instanceof FailedState) {
-			throw new ServiceError(((FailedState) task.state).reason);
-		}
-		logger.debug("task state: " + task.state.subKind);
-		logger.debug("get schema");
-		Schema schema = client.tableSchemaService.get(task.schemaId);
-		progressBar.setValue(i);
-		logger.debug("return schema");
-		return schema;
+		return fileDoc;
 	}
 
 	private Schema buildSchema(List<String> columnNames, ArrayList<String> channels) {

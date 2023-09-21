@@ -1,34 +1,30 @@
 package com.tercen.flowjo;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.tercen.client.impl.TercenClient;
 import com.tercen.flowjo.tasks.UploadProgressTask;
+import com.tercen.model.impl.FileDocument;
 import com.tercen.model.impl.Project;
-import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.UserSession;
 
 public class UploadFileTest {
 
 	private static final String PROJECT = "flowjo";
-	private static final String HOST_NAME = "http://localhost:5410/";
-	private static final String FILE = "LD1_PI+NS_B01_exp..ExtNode.csv";
+	private static final String FILE = "001_A488_channel_names.fcs";
+	private static final String HOST_NAME = "http://10.0.2.2:5402/";
 	private static final String USER_NAME = "admin";
 	private static final String PASSWORD = "admin";
 
 	@Test
-	public void uploadCsvWithoutChannels() {
+	public void uploadWithoutChannels() {
 		String sep = System.getProperty("file.separator");
 		String fileLocation = new File("").getAbsolutePath() + sep + "test" + sep + "resources" + sep + FILE;
 		System.out.println(fileLocation);
@@ -45,7 +41,7 @@ public class UploadFileTest {
 			filenames.add(fileLocation);
 			ArrayList<String> channels = new ArrayList<String>();
 			System.out.println("Uploading file: " + FILE + ", no channels");
-			Schema uploadResult = Utils.uploadCsvFile(plugin, client, project, filenames, channels,
+			FileDocument uploadResult = Utils.uploadZipFile(plugin, client, project, filenames, channels,
 					new UploadProgressTask(plugin), dataTableName);
 
 			// check result
@@ -53,13 +49,14 @@ public class UploadFileTest {
 			checkUploadResult(uploadResult, 100, colnames, "Relation");
 
 		} catch (Exception e) {
+			e.printStackTrace();
 			Assert.fail(e.getMessage());
 		}
 		System.out.println("finished");
 	}
 
 	@Test
-	public void uploadCsvWithChannels() {
+	public void uploadWithChannels() {
 		String sep = System.getProperty("file.separator");
 		String fileLocation = new File("").getAbsolutePath() + sep + "test" + sep + "resources" + sep + FILE;
 		System.out.println(fileLocation);
@@ -78,7 +75,7 @@ public class UploadFileTest {
 			channels.add("FSC-A");
 			channels.add("FSC-H");
 			System.out.println("Uploading file: " + FILE + ", 2 channels");
-			Schema uploadResult = Utils.uploadCsvFile(plugin, client, project, filenames, channels,
+			FileDocument uploadResult = Utils.uploadZipFile(plugin, client, project, filenames, channels,
 					new UploadProgressTask(plugin), dataTableName);
 
 			// check result (since data is gathered, hard to check some properties)
@@ -90,16 +87,12 @@ public class UploadFileTest {
 		}
 		System.out.println("finished");
 	}
-
-	private void checkUploadResult(Schema uploadResult, int nrows, List<String> colnames, String relation) {
+	
+	private void checkUploadResult(FileDocument uploadResult, int nrows, List<String> colnames, String relation) {
 		Assert.assertEquals(FILE, uploadResult.name);
 		Assert.assertEquals(USER_NAME, uploadResult.createdBy);
 		Assert.assertEquals(false, uploadResult.isDeleted);
-		Assert.assertEquals(nrows, uploadResult.nRows);
-		Assert.assertEquals(colnames.size(), uploadResult.columns.size());
-		List<String> names = uploadResult.columns.stream().map(c -> c.name).collect(Collectors.toList());
-		assertTrue(CollectionUtils.isEqualCollection(colnames, names));
-		Assert.assertEquals(relation, uploadResult.relation.subKind);
+		Assert.assertEquals("FileDocument", uploadResult.subKind);
 	}
 
 }

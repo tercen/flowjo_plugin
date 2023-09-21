@@ -19,7 +19,7 @@ public class UploadFileTest {
 
 	private static final String PROJECT = "flowjo";
 	private static final String FILE = "001_A488_channel_names.fcs";
-	private static final String HOST_NAME = "http://10.0.2.2:5402/";
+	private static final String HOST_NAME = "http://localhost:5410/";
 	private static final String USER_NAME = "admin";
 	private static final String PASSWORD = "admin";
 

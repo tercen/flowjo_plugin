@@ -82,7 +82,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	protected static final String pluginName = "Connector";
 	protected static final String version = Utils.getProjectVersion();
-	protected static final String CSV_FILE_NAME = "csvFileName";
+	protected static final String SAMPLE_FILE_NAME = "sampleFileName";
 	protected static final String HOSTNAME_URL = "https://tercen.com/";
 	protected static final String MAX_DATAPOINTS_VALUE = "-1";
 	protected static final String SEED_VALUE = "42";
@@ -102,7 +102,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected UserSession session;
 	private Icon tercenIcon = null;
 	protected ArrayList<String> channels = new ArrayList<String>();
-	private String csvFileName;
+	private String sampleFileName;
 	protected String projectURL;
 	protected File importFile;
 	protected long seed = -1;
@@ -141,7 +141,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 		result.setName(pluginName);
 		result.setString(CHANNELS, String.join(",", channels));
 		result.setString(PLUGIN_STATE, pluginState.toString());
-		result.setString(CSV_FILE_NAME, csvFileName);
+		result.setString(SAMPLE_FILE_NAME, sampleFileName);
 		result.setString(PROJECT_URL, projectURL);
 		if (!this.selectedSamplePops.isEmpty()) {
 			SElement pops = new SElement(SELECTED_POPULATIONS);
@@ -178,7 +178,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			channels = new ArrayList<String>(Arrays.asList(channelString.split(",")));
 		}
 		this.pluginState = ImportPluginStateEnum.valueOf(element.getString(PLUGIN_STATE));
-		this.csvFileName = element.getString(CSV_FILE_NAME);
+		this.sampleFileName = element.getString(SAMPLE_FILE_NAME);
 		this.projectURL = element.getString(PROJECT_URL);
 		this.selectedSamplePops = getSelectedSamplePops(element);
 		String importFilePath = element.getString(IMPORT_FILE_PATH);
@@ -207,8 +207,8 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			for (AppNode appNode : nodeList) {
 				if (appNode.isExternalPopNode()) {
 					// check if file has been selected for upload
-					String csvFileName = Utils.getCsvFileName(appNode);
-					if (this.selectedSamplePops.contains(csvFileName)) {
+					String sampleFileName = Utils.getSampleFileName(appNode);
+					if (this.selectedSamplePops.contains(sampleFileName)) {
 						appNode.setAnnotation(text);
 						anyAppNodeTextSet = true;
 					}
@@ -244,10 +244,10 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 			String fileName = sampleFile.getPath();
 			if (pluginState == ImportPluginStateEnum.empty) {
-				csvFileName = fileName;
+				sampleFileName = fileName;
 				pluginState = ImportPluginStateEnum.collectingSamples;
 			} else if (pluginState == ImportPluginStateEnum.collectingSamples) {
-				csvFileName = fileName;
+				sampleFileName = fileName;
 			} else if (pluginState == ImportPluginStateEnum.uploading) {
 				TercenClient client = new TercenClient(hostName);
 
@@ -334,11 +334,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 					projectName = Utils.getTercenProjectName(wsp);
 					Project project = Utils.getProject(client, session.user.id, projectName);
 
-					// upload csv file
+					// upload zip file
 					if (selectedSamplePops.size() > 0) {
 						if (channels.size() > 0) {
 							uploadProgressTask = new UploadProgressTask(this);
-							uploadResult = Utils.uploadFcsFile(this, client, project, selectedSamplePops, channels,
+							uploadResult = Utils.uploadZipFile(this, client, project, selectedSamplePops, channels,
 									uploadProgressTask, Utils.getTercenDataTableName(wsp));
 
 							// open browser
@@ -512,13 +512,13 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 			Workspace wsp = sample.getWorkspace();
 			List<AppNode> nodeList = Utils.getAllSelectedTercenNodes(wsp);
 			this.samplePops.clear();
-			String sampleFileName = Utils.getSampleFileName(sample);
+			String sampleFileName = Utils.getSampleShortFileName(sample);
 			for (AppNode node : nodeList) {
 				SElement nodeElement = node.getElement();
-				String nodeCSVFilename = Utils.getCsvFileName(node);
-				this.samplePops.add(nodeCSVFilename);
+				String nodeFilename = Utils.getSampleFileName(node);
+				this.samplePops.add(nodeFilename);
 				// update fields if current sample has been uploaded from a different sample
-				if (!nodeCSVFilename.contains(sampleFileName)) {
+				if (!nodeFilename.contains(sampleFileName)) {
 					SElement connEl = nodeElement.getChild(pluginName);
 					ImportPluginStateEnum nodeState = ImportPluginStateEnum.valueOf(connEl.getString(PLUGIN_STATE));
 					LinkedHashSet<String> nodeSamplePops = getSelectedSamplePops(connEl);

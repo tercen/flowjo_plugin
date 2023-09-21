@@ -84,7 +84,7 @@ public class Utils {
 	public static final String FLOWJO_ROW_ID = "F_rowId";
 
 	
-	public static Schema uploadFcsFile(Tercen plugin, TercenClient client, Project project,
+	public static Schema uploadZipFile(Tercen plugin, TercenClient client, Project project,
 			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
 			String dataTableName) throws ServiceError, IOException, DataFormatException {
 
@@ -523,15 +523,11 @@ public class Utils {
 		return popList;
 	}
 
-	public static String getCsvFileName(AppNode appNode) {
-		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.CSV_FILE_NAME);
-	}
-	
-	public static String getFcsFileName(AppNode appNode) {
-		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.CSV_FILE_NAME);
+	public static String getSampleFileName(AppNode appNode) {
+		return appNode.getElement().getChild(Tercen.pluginName).getAttribute(Tercen.SAMPLE_FILE_NAME);
 	}
 
-	public static String getSampleFileName(Sample sample) {
+	public static String getSampleShortFileName(Sample sample) {
 		return (sample.getShortFilename().replace(".fcs", ""));
 	}
 

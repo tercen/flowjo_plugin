@@ -44,7 +44,7 @@ public class ImportHelper {
 		int numEvents = PluginHelper.getNumTotalEvents(fcmlElem);
 
 		Sample sample = FJPluginHelper.getSample(fcmlElem);
-		String sampleFileName = Utils.getSampleFileName(sample);
+		String sampleFileName = Utils.getSampleShortFileName(sample);
 		if (!pluginCSVFile.getAbsolutePath().contains(sampleFileName)) {
 			throw new ServiceError(
 					String.format("Imported file name should contain the sample name %s", sampleFileName));

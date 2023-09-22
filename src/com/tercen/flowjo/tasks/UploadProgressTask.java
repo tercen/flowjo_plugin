@@ -118,8 +118,7 @@ public class UploadProgressTask extends JFrame {
 		}
 	}
 
-	public FileDocument uploadFile(File file, TercenClient client, Project project, FileDocument fileDoc,
-			ArrayList<String> channels, int blocksize, List<String> columnNames) throws ServiceError, IOException {
+	public FileDocument uploadFile(File file, TercenClient client, FileDocument fileDoc, int blocksize) throws ServiceError, IOException {
 		InputStream inputStream = new FileInputStream(file);
 		int i = 1;
 		try {
@@ -141,35 +140,5 @@ public class UploadProgressTask extends JFrame {
 		}
 
 		return fileDoc;
-	}
-
-	private Schema buildSchema(List<String> columnNames, ArrayList<String> channels) {
-		Schema schema = new TableSchema();
-		List<String> addedCols = Arrays.asList(new String[] { Utils.FILENAME, Utils.RANDOM_LABEL });
-		for (int i = 0; i < columnNames.size(); i++) {
-			String type;
-			String colName = columnNames.get(i);
-			if (colName.equals("filename")) {
-				type = "string";
-			} else {
-				type = "double";
-			}
-			ColumnSchema colSchema = new ColumnSchema();
-			colSchema.name = colName;
-			colSchema.type = type;
-			// set ignore property if needed
-			if (!channels.contains(colName) && !addedCols.contains(colName)) {
-				ColumnSchemaMetaData colMetaData = new ColumnSchemaMetaData();
-				ArrayList<Pair> properties = new ArrayList<Pair>();
-				Pair p = new Pair();
-				p.key = "ignore";
-				p.value = "true";
-				properties.add(p);
-				colMetaData.properties = properties;
-				colSchema.metaData = colMetaData;
-			}
-			schema.columns.add(colSchema);
-		}
-		return schema;
 	}
 }

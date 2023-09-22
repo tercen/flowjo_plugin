@@ -8,12 +8,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -28,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Queue;
-import java.util.Random;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,12 +48,9 @@ import com.tercen.flowjo.comparator.SampleComparator;
 import com.tercen.flowjo.exception.DataFormatException;
 import com.tercen.flowjo.gui.TercenGUI;
 import com.tercen.flowjo.tasks.UploadProgressTask;
-import com.tercen.model.impl.CSVFileMetadata;
 import com.tercen.model.impl.FileDocument;
-import com.tercen.model.impl.FileMetadata;
 import com.tercen.model.impl.Project;
 import com.tercen.model.impl.ProjectDocument;
-import com.tercen.model.impl.Schema;
 import com.tercen.model.impl.Token;
 import com.tercen.model.impl.User;
 import com.tercen.model.impl.UserSession;
@@ -77,7 +71,6 @@ public class Utils {
 	private static final String SESSION_FOLDER_NAME = ".tercen";
 	private static final String SEPARATOR = "\\";
 	private static final int MIN_BLOCKSIZE = 1024 * 1024;
-	private static final String SPLIT_COMMA_NOT_IN_QUOTES = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 	public static final String RANDOM_LABEL = "random_label";
 	public static final String FILENAME = "filename";
 	private static final String SERVICE_ERROR = "ServiceError: ";
@@ -93,15 +86,8 @@ public class Utils {
 		fileDoc.name = name;
 		fileDoc.projectId = project.id;
 		fileDoc.acl.owner = project.acl.owner;
-//		FileMetadata metadata = new FileMetadata();
-//		metadata.contentType = "application/octet-stream";
-//		metadata.contentEncoding = "gzip";
-//		fileDoc.metadata = metadata;
 	
-		List<Object> result = getMergedFCSFile(fileNames, channels, plugin, uploadProgressTask);
-		File mergedFile = (File) result.get(0);
-		List<String> columnNames = (List<String>) result.get(1);
-		ArrayList<String> fullChannels = (ArrayList<String>) result.get(2);
+		File mergedFile = createUploadFile(fileNames, plugin, uploadProgressTask);
 
 		// remove existing file and upload new file
 		removeProjectFileIfExists(client, project, name);
@@ -110,8 +96,7 @@ public class Utils {
 		int iterations = (int) (mergedFile.length() / blockSize);
 		uploadProgressTask.setIterations(iterations);
 		uploadProgressTask.showDialog();
-		return uploadProgressTask.uploadFile(mergedFile, client, project, fileDoc, fullChannels, blockSize,
-				columnNames);
+		return uploadProgressTask.uploadFile(mergedFile, client, fileDoc, blockSize);
 	}
 	
 	private static int getBlockSize(File mergedFile) {
@@ -168,12 +153,8 @@ public class Utils {
 	}
 	
 	// merge fcs files into a zip file
-	private static List<Object> getMergedFCSFile(LinkedHashSet<String> paths, ArrayList<String> channels,
-				Tercen plugin, UploadProgressTask uploadProgressTask) throws IOException, DataFormatException {
-			List<Object> result = new ArrayList<Object>();
-			List<String> mergedLines = new ArrayList<>();
-			List<String> columnNames = new ArrayList<>();
-			List<String> fullChannels = new ArrayList<>();
+	private static File createUploadFile(LinkedHashSet<String> paths, Tercen plugin, 
+			UploadProgressTask uploadProgressTask) throws IOException, DataFormatException {
 			int fileCount = paths.size();
 			logger.debug(String.format("Create upload file from %d sample files", fileCount));
 			// Create zip file
@@ -186,38 +167,8 @@ public class Utils {
 			        Files.copy(file.toPath(), zipOut);
 			    }
 			}
-			
-			logger.debug(String.format("Upload file has %d rows, %d columns, %d channels", mergedLines.size(),
-						columnNames.size(), channels.size()));
-			result.add(mergedFile);
-			result.add(columnNames);
-			result.add(fullChannels);
-			return (result);
-		}
-
-	private static String getHeader(ArrayList<String> channels, String headerLine) {
-		// handle possible commas inside quotes
-		List<String> headerList = Arrays.asList(headerLine.split(SPLIT_COMMA_NOT_IN_QUOTES));
-		Stream<String> fullHeaderList = headerList.stream().map(s -> s.replace("\"", ""))
-				.map(s -> setFullColumnName(channels, s));
-		String header = "\"".concat(fullHeaderList.collect(Collectors.joining("\",\""))).concat("\"");
-		return header.concat(String.format(", %s", FILENAME));
-	}
-
-	// In some cases FlowJo has generated a csv file with shortened column names.
-	// This methods sets the full column name, needed by Tercen.
-	private static String setFullColumnName(List<String> channels, String input) {
-		String result = input;
-		if (result.equalsIgnoreCase(FJML.EventNumberDP)) {
-			result = FLOWJO_ROW_ID;
-		} else {
-			List<String> filteredChannels = channels.stream().filter(c -> c.startsWith(input))
-					.collect(Collectors.toList());
-			if (filteredChannels.size() == 1) {
-				result = filteredChannels.get(0);
-			}
-		}
-		return result;
+			logger.debug("Upload file has been created");
+			return (mergedFile);
 	}
 
 	// In some cases, the FCS channel name as can be seen in the User Interface is
@@ -228,27 +179,6 @@ public class Utils {
 		if (result != null && result.equalsIgnoreCase("Event #")) {
 			result = FJML.EventNumberDP;
 
-		}
-		return result;
-	}
-
-	// In some cases FlowJo has generated a csv file with a column name that is
-	// longer than the channel name displayed in the UI.
-	// This methods sets the full channel name, needed by Tercen.
-	protected static ArrayList<String> setFullChannelNames(ArrayList<String> channels, List<String> columnNames) {
-		ArrayList<String> result = new ArrayList(channels.size());
-		for (int i = 0; i < channels.size(); i++) {
-			String channel = channels.get(i);
-			for (int j = 0; j < columnNames.size(); j++) {
-				String colName = columnNames.get(j);
-				if (colName.equals(channel)) {
-					result.add(channel);
-					break;
-				} else if (colName.startsWith(channel) && (colName.length() > channel.length())) {
-					result.add(colName);
-					break;
-				}
-			}
 		}
 		return result;
 	}
@@ -488,43 +418,6 @@ public class Utils {
 		return session;
 	}
 
-	private static List<String> downsample(List<String> lines, long maxDataPoints, long seed, TercenGUI gui,
-			UploadProgressTask uploadProgressTask, int channelSize, int fileCount) {
-		List<String> result = new ArrayList<>();
-		if (lines != null && lines.size() >= 1) {
-			result.add(lines.get(0).concat(String.format(", %s", RANDOM_LABEL))); // header
-			int ncols = result.get(0).split(",").length;
-
-			List<String> content = lines.subList(1, lines.size());
-			int nrows = content.size();
-			List<String> contentResult = content;
-			Random random = seed == -1 ? new Random() : new Random(seed);
-			int totalDataPoints = nrows * ncols;
-			if (maxDataPoints != -1 && totalDataPoints > maxDataPoints) {
-				int maxRows = Math.round(maxDataPoints / ncols);
-				double fraction = (double) 100 * maxRows / (double) nrows;
-				logger.debug(String.format("Downsample data from %d to %d rows", nrows, maxRows));
-				String fileText = fileCount > 1 ? "files" : "file";
-				uploadProgressTask.setMessage(String.format(
-						"Downsampling from %d data points to %d data points across %d %s. Reducing %d events to %d events (%d %%).",
-						totalDataPoints, maxDataPoints, fileCount, fileText, nrows, maxRows, Math.round(fraction)));
-
-				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
-				contentResult = contentResult.stream().filter(s -> {
-					int i = s.lastIndexOf(",");
-					double d = Double.valueOf(s.substring(i + 1));
-					boolean value = (d < fraction) ? true : false;
-					return value;
-				}).collect(Collectors.toList());
-			} else {
-				logger.debug("Add random_label column");
-				contentResult.replaceAll(s -> s + "," + 100 * random.nextDouble());
-			}
-			result.addAll(contentResult);
-		}
-		return result;
-	}
-
 	public static boolean isNumeric(String strNum) {
 		if (strNum == null) {
 			return false;
@@ -628,29 +521,5 @@ public class Utils {
 
 	protected static String decode(String encodedString) {
 		return new String(Base64.getUrlDecoder().decode(encodedString));
-	}
-
-	private static boolean headersEqual(String currentHeader, String newHeader) {
-		boolean result = true;
-		if (!currentHeader.equals(newHeader)) {
-			String[] h1Cols = currentHeader.split(",");
-			String[] h2Cols = newHeader.split(",");
-			if (h1Cols.length == h2Cols.length) {
-				for (int i = 0; i < h1Cols.length; i++) {
-					String col1 = h1Cols[i];
-					String col2 = h2Cols[i];
-					if (!col1.equals(col2)) {
-						String name1 = col1.substring(0, col1.indexOf("::"));
-						String name2 = col2.substring(0, col2.indexOf("::"));
-						if (!name1.equals(name2)) {
-							result = false;
-						}
-					}
-				}
-			} else {
-				result = false;
-			}
-		}
-		return result;
 	}
 }

@@ -74,7 +74,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	private static final String ICON_NAME = "logo.png";
 	private static final String PROJECT_URL = "projectURL";
 	private static final String PLUGIN_STATE = "pluginState";
-	private static final String CHANNELS = "channels";
 	private static final String IMPORT_FILE_PATH = "importFilePath";
 	private static final String SELECTED_POPULATION = "SelectedPopulation";
 	private static final String SELECTED_POPULATIONS = "SelectedPopulations";
@@ -101,7 +100,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	protected String token;
 	protected UserSession session;
 	private Icon tercenIcon = null;
-	protected ArrayList<String> channels = new ArrayList<String>();
 	private String sampleFileName;
 	protected String projectURL;
 	protected File importFile;
@@ -139,7 +137,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	public SElement getElement() {
 		SElement result = super.getElement();
 		result.setName(pluginName);
-		result.setString(CHANNELS, String.join(",", channels));
 		result.setString(PLUGIN_STATE, pluginState.toString());
 		result.setString(SAMPLE_FILE_NAME, sampleFileName);
 		result.setString(PROJECT_URL, projectURL);
@@ -171,12 +168,6 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	@Override
 	public void setElement(SElement element) {
-		String channelString = element.getString(CHANNELS);
-		if (channelString.equals("")) {
-			channels = new ArrayList<String>();
-		} else {
-			channels = new ArrayList<String>(Arrays.asList(channelString.split(",")));
-		}
 		this.pluginState = ImportPluginStateEnum.valueOf(element.getString(PLUGIN_STATE));
 		this.sampleFileName = element.getString(SAMPLE_FILE_NAME);
 		this.projectURL = element.getString(PROJECT_URL);
@@ -336,28 +327,22 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 					// upload zip file
 					if (selectedSamplePops.size() > 0) {
-						if (channels.size() > 0) {
-							uploadProgressTask = new UploadProgressTask(this);
-							uploadResult = Utils.uploadZipFile(this, client, project, selectedSamplePops, channels,
-									uploadProgressTask, Utils.getTercenDataTableName(wsp));
+						uploadProgressTask = new UploadProgressTask(this);
+						uploadResult = Utils.uploadZipFile(this, client, project, selectedSamplePops,
+								uploadProgressTask, Utils.getTercenDataTableName(wsp));
 
-							// open browser
-							if (uploadResult != null) {
-								String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
-										uploadResult, wsp);
-								Desktop desktop = java.awt.Desktop.getDesktop();
-								URI uri = new URI(String.valueOf(url));
-								desktop.browse(uri);
-								projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
-								workspaceText = String.format("Uploaded to %s.", hostName);
-								pluginState = ImportPluginStateEnum.uploaded;
-							} else {
-								Utils.showWarningDialog("No files have been uploaded, browser window will not open.");
-								return result;
-							}
+						// open browser
+						if (uploadResult != null) {
+							String url = Utils.getTercenCreateWorkflowURL(client, hostName, session.user.id,
+									uploadResult, wsp);
+							Desktop desktop = java.awt.Desktop.getDesktop();
+							URI uri = new URI(String.valueOf(url));
+							desktop.browse(uri);
+							projectURL = Utils.getTercenProjectURL(hostName, session.user.id, uploadResult);
+							workspaceText = String.format("Uploaded to %s.", hostName);
+							pluginState = ImportPluginStateEnum.uploaded;
 						} else {
-							Utils.showWarningDialog(
-									"Oops! there are no FCS channels selected. Make sure to pick at least one.");
+							Utils.showWarningDialog("No files have been uploaded, browser window will not open.");
 							return result;
 						}
 					} else {
@@ -504,11 +489,11 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 	}
 
 	@Override
-	public boolean promptForOptions(SElement arg0, List<String> arg1) {
+	public boolean promptForOptions(SElement fcmlQueryElement, List<String> pNames) {
 		if (this.pluginState == ImportPluginStateEnum.collectingSamples
 				|| this.pluginState == ImportPluginStateEnum.uploaded
 				|| this.pluginState == ImportPluginStateEnum.error) {
-			Sample sample = FJPluginHelper.getSample(arg0);
+			Sample sample = FJPluginHelper.getSample(fcmlQueryElement);
 			Workspace wsp = sample.getWorkspace();
 			List<AppNode> nodeList = Utils.getAllSelectedTercenNodes(wsp);
 			this.samplePops.clear();
@@ -532,7 +517,7 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 				}
 			}
 		}
-		return gui.promptForOptions(arg0, arg1);
+		return gui.promptForOptions(fcmlQueryElement, pNames);
 	}
 
 	@Override
@@ -647,9 +632,5 @@ public class Tercen extends ParameterOptionHolder implements PopulationPluginInt
 
 	public void setImportFile(File importFile) {
 		this.importFile = importFile;
-	}
-
-	public void setChannels(ArrayList<String> channels) {
-		this.channels = channels;
 	}
 }

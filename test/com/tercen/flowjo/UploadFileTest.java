@@ -39,9 +39,8 @@ public class UploadFileTest {
 
 			LinkedHashSet<String> filenames = new LinkedHashSet<String>();
 			filenames.add(fileLocation);
-			ArrayList<String> channels = new ArrayList<String>();
-			System.out.println("Uploading file: " + FILE + ", no channels");
-			FileDocument uploadResult = Utils.uploadZipFile(plugin, client, project, filenames, channels,
+			System.out.println("Uploading file: " + FILE + ", all channels");
+			FileDocument uploadResult = Utils.uploadZipFile(plugin, client, project, filenames,
 					new UploadProgressTask(plugin), dataTableName);
 
 			// check result
@@ -71,11 +70,8 @@ public class UploadFileTest {
 
 			LinkedHashSet<String> filenames = new LinkedHashSet<String>();
 			filenames.add(fileLocation);
-			ArrayList<String> channels = new ArrayList<String>();
-			channels.add("FSC-A");
-			channels.add("FSC-H");
 			System.out.println("Uploading file: " + FILE + ", 2 channels");
-			FileDocument uploadResult = Utils.uploadZipFile(plugin, client, project, filenames, channels,
+			FileDocument uploadResult = Utils.uploadZipFile(plugin, client, project, filenames,
 					new UploadProgressTask(plugin), dataTableName);
 
 			// check result (since data is gathered, hard to check some properties)

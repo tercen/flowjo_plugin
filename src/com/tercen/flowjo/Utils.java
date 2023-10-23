@@ -78,7 +78,7 @@ public class Utils {
 
 	
 	public static FileDocument uploadZipFile(Tercen plugin, TercenClient client, Project project,
-			LinkedHashSet<String> fileNames, ArrayList<String> channels, UploadProgressTask uploadProgressTask,
+			LinkedHashSet<String> fileNames, UploadProgressTask uploadProgressTask,
 			String dataTableName) throws ServiceError, IOException, DataFormatException {
 
 		FileDocument fileDoc = new FileDocument();

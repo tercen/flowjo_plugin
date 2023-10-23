@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.swing.Box;
@@ -53,7 +52,6 @@ public class TercenGUI {
 
 	private static final Logger logger = LogManager.getLogger();
 	private static final String CHOOSE_DATA = "Choose Data";
-	private static final String SELECT_CHANNELS = "Select FCS channels.";
 	private static final String SELECT_TEXT = "Hold Ctrl or Shift and use your mouse to select multiple.";
 	private static final String CREATE_USER_TITLE_TEXT = "We're creating your Tercen account.";
 	private static final String CREATE_USER_SUBTITLE_TEXT = "Please verify your details and create a password for Tercen.";
@@ -75,7 +73,7 @@ public class TercenGUI {
 		this.plugin = plugin;
 	}
 
-	public boolean promptForOptions(SElement arg0, List<String> arg1) {
+	public boolean promptForOptions(SElement fcmlQueryElement, List<String> pNames) {
 		boolean result = false;
 
 		// show upload dialog
@@ -125,7 +123,7 @@ public class TercenGUI {
 					componentList.clear();
 					componentList.add(addHeaderString("Re-Upload Data", FontUtil.dlogBold16));
 					componentList.add(new JSeparator());
-					result = openUploadDialog(componentList, arg0, arg1);
+					result = openUploadDialog(componentList, fcmlQueryElement, pNames);
 				} else if (returnValue == 2) {
 					JFileChooser fileChooser = new JFileChooser();
 					if (Utils.isWindows()) {
@@ -148,7 +146,7 @@ public class TercenGUI {
 				componentList.clear();
 				componentList.add(addHeaderString("Upload to Tercen", FontUtil.dlogBold16));
 				componentList.add(new JSeparator());
-				result = openUploadDialog(componentList, arg0, arg1);
+				result = openUploadDialog(componentList, fcmlQueryElement, pNames);
 			}
 		} else {
 			FJLabel headerLabel = addHeaderString("<html><center>Instructions</center><html>", FontUtil.dlogBold16);
@@ -185,28 +183,10 @@ public class TercenGUI {
 			componentList.add(new JSeparator());
 		}
 
-		// channel section
-		FJLabel label = new FJLabel(SELECT_CHANNELS);
-		label.setFont(FontUtil.BoldDialog12);
-		HBox box = new HBox(new Component[] { label, Box.createHorizontalGlue() });
-		componentList.add(box);
-
-		componentList.add(new FJLabel(""));
-		componentList.add(new FJLabel(SELECT_TEXT));
-		componentList.add(new FJLabel(""));
-
-		List<String> compParams = FJPluginHelper.getSample(arg0).getParameters(true).getCompensatedParameterNames();
-		DualListBox dualListBox = new DualListBox(arg1, compParams);
-		componentList.add(dualListBox);
-
 		int option = JOptionPane.showConfirmDialog((Component) null, componentList.toArray(), getDialogTitle(),
 				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
 		if (option == JOptionPane.OK_OPTION) {
-			List<String> fcsChannels = dualListBox.getAllResultItems();
-			plugin.setChannels(new ArrayList<String>(
-					fcsChannels.stream().map(s -> Utils.setColumnName(s)).collect(Collectors.toList())));
-
 			// set selected sample files
 			if (samplePopulationsList != null) {
 				plugin.selectedSamplePops.clear();
